@@ -25,7 +25,7 @@ export async function buildLearnerContext(
       .maybeSingle(),
     supabase
       .from("goals")
-      .select("id, tier, title, status, target_date, smart_criteria")
+      .select("id, primary_lens, title, status, target_date, smart_criteria")
       .eq("user_id", userId)
       .in("status", ["not_started", "in_progress"])
       .order("created_at", { ascending: false }),
@@ -59,7 +59,7 @@ export async function buildLearnerContext(
         goals
           .map(
             (g) =>
-              `- [${tierLabel(g.tier)}] ${g.title} (${g.status}${g.target_date ? `, target ${g.target_date}` : ""})`,
+              `- ${g.title}${g.primary_lens ? ` (started from ${lensLabel(g.primary_lens)})` : ""} — ${g.status}${g.target_date ? `, target ${g.target_date}` : ""}`,
           )
           .join("\n");
 
@@ -78,14 +78,14 @@ export async function buildLearnerContext(
   return [header, goalsBlock, actionsBlock].join("\n\n");
 }
 
-function tierLabel(tier: string): string {
-  return tier === "self"
+function lensLabel(lens: string | null): string {
+  return lens === "self"
     ? "Leading Self"
-    : tier === "others"
+    : lens === "others"
       ? "Leading Others"
-      : tier === "org"
+      : lens === "org"
         ? "Leading Org"
-        : tier;
+        : (lens ?? "");
 }
 
 function truncate(s: string | null | undefined, max: number): string {

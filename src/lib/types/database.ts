@@ -346,14 +346,14 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          impact_org: string | null
-          impact_others: string | null
-          impact_self: string | null
+          impact_org: string
+          impact_others: string
+          impact_self: string
           org_id: string
+          primary_lens: string | null
           smart_criteria: Json
           status: string
           target_date: string | null
-          tier: string
           title: string
           updated_at: string
           user_id: string
@@ -361,14 +361,14 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          impact_org?: string | null
-          impact_others?: string | null
-          impact_self?: string | null
+          impact_org: string
+          impact_others: string
+          impact_self: string
           org_id: string
+          primary_lens?: string | null
           smart_criteria?: Json
           status?: string
           target_date?: string | null
-          tier: string
           title: string
           updated_at?: string
           user_id: string
@@ -376,14 +376,14 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          impact_org?: string | null
-          impact_others?: string | null
-          impact_self?: string | null
+          impact_org?: string
+          impact_others?: string
+          impact_self?: string
           org_id?: string
+          primary_lens?: string | null
           smart_criteria?: Json
           status?: string
           target_date?: string | null
-          tier?: string
           title?: string
           updated_at?: string
           user_id?: string

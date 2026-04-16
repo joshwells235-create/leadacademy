@@ -16,7 +16,7 @@ export function ActionLogForm({
   goals,
   preselectedGoalId,
 }: {
-  goals: { id: string; title: string; tier: string }[];
+  goals: { id: string; title: string }[];
   preselectedGoalId?: string;
 }) {
   const [state, formAction, pending] = useActionState(createActionLog, initialState);
@@ -58,7 +58,7 @@ export function ActionLogForm({
           <option value="">— none / general —</option>
           {goals.map((g) => (
             <option key={g.id} value={g.id}>
-              [{tierLabel(g.tier)}] {g.title}
+              {g.title}
             </option>
           ))}
         </select>
@@ -99,6 +99,3 @@ export function ActionLogForm({
   );
 }
 
-function tierLabel(t: string): string {
-  return t === "self" ? "Self" : t === "others" ? "Others" : t === "org" ? "Org" : t;
-}

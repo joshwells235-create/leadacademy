@@ -18,7 +18,7 @@ export default async function DashboardPage() {
       .maybeSingle(),
     supabase
       .from("goals")
-      .select("id, tier, title, status")
+      .select("id, title, status")
       .eq("user_id", user!.id)
       .neq("status", "archived"),
     supabase
@@ -42,12 +42,12 @@ export default async function DashboardPage() {
   const actions = actionsRes.data ?? [];
 
   const firstName = profile?.display_name?.split(" ")[0] ?? user!.email?.split("@")[0] ?? "there";
-  const goalsByTier = {
-    self: goals.filter((g) => g.tier === "self").length,
-    others: goals.filter((g) => g.tier === "others").length,
-    org: goals.filter((g) => g.tier === "org").length,
-  };
   const totalGoals = goals.length;
+  const goalsByStatus = {
+    not_started: goals.filter((g) => g.status === "not_started").length,
+    in_progress: goals.filter((g) => g.status === "in_progress").length,
+    completed: goals.filter((g) => g.status === "completed").length,
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10">
@@ -72,11 +72,12 @@ export default async function DashboardPage() {
         <div className="mb-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Set your first growth goal</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            Chat with the coach to draft a SMART goal across one of the three tiers. The coach will save it
-            for you when it's ready.
+            Chat with the coach to draft an integrative SMART goal — one that changes you, the people
+            around you, and the work at the organizational level. The coach will save it when it's
+            ready.
           </p>
           <Link
-            href="/coach-chat"
+            href="/coach-chat?mode=goal"
             className="mt-4 inline-flex rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
           >
             Start coaching session →
@@ -85,9 +86,9 @@ export default async function DashboardPage() {
       ) : (
         <div className="mb-6 grid gap-4 md:grid-cols-4">
           <StatCard label="Total goals" value={totalGoals} href="/goals" />
-          <StatCard label="Leading self" value={goalsByTier.self} href="/goals" />
-          <StatCard label="Leading others" value={goalsByTier.others} href="/goals" />
-          <StatCard label="Leading org" value={goalsByTier.org} href="/goals" />
+          <StatCard label="In progress" value={goalsByStatus.in_progress} href="/goals" />
+          <StatCard label="Not started" value={goalsByStatus.not_started} href="/goals" />
+          <StatCard label="Completed" value={goalsByStatus.completed} href="/goals" />
         </div>
       )}
 

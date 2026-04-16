@@ -2,17 +2,20 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * `finalize_goal` — Claude calls this when learner + coach have agreed on a
- * complete SMART goal. The handler runs on our server with the learner's
- * Supabase session, so RLS enforces that the row is theirs.
+ * `finalize_goal` — Claude calls this when the coach and learner have agreed
+ * on a complete, integrative goal. Every goal must articulate impact across
+ * all three lenses (self, others, organization) — that's the product point.
+ *
+ * `primary_lens` is optional metadata about where the learner started
+ * thinking, not a silo classification. The coach can set it if the learner
+ * clearly began from one lens.
  */
 export const finalizeGoalInputSchema = z.object({
-  tier: z.enum(["self", "others", "org"]).describe(
-    "Which of the three tiers this goal belongs to: Leading Self, Leading Others, or Leading the Organization.",
-  ),
-  title: z.string().min(1).max(200).describe(
-    "Short title of the goal — one sentence, written in the learner's voice.",
-  ),
+  title: z
+    .string()
+    .min(1)
+    .max(200)
+    .describe("Short title of the goal — one sentence, written in the learner's voice."),
   smart_criteria: z
     .object({
       specific: z.string().min(1).describe("Concrete behavior or outcome."),
@@ -22,9 +25,30 @@ export const finalizeGoalInputSchema = z.object({
       time_bound: z.string().min(1).describe("Deadline or cadence."),
     })
     .describe("One sentence per SMART criterion, in the learner's voice."),
-  impact_self: z.string().optional().describe("How achieving this changes the learner. Optional if self tier."),
-  impact_others: z.string().optional().describe("How it affects their team or peers."),
-  impact_org: z.string().optional().describe("How it affects the wider organization."),
+  impact_self: z
+    .string()
+    .min(10)
+    .describe(
+      "How achieving this goal changes the learner personally — their habits, mindset, discipline, identity. Required.",
+    ),
+  impact_others: z
+    .string()
+    .min(10)
+    .describe(
+      "How achieving this goal changes the people around the learner — team, peers, direct reports. Required.",
+    ),
+  impact_org: z
+    .string()
+    .min(10)
+    .describe(
+      "How achieving this goal changes the wider organization — culture, execution, strategy, outcomes. Required.",
+    ),
+  primary_lens: z
+    .enum(["self", "others", "org"])
+    .optional()
+    .describe(
+      "Optional: which of the three lenses did the learner start from? This is metadata about the entry point, NOT a classification that confines the goal. Omit if the goal emerged organically across all three.",
+    ),
   target_date: z
     .string()
     .optional()
@@ -38,7 +62,7 @@ export function buildFinalizeGoalTool(
 ) {
   return tool({
     description:
-      "Save a finalized SMART goal for the learner. Call this only after the coach and learner have agreed on all five SMART criteria, the tier, at least one impact field, and a target timeframe.",
+      "Save a finalized integrative goal for the learner. Call this only after the coach and learner have agreed on the title, all five SMART criteria, AND impact across ALL THREE lenses (self, others, org). Every goal must touch all three — do not call this tool unless all three impacts have real content, not placeholders.",
     inputSchema: finalizeGoalInputSchema,
     execute: handler,
   });

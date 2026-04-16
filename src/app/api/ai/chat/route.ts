@@ -25,7 +25,8 @@ const requestSchema = z.object({
   conversationId: z.string().uuid().optional(),
   goalContext: z
     .object({
-      tier: z.enum(["self", "others", "org"]).optional(),
+      primaryLens: z.enum(["self", "others", "org"]).optional(),
+      goalId: z.string().uuid().optional(),
     })
     .optional(),
 });
@@ -94,8 +95,8 @@ export async function POST(request: NextRequest) {
     PERSONA,
     "\n## Current mode\n" + (MODE_PROMPTS[mode] ?? MODE_PROMPTS.general),
     "\n## Learner context (read-only, updated each turn)\n" + learnerContext,
-    goalContext?.tier
-      ? `\n## Goal focus\nThe learner clicked into a ${tierLabel(goalContext.tier)} goal. If calling finalize_goal, set tier="${goalContext.tier}" unless the learner explicitly redirects.`
+    goalContext?.primaryLens
+      ? `\n## Starting lens\nThe learner started this conversation from the **${lensLabel(goalContext.primaryLens)}** lens. That's the on-ramp — the goal must still land with real impact across all three lenses. If calling finalize_goal, you can set primary_lens="${goalContext.primaryLens}" unless the learner clearly pivoted during the conversation.`
       : "",
   ]
     .filter(Boolean)
@@ -108,12 +109,12 @@ export async function POST(request: NextRequest) {
       .insert({
         org_id: membership.org_id,
         user_id: user.id,
-        tier: input.tier,
+        primary_lens: input.primary_lens ?? goalContext?.primaryLens ?? null,
         title: input.title,
         smart_criteria: input.smart_criteria,
-        impact_self: input.impact_self ?? null,
-        impact_others: input.impact_others ?? null,
-        impact_org: input.impact_org ?? null,
+        impact_self: input.impact_self,
+        impact_others: input.impact_others,
+        impact_org: input.impact_org,
         target_date: input.target_date ?? null,
         status: "in_progress",
       })
@@ -204,6 +205,6 @@ export async function POST(request: NextRequest) {
   });
 }
 
-function tierLabel(tier: "self" | "others" | "org"): string {
-  return tier === "self" ? "Leading Self" : tier === "others" ? "Leading Others" : "Leading the Organization";
+function lensLabel(lens: "self" | "others" | "org"): string {
+  return lens === "self" ? "Leading Self" : lens === "others" ? "Leading Others" : "Leading the Organization";
 }

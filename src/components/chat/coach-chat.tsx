@@ -15,7 +15,7 @@ export function CoachChat({
   emptyHint,
 }: {
   mode: Mode;
-  goalContext?: { tier?: "self" | "others" | "org"; goalId?: string };
+  goalContext?: { primaryLens?: "self" | "others" | "org"; goalId?: string };
   initialConversationId?: string;
   placeholder?: string;
   emptyHint?: React.ReactNode;

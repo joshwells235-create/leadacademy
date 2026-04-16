@@ -14,13 +14,13 @@ export default async function ActionLogPage({ searchParams }: Props) {
   const [goalsRes, actionsRes] = await Promise.all([
     supabase
       .from("goals")
-      .select("id, title, tier, status")
+      .select("id, title, primary_lens, status")
       .eq("user_id", user!.id)
       .in("status", ["not_started", "in_progress"])
       .order("created_at", { ascending: false }),
     supabase
       .from("action_logs")
-      .select("id, description, reflection, impact_area, occurred_on, goal_id, goals(title, tier)")
+      .select("id, description, reflection, impact_area, occurred_on, goal_id, goals(title, primary_lens)")
       .eq("user_id", user!.id)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
@@ -102,7 +102,7 @@ export default async function ActionLogPage({ searchParams }: Props) {
           <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold">Log an action</h2>
             <ActionLogForm
-              goals={goals.map((g) => ({ id: g.id, title: g.title, tier: g.tier }))}
+              goals={goals.map((g) => ({ id: g.id, title: g.title }))}
               preselectedGoalId={preselectedGoalId}
             />
           </div>

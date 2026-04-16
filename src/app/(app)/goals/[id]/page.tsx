@@ -7,7 +7,7 @@ import { DeleteGoalButton } from "./delete-goal-button";
 
 type Props = { params: Promise<{ id: string }> };
 
-const TIER_LABELS: Record<string, string> = {
+const LENS_LABELS: Record<string, string> = {
   self: "Leading Self",
   others: "Leading Others",
   org: "Leading the Organization",
@@ -52,9 +52,11 @@ export default async function GoalDetailPage({ params }: Props) {
 
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-            {TIER_LABELS[goal.tier] ?? goal.tier}
-          </div>
+          {goal.primary_lens && (
+            <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+              started from {LENS_LABELS[goal.primary_lens] ?? goal.primary_lens}
+            </div>
+          )}
           <h1 className="mt-1 text-2xl font-semibold">{goal.title}</h1>
           {goal.target_date && (
             <p className="mt-1 text-sm text-neutral-500">Target: {goal.target_date}</p>
@@ -92,37 +94,33 @@ export default async function GoalDetailPage({ params }: Props) {
             </dl>
           </section>
 
-          {(goal.impact_self || goal.impact_others || goal.impact_org) && (
-            <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-              <h2 className="text-sm font-semibold">Impact</h2>
-              <dl className="mt-3 space-y-3 text-sm">
-                {goal.impact_self && (
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                      Self
-                    </dt>
-                    <dd className="mt-0.5 text-neutral-800">{goal.impact_self}</dd>
-                  </div>
-                )}
-                {goal.impact_others && (
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                      Others
-                    </dt>
-                    <dd className="mt-0.5 text-neutral-800">{goal.impact_others}</dd>
-                  </div>
-                )}
-                {goal.impact_org && (
-                  <div>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                      Organization
-                    </dt>
-                    <dd className="mt-0.5 text-neutral-800">{goal.impact_org}</dd>
-                  </div>
-                )}
-              </dl>
-            </section>
-          )}
+          <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+            <h2 className="text-sm font-semibold">Impact across the three lenses</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              Every goal lives across all three. If any of these feel thin, refine with the coach on
+              the right.
+            </p>
+            <dl className="mt-3 space-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Leading Self
+                </dt>
+                <dd className="mt-0.5 text-neutral-800">{goal.impact_self}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Leading Others
+                </dt>
+                <dd className="mt-0.5 text-neutral-800">{goal.impact_others}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                  Leading the Organization
+                </dt>
+                <dd className="mt-0.5 text-neutral-800">{goal.impact_org}</dd>
+              </div>
+            </dl>
+          </section>
 
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between">
@@ -161,7 +159,10 @@ export default async function GoalDetailPage({ params }: Props) {
           </div>
           <CoachChat
             mode="goal"
-            goalContext={{ tier: goal.tier as "self" | "others" | "org", goalId: goal.id }}
+            goalContext={{
+              primaryLens: (goal.primary_lens as "self" | "others" | "org" | null) ?? undefined,
+              goalId: goal.id,
+            }}
             placeholder="Ask the coach about this goal…"
             emptyHint={
               <p>
