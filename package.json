@@ -1,0 +1,45 @@
+{
+  "name": "leadacademy",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check",
+    "format": "biome format --write",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "gen:types": "supabase gen types typescript --project-id vcpuxpbncltyihnfnaim --schema public > src/lib/types/database.ts",
+    "seed:super-admin": "tsx scripts/seed-super-admin.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.70",
+    "@anthropic-ai/sdk": "^0.90.0",
+    "@supabase/ssr": "^0.10.2",
+    "@supabase/supabase-js": "^2.103.3",
+    "ai": "^6.0.165",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "resend": "^6.12.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.12",
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitest/ui": "^4.1.4",
+    "dotenv": "^17.4.2",
+    "supabase": "^2.92.0",
+    "tailwindcss": "^4",
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "vitest": "^4.1.4"
+  }
+}
