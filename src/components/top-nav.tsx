@@ -51,6 +51,9 @@ export function TopNav({
           <Link href="/goals" className="text-neutral-700 hover:text-neutral-900">
             Goals
           </Link>
+          <Link href="/action-log" className="text-neutral-700 hover:text-neutral-900">
+            Action log
+          </Link>
           <Link href="/coach-chat" className="text-neutral-700 hover:text-neutral-900">
             Coach
           </Link>

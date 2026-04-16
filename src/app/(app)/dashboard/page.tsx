@@ -116,11 +116,17 @@ export default async function DashboardPage() {
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Recent actions</h2>
-            <span className="text-xs text-neutral-500">Phase 1b · action logging UI coming next</span>
+            <Link href="/action-log" className="text-xs text-neutral-600 hover:text-neutral-900">
+              Log + view all →
+            </Link>
           </div>
           {actions.length === 0 ? (
             <p className="mt-2 text-sm text-neutral-600">
-              No actions logged yet. Once you start taking action on a goal, log it here.
+              No actions logged yet.{" "}
+              <Link href="/action-log" className="text-neutral-900 underline">
+                Log your first one
+              </Link>
+              .
             </p>
           ) : (
             <ul className="mt-2 space-y-1.5 text-sm text-neutral-700">
