@@ -48,6 +48,12 @@ export function TopNav({
           <Link href="/dashboard" className="text-neutral-700 hover:text-neutral-900">
             Dashboard
           </Link>
+          <Link href="/goals" className="text-neutral-700 hover:text-neutral-900">
+            Goals
+          </Link>
+          <Link href="/coach-chat" className="text-neutral-700 hover:text-neutral-900">
+            Coach
+          </Link>
           {superAdmin && (
             <Link href="/super/orgs" className="text-neutral-700 hover:text-neutral-900">
               Orgs

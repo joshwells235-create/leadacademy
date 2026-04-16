@@ -9,13 +9,65 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
+      action_logs: {
+        Row: {
+          created_at: string
+          description: string
+          goal_id: string | null
+          id: string
+          impact_area: string | null
+          occurred_on: string
+          org_id: string
+          reflection: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          goal_id?: string | null
+          id?: string
+          impact_area?: string | null
+          occurred_on?: string
+          org_id: string
+          reflection?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          goal_id?: string | null
+          id?: string
+          impact_area?: string | null
+          occurred_on?: string
+          org_id?: string
+          reflection?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_logs_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_logs: {
         Row: {
           action: string
@@ -50,6 +102,147 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "activity_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_conversations: {
+        Row: {
+          context_ref: Json
+          created_at: string
+          id: string
+          last_message_at: string | null
+          mode: string
+          org_id: string
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context_ref?: Json
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          mode: string
+          org_id: string
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context_ref?: Json
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          mode?: string
+          org_id?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: Json
+          conversation_id: string
+          created_at: string
+          id: string
+          latency_ms: number | null
+          model: string | null
+          role: string
+          tokens_in: number | null
+          tokens_out: number | null
+          tool_calls: Json | null
+          tool_results: Json | null
+        }
+        Insert: {
+          content: Json
+          conversation_id: string
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          role: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Update: {
+          content?: Json
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          model?: string | null
+          role?: string
+          tokens_in?: number | null
+          tokens_out?: number | null
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_usage: {
+        Row: {
+          day: string
+          id: string
+          model: string
+          org_id: string
+          request_count: number
+          tokens_in: number
+          tokens_out: number
+          updated_at: string
+          usd_cents: number
+          user_id: string
+        }
+        Insert: {
+          day?: string
+          id?: string
+          model: string
+          org_id: string
+          request_count?: number
+          tokens_in?: number
+          tokens_out?: number
+          updated_at?: string
+          usd_cents?: number
+          user_id: string
+        }
+        Update: {
+          day?: string
+          id?: string
+          model?: string
+          org_id?: string
+          request_count?: number
+          tokens_in?: number
+          tokens_out?: number
+          updated_at?: string
+          usd_cents?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -142,6 +335,62 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cohorts_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          created_at: string
+          id: string
+          impact_org: string | null
+          impact_others: string | null
+          impact_self: string | null
+          org_id: string
+          smart_criteria: Json
+          status: string
+          target_date: string | null
+          tier: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          impact_org?: string | null
+          impact_others?: string | null
+          impact_self?: string | null
+          org_id: string
+          smart_criteria?: Json
+          status?: string
+          target_date?: string | null
+          tier: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          impact_org?: string | null
+          impact_others?: string | null
+          impact_self?: string | null
+          org_id?: string
+          smart_criteria?: Json
+          status?: string
+          target_date?: string | null
+          tier?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -324,22 +573,7 @@ export type Database = {
     Functions: {
       consume_invitation: {
         Args: { p_token: string }
-        Returns: {
-          cohort_id: string | null
-          created_at: string
-          id: string
-          org_id: string
-          role: string
-          status: string
-          updated_at: string
-          user_id: string
-        }
-        SetofOptions: {
-          from: "*"
-          to: "memberships"
-          isOneToOne: true
-          isSetofReturn: false
-        }
+        Returns: Database["public"]["Tables"]["memberships"]["Row"]
       }
       is_coach_in_org: { Args: { p_org_id: string }; Returns: boolean }
       is_coach_of: { Args: { p_learner: string }; Returns: boolean }
@@ -349,7 +583,7 @@ export type Database = {
       verify_invitation: {
         Args: { p_token: string }
         Returns: {
-          cohort_id: string
+          cohort_id: string | null
           email: string
           expires_at: string
           id: string
