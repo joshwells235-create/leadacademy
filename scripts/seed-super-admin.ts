@@ -13,7 +13,11 @@ import type { Database } from "../src/lib/types/database";
 
 config({ path: ".env.local" });
 
+// pnpm passes `--` through to the script; filter it so parseArgs doesn't
+// treat what follows as positional.
+const rawArgs = process.argv.slice(2).filter((arg) => arg !== "--");
 const { values } = parseArgs({
+  args: rawArgs,
   options: {
     email: { type: "string" },
     password: { type: "string" },
