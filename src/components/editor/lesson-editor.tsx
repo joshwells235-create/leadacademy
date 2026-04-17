@@ -19,6 +19,7 @@ type Props = {
 export function LessonEditor({ content, onChange, courseId, lessonId }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
 
   const editor = useEditor({
     extensions: [
@@ -43,6 +44,8 @@ export function LessonEditor({ content, onChange, courseId, lessonId }: Props) {
     },
     onUpdate: ({ editor: e }) => {
       onChange(e.getJSON());
+      const text = e.getText();
+      setWordCount(text.trim() ? text.trim().split(/\s+/).length : 0);
     },
   });
 
@@ -158,9 +161,12 @@ export function LessonEditor({ content, onChange, courseId, lessonId }: Props) {
 
       <EditorContent editor={editor} />
 
-      {/* Footer with keyboard hints */}
-      <div className="border-t border-neutral-100 bg-neutral-50 px-4 py-1.5 text-[10px] text-neutral-400">
-        <span className="font-medium">Ctrl+B</span> bold · <span className="font-medium">Ctrl+I</span> italic · <span className="font-medium">Ctrl+K</span> link · <span className="font-medium">Ctrl+Z</span> undo · <span className="font-medium">Ctrl+Shift+Z</span> redo
+      {/* Footer with keyboard hints + word count */}
+      <div className="border-t border-neutral-100 bg-neutral-50 px-4 py-1.5 flex items-center justify-between text-[10px] text-neutral-400">
+        <span>
+          <span className="font-medium">Ctrl+B</span> bold · <span className="font-medium">Ctrl+I</span> italic · <span className="font-medium">Ctrl+K</span> link · <span className="font-medium">Ctrl+Z</span> undo
+        </span>
+        <span>{wordCount} word{wordCount !== 1 ? "s" : ""}{wordCount > 0 ? ` · ~${Math.max(1, Math.ceil(wordCount / 200))} min read` : ""}</span>
       </div>
     </div>
   );

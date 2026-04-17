@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { updateCourse, deleteCourse, createModule, updateModule, deleteModule, createLesson } from "@/lib/learning/actions";
 
@@ -18,15 +18,23 @@ export function CourseEditor({ course, modules, lessonsByModule }: {
   const [description, setDescription] = useState(course.description ?? "");
   const [status, setStatus] = useState(course.status);
   const [pending, start] = useTransition();
-  const [saved, setSaved] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const router = useRouter();
 
-  const saveCourse = () => start(async () => {
-    await updateCourse(course.id, { title, description: description || undefined, status });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  // Refs for stale-closure-safe saving.
+  const titleRef = useRef(title);
+  const descRef = useRef(description);
+  const statusRef = useRef(status);
+  titleRef.current = title;
+  descRef.current = description;
+  statusRef.current = status;
+
+  const saveCourse = useCallback(() => start(async () => {
+    await updateCourse(course.id, { title: titleRef.current, description: descRef.current || undefined, status: statusRef.current });
+    setSaveState("saved");
+    setTimeout(() => setSaveState("idle"), 3000);
     router.refresh();
-  });
+  }), [course.id, router]);
 
   const handleDeleteCourse = () => {
     if (!confirm("Delete this entire course, including all modules and lessons? This cannot be undone.")) return;
@@ -42,7 +50,7 @@ export function CourseEditor({ course, modules, lessonsByModule }: {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold text-brand-navy">Course Details</h1>
-            {saved && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 animate-pulse">Saved</span>}
+            {saveState === "saved" && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">✓ Saved</span>}
           </div>
           <div className="flex items-center gap-2">
             <select
@@ -82,9 +90,14 @@ export function CourseEditor({ course, modules, lessonsByModule }: {
               placeholder="What will learners gain from this course? Write 2-3 sentences."
             />
           </div>
-          <div className="text-xs text-neutral-500 pt-1">
-            {modules.length} module{modules.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
-            {status === "draft" && " · This course is not visible to learners until published."}
+          <div className="text-xs pt-1">
+            <span className="text-neutral-500">{modules.length} module{modules.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}</span>
+            {status === "draft" && (
+              <span className="ml-2 text-amber-600">· Draft — not visible to learners until published</span>
+            )}
+            {status === "published" && (
+              <span className="ml-2 text-emerald-600">· Published — visible to learners in assigned cohorts</span>
+            )}
           </div>
         </div>
       </div>
