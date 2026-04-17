@@ -34,7 +34,7 @@ export default async function GoalsPage() {
         </div>
         <Link
           href="/coach-chat?mode=goal"
-          className="shrink-0 rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+          className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
         >
           + Draft with coach
         </Link>

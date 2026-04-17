@@ -65,7 +65,7 @@ export function ActionItemsPanel({ learnerId, items }: { learnerId: string; item
             className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
           />
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs" />
-          <button type="submit" disabled={pending} className="rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-800 disabled:opacity-60">Add</button>
+          <button type="submit" disabled={pending} className="rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark disabled:opacity-60">Add</button>
           <button type="button" onClick={() => setShowForm(false)} className="text-xs text-neutral-500 hover:text-neutral-700">Cancel</button>
         </form>
       ) : (

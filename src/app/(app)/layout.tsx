@@ -37,7 +37,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           })) ?? []
         }
       />
-      <main className="flex-1 bg-neutral-50">{children}</main>
+      <main className="flex-1 bg-brand-light">{children}</main>
     </div>
   );
 }

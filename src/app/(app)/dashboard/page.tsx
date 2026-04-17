@@ -103,7 +103,7 @@ export default async function DashboardPage() {
           </p>
           <Link
             href="/coach-chat?mode=goal"
-            className="mt-4 inline-flex rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800"
+            className="mt-4 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
           >
             Start coaching session →
           </Link>
@@ -215,7 +215,7 @@ export default async function DashboardPage() {
           </p>
           <Link
             href="/coach-chat"
-            className="mt-3 inline-flex rounded-md bg-neutral-900 px-3 py-1.5 text-sm text-white hover:bg-neutral-800"
+            className="mt-3 inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark"
           >
             Start a session
           </Link>

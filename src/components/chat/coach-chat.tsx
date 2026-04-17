@@ -76,8 +76,8 @@ export function CoachChat({
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
                     m.role === "user"
-                      ? "bg-neutral-900 text-white"
-                      : "bg-neutral-100 text-neutral-900"
+                      ? "bg-brand-blue text-white"
+                      : "bg-brand-light text-brand-navy"
                   }`}
                 >
                   <MessageContent message={m} />
@@ -116,12 +116,12 @@ export function CoachChat({
             placeholder={placeholder}
             rows={2}
             disabled={isStreaming}
-            className="flex-1 resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 disabled:bg-neutral-50"
+            className="flex-1 resize-none rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-brand-light"
           />
           <button
             type="submit"
             disabled={isStreaming || input.trim().length === 0}
-            className="rounded-md bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             Send
           </button>
