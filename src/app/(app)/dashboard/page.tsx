@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -7,7 +8,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [profileRes, membershipRes, goalsRes, actionsRes, convRes] = await Promise.all([
+  const [profileRes, membershipRes, goalsRes, actionsRes, convRes, reflectionsRes] = await Promise.all([
     supabase.from("profiles").select("display_name, super_admin").eq("user_id", user!.id).maybeSingle(),
     supabase
       .from("memberships")
@@ -34,6 +35,10 @@ export default async function DashboardPage() {
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("reflections")
+      .select("id")
+      .eq("user_id", user!.id),
   ]);
 
   const profile = profileRes.data;
@@ -93,6 +98,28 @@ export default async function DashboardPage() {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
+        <DailyChallengeWidget />
+
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Reflections</h2>
+            <Link href="/reflections" className="text-xs text-neutral-600 hover:text-neutral-900">
+              Journal →
+            </Link>
+          </div>
+          <p className="mt-2 text-sm text-neutral-600">
+            {(reflectionsRes.data?.length ?? 0) === 0
+              ? "Start journaling — even one sentence counts."
+              : `${reflectionsRes.data!.length} reflection${reflectionsRes.data!.length === 1 ? "" : "s"} so far.`}
+          </p>
+          <Link
+            href="/reflections"
+            className="mt-3 inline-flex rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 hover:bg-neutral-50"
+          >
+            Write a reflection
+          </Link>
+        </div>
+
         <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold">Coach</h2>

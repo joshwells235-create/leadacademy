@@ -566,6 +566,97 @@ export type Database = {
         }
         Relationships: []
       }
+      reflections: {
+        Row: {
+          ai_insights: Json
+          content: string
+          created_at: string
+          id: string
+          org_id: string
+          reflected_on: string
+          themes: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_insights?: Json
+          content: string
+          created_at?: string
+          id?: string
+          org_id: string
+          reflected_on?: string
+          themes?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_insights?: Json
+          content?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          reflected_on?: string
+          themes?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reflections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_challenges: {
+        Row: {
+          challenge: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          for_date: string
+          id: string
+          org_id: string
+          reflection: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          for_date?: string
+          id?: string
+          org_id: string
+          reflection?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          for_date?: string
+          id?: string
+          org_id?: string
+          reflection?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_challenges_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

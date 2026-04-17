@@ -5,7 +5,9 @@ import { claude, MODELS } from "@/lib/ai/client";
 import { PERSONA } from "@/lib/ai/prompts/base/persona";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
+import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
+import { buildTagThemesTool } from "@/lib/ai/tools/tag-themes";
 import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
 import { estimateCostCents } from "@/lib/ai/pricing";
 import { createClient } from "@/lib/supabase/server";
@@ -17,11 +19,12 @@ export const maxDuration = 60;
 const MODE_PROMPTS: Record<string, string> = {
   general: GENERAL_MODE,
   goal: GOAL_MODE,
+  reflection: REFLECTION_MODE,
 };
 
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
-  mode: z.enum(["general", "goal"]).default("general"),
+  mode: z.enum(["general", "goal", "reflection"]).default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
     .object({
@@ -129,12 +132,23 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   const model = MODELS.sonnet;
 
+  // tag_themes tool — updates a reflection's theme tags.
+  const tagThemesTool = buildTagThemesTool(async (input) => {
+    const { error } = await supabase
+      .from("reflections")
+      .update({ themes: input.themes })
+      .eq("id", input.reflectionId)
+      .eq("user_id", user.id);
+    if (error) return { error: error.message };
+    return { ok: true };
+  });
+
   const modelMessages = await convertToModelMessages(messages as UIMessage[]);
   const result = streamText({
     model: claude(model),
     system: systemPrompt,
     messages: modelMessages,
-    tools: { finalize_goal: finalizeGoalTool },
+    tools: { finalize_goal: finalizeGoalTool, tag_themes: tagThemesTool },
     stopWhen: stepCountIs(4), // Allow one tool call + follow-up text.
     onFinish: async ({ usage, finishReason }) => {
       const latency = Date.now() - startedAt;

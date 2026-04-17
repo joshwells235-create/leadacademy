@@ -52,7 +52,10 @@ export function TopNav({
             Goals
           </Link>
           <Link href="/action-log" className="text-neutral-700 hover:text-neutral-900">
-            Action log
+            Actions
+          </Link>
+          <Link href="/reflections" className="text-neutral-700 hover:text-neutral-900">
+            Reflections
           </Link>
           <Link href="/coach-chat" className="text-neutral-700 hover:text-neutral-900">
             Coach
