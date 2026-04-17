@@ -20,10 +20,10 @@ export default async function CourseEditorPage({ params }: Props) {
   // Get lesson counts per module.
   const moduleIds = (modules ?? []).map((m) => m.id);
   const { data: lessons } = moduleIds.length > 0
-    ? await supabase.from("lessons").select("id, module_id, title, type, order").in("module_id", moduleIds).order("order")
+    ? await supabase.from("lessons").select("id, module_id, title, type, order, video_url, content").in("module_id", moduleIds).order("order")
     : { data: [] };
 
-  type LessonRow = { id: string; module_id: string; title: string; type: string; order: number };
+  type LessonRow = { id: string; module_id: string; title: string; type: string; order: number; video_url: string | null; content: unknown };
   const lessonsByModule: Record<string, LessonRow[]> = {};
   for (const l of (lessons ?? []) as LessonRow[]) {
     if (!lessonsByModule[l.module_id]) lessonsByModule[l.module_id] = [];
@@ -32,9 +32,11 @@ export default async function CourseEditorPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-2 text-xs text-neutral-500">
-        <Link href="/super/course-builder" className="hover:text-neutral-700">← All courses</Link>
-      </div>
+      <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
+        <Link href="/super/course-builder" className="hover:text-brand-blue">Courses</Link>
+        <span>/</span>
+        <span className="font-medium text-brand-navy">{course.title}</span>
+      </nav>
 
       <CourseEditor course={course} modules={modules ?? []} lessonsByModule={lessonsByModule} />
     </div>

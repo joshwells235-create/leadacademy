@@ -7,7 +7,7 @@ import { updateCourse, deleteCourse, createModule, updateModule, deleteModule, c
 
 type Course = { id: string; title: string; description: string | null; status: string };
 type Module = { id: string; title: string; description: string | null; status: string; order: number; duration_minutes: number | null };
-type Lesson = { id: string; module_id: string; title: string; type: string; order: number };
+type Lesson = { id: string; module_id: string; title: string; type: string; order: number; video_url?: string | null; content?: unknown };
 
 export function CourseEditor({ course, modules, lessonsByModule }: {
   course: Course;
@@ -143,12 +143,17 @@ function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(m.title);
   const [editDesc, setEditDesc] = useState(m.description ?? "");
+  const [editDuration, setEditDuration] = useState(m.duration_minutes?.toString() ?? "");
   const [addingLesson, setAddingLesson] = useState(false);
   const [newLessonTitle, setNewLessonTitle] = useState("");
 
   const handleSaveModule = () => {
     onTransition(async () => {
-      await updateModule(m.id, courseId, { title: editTitle, description: editDesc || undefined });
+      await updateModule(m.id, courseId, {
+        title: editTitle,
+        description: editDesc || undefined,
+        duration_minutes: editDuration ? parseInt(editDuration, 10) : undefined,
+      });
       setEditing(false);
       onRefresh();
     });
@@ -186,10 +191,24 @@ function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition
               onChange={(e) => setEditDesc(e.target.value)}
               rows={2}
               className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
-              placeholder="Module description (optional)"
+              placeholder="Module description — what will learners gain from this section? (optional)"
             />
-            <div className="flex gap-2">
-              <button onClick={handleSaveModule} disabled={pending} className="rounded-md bg-brand-blue px-3 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-60">Save</button>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-1.5 text-xs text-neutral-600">
+                Duration:
+                <input
+                  type="number"
+                  min={0}
+                  value={editDuration}
+                  onChange={(e) => setEditDuration(e.target.value)}
+                  placeholder="—"
+                  className="w-16 rounded-md border border-neutral-300 bg-white px-2 py-1 text-xs focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+                />
+                min
+              </label>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button onClick={handleSaveModule} disabled={pending} className="rounded-md bg-brand-blue px-3 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-60">Save module</button>
               <button onClick={() => setEditing(false)} className="text-xs text-neutral-500">Cancel</button>
             </div>
           </div>
@@ -202,7 +221,10 @@ function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition
                 <button onClick={(e) => { e.stopPropagation(); setEditing(true); }} className="text-xs text-brand-blue hover:underline">Edit</button>
               </div>
               {m.description && <p className="text-sm text-neutral-600 mt-0.5">{m.description}</p>}
-              <span className="text-xs text-neutral-500">{lessons.length} lesson{lessons.length !== 1 ? "s" : ""}</span>
+              <span className="text-xs text-neutral-500">
+                {lessons.length} lesson{lessons.length !== 1 ? "s" : ""}
+                {m.duration_minutes ? ` · ${m.duration_minutes} min` : ""}
+              </span>
             </div>
             <button onClick={handleDeleteModule} className="text-xs text-neutral-400 hover:text-brand-pink ml-4">Delete module</button>
           </div>
@@ -226,7 +248,13 @@ function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition
                     {l.type === "quiz" ? "Quiz" : "Lesson"}
                   </span>
                   <span className="text-brand-navy group-hover:text-brand-blue">{l.title}</span>
-                  <span className="ml-auto text-xs text-neutral-400 opacity-0 group-hover:opacity-100">Edit →</span>
+                  {/* Content indicators */}
+                  <span className="ml-auto flex items-center gap-1.5">
+                    {l.video_url && <span className="text-[10px] text-neutral-400" title="Has video">▶</span>}
+                    {hasContent(l.content) && <span className="text-[10px] text-neutral-400" title="Has written content">✎</span>}
+                    {!l.video_url && !hasContent(l.content) && <span className="text-[10px] text-amber-400" title="Empty — needs content">○</span>}
+                    <span className="text-xs text-neutral-400 opacity-0 group-hover:opacity-100">Edit →</span>
+                  </span>
                 </Link>
               </li>
             ))}
@@ -260,6 +288,14 @@ function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition
       </div>
     </div>
   );
+}
+
+function hasContent(content: unknown): boolean {
+  if (!content || typeof content !== "object") return false;
+  const doc = content as { type?: string; content?: Array<{ content?: unknown[] }> };
+  if (doc.type !== "doc" || !doc.content) return false;
+  // Check if there's any non-empty paragraph.
+  return doc.content.some((node) => node.content && node.content.length > 0);
 }
 
 function AddModuleForm({ courseId, pending, onTransition, onRefresh }: {
