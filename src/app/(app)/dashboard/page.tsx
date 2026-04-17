@@ -8,7 +8,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [profileRes, membershipRes, goalsRes, actionsRes, convRes, reflectionsRes] = await Promise.all([
+  const [profileRes, membershipRes, goalsRes, actionsRes, convRes, reflectionsRes, assessmentDocsRes] = await Promise.all([
     supabase.from("profiles").select("display_name, super_admin").eq("user_id", user!.id).maybeSingle(),
     supabase
       .from("memberships")
@@ -39,6 +39,11 @@ export default async function DashboardPage() {
       .from("reflections")
       .select("id")
       .eq("user_id", user!.id),
+    supabase
+      .from("assessments")
+      .select("id, assessment_documents(type, status)")
+      .eq("user_id", user!.id)
+      .maybeSingle(),
   ]);
 
   const profile = profileRes.data;
@@ -117,6 +122,34 @@ export default async function DashboardPage() {
             className="mt-3 inline-flex rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 hover:bg-neutral-50"
           >
             Write a reflection
+          </Link>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Assessments</h2>
+            <Link href="/assessments" className="text-xs text-neutral-600 hover:text-neutral-900">
+              Manage →
+            </Link>
+          </div>
+          {(() => {
+            const docs = (assessmentDocsRes.data?.assessment_documents ?? []) as Array<{ type: string; status: string }>;
+            const ready = docs.filter((d) => d.status === "ready").length;
+            return (
+              <p className="mt-2 text-sm text-neutral-600">
+                {ready === 0
+                  ? "Upload your PI, EQ-i, and 360 reports to ground the coaching in real data."
+                  : `${ready}/3 assessments uploaded and processed.`}
+              </p>
+            );
+          })()}
+          <Link
+            href="/assessments"
+            className="mt-3 inline-flex rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 hover:bg-neutral-50"
+          >
+            {(assessmentDocsRes.data?.assessment_documents as Array<{ status: string }> | undefined)?.some((d) => d.status === "ready")
+              ? "View results"
+              : "Upload assessments"}
           </Link>
         </div>
 

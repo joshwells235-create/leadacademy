@@ -6,6 +6,7 @@ import { PERSONA } from "@/lib/ai/prompts/base/persona";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
 import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
+import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
 import { buildTagThemesTool } from "@/lib/ai/tools/tag-themes";
 import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
@@ -20,11 +21,12 @@ const MODE_PROMPTS: Record<string, string> = {
   general: GENERAL_MODE,
   goal: GOAL_MODE,
   reflection: REFLECTION_MODE,
+  assessment: ASSESSMENT_MODE,
 };
 
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
-  mode: z.enum(["general", "goal", "reflection"]).default("general"),
+  mode: z.enum(["general", "goal", "reflection", "assessment"]).default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
     .object({

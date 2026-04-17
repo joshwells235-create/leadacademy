@@ -10,7 +10,7 @@ export async function buildLearnerContext(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<string> {
-  const [profileRes, orgRes, goalsRes, actionsRes] = await Promise.all([
+  const [profileRes, orgRes, goalsRes, actionsRes, assessmentRes] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name, timezone")
@@ -35,6 +35,11 @@ export async function buildLearnerContext(
       .eq("user_id", userId)
       .order("occurred_on", { ascending: false })
       .limit(10),
+    supabase
+      .from("assessments")
+      .select("ai_summary")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
 
   const name = profileRes.data?.display_name ?? "the learner";
@@ -75,7 +80,34 @@ export async function buildLearnerContext(
           )
           .join("\n");
 
-  return [header, goalsBlock, actionsBlock].join("\n\n");
+  // Assessment summaries — only included if uploaded.
+  const assessmentSummary = assessmentRes.data?.ai_summary;
+  let assessmentBlock = "Assessment summaries: none uploaded yet.";
+  if (assessmentSummary && typeof assessmentSummary === "object" && Object.keys(assessmentSummary).length > 0) {
+    const parts: string[] = [];
+    const TYPE_LABELS: Record<string, string> = { pi: "Predictive Index", eqi: "EQ-i 2.0", threesixty: "360-Degree Feedback" };
+    for (const [key, val] of Object.entries(assessmentSummary as Record<string, unknown>)) {
+      if (val && typeof val === "object") {
+        const v = val as Record<string, unknown>;
+        const label = TYPE_LABELS[key] ?? key;
+        parts.push(`${label}:`);
+        if (v.summary) parts.push(`  Summary: ${v.summary}`);
+        if (Array.isArray(v.key_strengths) && v.key_strengths.length > 0) {
+          parts.push(`  Key strengths: ${v.key_strengths.join(", ")}`);
+        }
+        if (Array.isArray(v.growth_areas) && v.growth_areas.length > 0) {
+          parts.push(`  Growth areas: ${v.growth_areas.join(", ")}`);
+        }
+        if (v.coaching_implications) parts.push(`  Coaching implications: ${v.coaching_implications}`);
+        if (v.raw_highlights) parts.push(`  Raw highlights: ${truncate(v.raw_highlights as string, 500)}`);
+      }
+    }
+    if (parts.length > 0) {
+      assessmentBlock = "Assessment summaries:\n" + parts.join("\n");
+    }
+  }
+
+  return [header, goalsBlock, actionsBlock, assessmentBlock].join("\n\n");
 }
 
 function lensLabel(lens: string | null): string {

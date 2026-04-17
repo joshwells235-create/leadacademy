@@ -57,6 +57,9 @@ export function TopNav({
           <Link href="/reflections" className="text-neutral-700 hover:text-neutral-900">
             Reflections
           </Link>
+          <Link href="/assessments" className="text-neutral-700 hover:text-neutral-900">
+            Assessments
+          </Link>
           <Link href="/coach-chat" className="text-neutral-700 hover:text-neutral-900">
             Coach
           </Link>

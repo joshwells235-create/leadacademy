@@ -250,6 +250,91 @@ export type Database = {
           },
         ]
       }
+      assessment_documents: {
+        Row: {
+          ai_summary: Json
+          assessment_id: string
+          error_message: string | null
+          extracted_text: string | null
+          file_name: string
+          id: string
+          processed_at: string | null
+          status: string
+          storage_path: string
+          type: string
+          uploaded_at: string
+        }
+        Insert: {
+          ai_summary?: Json
+          assessment_id: string
+          error_message?: string | null
+          extracted_text?: string | null
+          file_name: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          storage_path: string
+          type: string
+          uploaded_at?: string
+        }
+        Update: {
+          ai_summary?: Json
+          assessment_id?: string
+          error_message?: string | null
+          extracted_text?: string | null
+          file_name?: string
+          id?: string
+          processed_at?: string | null
+          status?: string
+          storage_path?: string
+          type?: string
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessment_documents_assessment_id_fkey"
+            columns: ["assessment_id"]
+            isOneToOne: false
+            referencedRelation: "assessments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assessments: {
+        Row: {
+          ai_summary: Json
+          created_at: string
+          id: string
+          org_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_summary?: Json
+          created_at?: string
+          id?: string
+          org_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_summary?: Json
+          created_at?: string
+          id?: string
+          org_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assessments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_assignments: {
         Row: {
           active_from: string
