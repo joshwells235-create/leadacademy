@@ -60,9 +60,17 @@ export function TopNav({
           <Link href="/assessments" className="text-neutral-700 hover:text-neutral-900">
             Assessments
           </Link>
+          <Link href="/pre-session" className="text-neutral-700 hover:text-neutral-900">
+            Pre-session
+          </Link>
           <Link href="/coach-chat" className="text-neutral-700 hover:text-neutral-900">
             Coach
           </Link>
+          {(superAdmin || memberships.some((m) => m.role === "coach" || m.role === "org_admin")) && (
+            <Link href="/coach/dashboard" className="font-medium text-neutral-900 hover:text-neutral-700">
+              Coach Portal
+            </Link>
+          )}
           {superAdmin && (
             <Link href="/super/orgs" className="text-neutral-700 hover:text-neutral-900">
               Orgs

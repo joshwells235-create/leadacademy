@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_items: {
+        Row: {
+          coach_user_id: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          learner_user_id: string
+          org_id: string
+          recap_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          coach_user_id: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          learner_user_id: string
+          org_id: string
+          recap_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          coach_user_id?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          learner_user_id?: string
+          org_id?: string
+          recap_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_items_recap_id_fkey"
+            columns: ["recap_id"]
+            isOneToOne: false
+            referencedRelation: "session_recaps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_logs: {
         Row: {
           created_at: string
@@ -386,6 +446,44 @@ export type Database = {
           },
         ]
       }
+      coach_notes: {
+        Row: {
+          coach_user_id: string
+          content: string
+          created_at: string
+          id: string
+          learner_user_id: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          coach_user_id: string
+          content: string
+          created_at?: string
+          id?: string
+          learner_user_id: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          coach_user_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          learner_user_id?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohorts: {
         Row: {
           created_at: string
@@ -651,6 +749,50 @@ export type Database = {
         }
         Relationships: []
       }
+      pre_session_notes: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          session_date: string | null
+          updated_at: string
+          user_id: string
+          want_to_discuss: string
+          whats_been_hard: string | null
+          whats_going_well: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          session_date?: string | null
+          updated_at?: string
+          user_id: string
+          want_to_discuss: string
+          whats_been_hard?: string | null
+          whats_going_well?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          session_date?: string | null
+          updated_at?: string
+          user_id?: string
+          want_to_discuss?: string
+          whats_been_hard?: string | null
+          whats_going_well?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pre_session_notes_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reflections: {
         Row: {
           ai_insights: Json
@@ -688,6 +830,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "reflections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_recaps: {
+        Row: {
+          ai_draft: Json
+          coach_user_id: string
+          content: string
+          created_at: string
+          id: string
+          learner_user_id: string
+          org_id: string
+          session_date: string
+          updated_at: string
+        }
+        Insert: {
+          ai_draft?: Json
+          coach_user_id: string
+          content: string
+          created_at?: string
+          id?: string
+          learner_user_id: string
+          org_id: string
+          session_date: string
+          updated_at?: string
+        }
+        Update: {
+          ai_draft?: Json
+          coach_user_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          learner_user_id?: string
+          org_id?: string
+          session_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_recaps_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"

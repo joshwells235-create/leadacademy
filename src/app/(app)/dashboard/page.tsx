@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
+import { ActionItemToggle } from "@/components/action-item-toggle";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -8,7 +9,7 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [profileRes, membershipRes, goalsRes, actionsRes, convRes, reflectionsRes, assessmentDocsRes] = await Promise.all([
+  const [profileRes, membershipRes, goalsRes, actionsRes, convRes, reflectionsRes, assessmentDocsRes, actionItemsRes, preSessionRes] = await Promise.all([
     supabase.from("profiles").select("display_name, super_admin").eq("user_id", user!.id).maybeSingle(),
     supabase
       .from("memberships")
@@ -43,6 +44,20 @@ export default async function DashboardPage() {
       .from("assessments")
       .select("id, assessment_documents(type, status)")
       .eq("user_id", user!.id)
+      .maybeSingle(),
+    supabase
+      .from("action_items")
+      .select("id, title, due_date, completed")
+      .eq("learner_user_id", user!.id)
+      .eq("completed", false)
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(5),
+    supabase
+      .from("pre_session_notes")
+      .select("id, created_at")
+      .eq("user_id", user!.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -150,6 +165,38 @@ export default async function DashboardPage() {
             {(assessmentDocsRes.data?.assessment_documents as Array<{ status: string }> | undefined)?.some((d) => d.status === "ready")
               ? "View results"
               : "Upload assessments"}
+          </Link>
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Action items from your coach</h2>
+          </div>
+          {(actionItemsRes.data ?? []).length === 0 ? (
+            <p className="mt-2 text-sm text-neutral-600">No pending action items.</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5">
+              {(actionItemsRes.data ?? []).map((item) => (
+                <ActionItemToggle key={item.id} item={item} />
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold">Pre-session prep</h2>
+            <Link href="/pre-session" className="text-xs text-neutral-600 hover:text-neutral-900">
+              Prepare →
+            </Link>
+          </div>
+          <p className="mt-2 text-sm text-neutral-600">
+            {preSessionRes.data
+              ? `Last prepped ${new Date(preSessionRes.data.created_at).toLocaleDateString()}.`
+              : "Fill out prep notes before your next coaching session."}
+          </p>
+          <Link href="/pre-session" className="mt-3 inline-flex rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm text-neutral-800 hover:bg-neutral-50">
+            {preSessionRes.data ? "Prep for next session" : "Write prep notes"}
           </Link>
         </div>
 
