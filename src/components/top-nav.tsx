@@ -50,14 +50,17 @@ export function TopNav({
           <NavLink href="/action-log">Actions</NavLink>
           <NavLink href="/reflections">Reflections</NavLink>
           <NavLink href="/assessments">Assessments</NavLink>
+          <NavLink href="/learning">Learning</NavLink>
           <NavLink href="/pre-session">Pre-session</NavLink>
           <NavLink href="/coach-chat" accent>Coach</NavLink>
           {isCoach && (
-            <Link
-              href="/coach/dashboard"
-              className="rounded-md bg-brand-blue/20 px-2.5 py-1 font-medium text-white hover:bg-brand-blue/30 transition"
-            >
+            <Link href="/coach/dashboard" className="rounded-md bg-brand-blue/20 px-2.5 py-1 font-medium text-white hover:bg-brand-blue/30 transition">
               Coach Portal
+            </Link>
+          )}
+          {superAdmin && (
+            <Link href="/super/course-builder" className="rounded-md bg-brand-pink/20 px-2.5 py-1 font-medium text-white hover:bg-brand-pink/30 transition">
+              Course Builder
             </Link>
           )}
         </nav>

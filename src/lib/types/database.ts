@@ -484,6 +484,15 @@ export type Database = {
           },
         ]
       }
+      cohort_courses: {
+        Row: { available_from: string | null; available_until: string | null; cohort_id: string; course_id: string; created_at: string; id: string }
+        Insert: { available_from?: string | null; available_until?: string | null; cohort_id: string; course_id: string; created_at?: string; id?: string }
+        Update: { available_from?: string | null; available_until?: string | null; cohort_id?: string; course_id?: string; created_at?: string; id?: string }
+        Relationships: [
+          { foreignKeyName: "cohort_courses_cohort_id_fkey"; columns: ["cohort_id"]; isOneToOne: false; referencedRelation: "cohorts"; referencedColumns: ["id"] },
+          { foreignKeyName: "cohort_courses_course_id_fkey"; columns: ["course_id"]; isOneToOne: false; referencedRelation: "courses"; referencedColumns: ["id"] },
+        ]
+      }
       cohorts: {
         Row: {
           created_at: string
@@ -638,6 +647,22 @@ export type Database = {
           },
         ]
       }
+      lesson_progress: {
+        Row: { completed: boolean; completed_at: string | null; created_at: string; id: string; lesson_id: string; score: number | null; updated_at: string; user_id: string }
+        Insert: { completed?: boolean; completed_at?: string | null; created_at?: string; id?: string; lesson_id: string; score?: number | null; updated_at?: string; user_id: string }
+        Update: { completed?: boolean; completed_at?: string | null; created_at?: string; id?: string; lesson_id?: string; score?: number | null; updated_at?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "lesson_progress_lesson_id_fkey"; columns: ["lesson_id"]; isOneToOne: false; referencedRelation: "lessons"; referencedColumns: ["id"] },
+        ]
+      }
+      lessons: {
+        Row: { content: Json; created_at: string; id: string; materials: Json; module_id: string; order: number; quiz: Json; title: string; type: string; updated_at: string; video_url: string | null }
+        Insert: { content?: Json; created_at?: string; id?: string; materials?: Json; module_id: string; order?: number; quiz?: Json; title: string; type?: string; updated_at?: string; video_url?: string | null }
+        Update: { content?: Json; created_at?: string; id?: string; materials?: Json; module_id?: string; order?: number; quiz?: Json; title?: string; type?: string; updated_at?: string; video_url?: string | null }
+        Relationships: [
+          { foreignKeyName: "lessons_module_id_fkey"; columns: ["module_id"]; isOneToOne: false; referencedRelation: "modules"; referencedColumns: ["id"] },
+        ]
+      }
       memberships: {
         Row: {
           cohort_id: string | null
@@ -684,6 +709,14 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      modules: {
+        Row: { course_id: string; created_at: string; description: string | null; duration_minutes: number | null; id: string; image_url: string | null; learning_objectives: string[]; order: number; prerequisites: string[]; status: string; title: string; updated_at: string }
+        Insert: { course_id: string; created_at?: string; description?: string | null; duration_minutes?: number | null; id?: string; image_url?: string | null; learning_objectives?: string[]; order?: number; prerequisites?: string[]; status?: string; title: string; updated_at?: string }
+        Update: { course_id?: string; created_at?: string; description?: string | null; duration_minutes?: number | null; id?: string; image_url?: string | null; learning_objectives?: string[]; order?: number; prerequisites?: string[]; status?: string; title?: string; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "modules_course_id_fkey"; columns: ["course_id"]; isOneToOne: false; referencedRelation: "courses"; referencedColumns: ["id"] },
         ]
       }
       organizations: {
@@ -880,6 +913,12 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      courses: {
+        Row: { created_at: string; description: string | null; id: string; image_url: string | null; order: number; status: string; title: string; updated_at: string }
+        Insert: { created_at?: string; description?: string | null; id?: string; image_url?: string | null; order?: number; status?: string; title: string; updated_at?: string }
+        Update: { created_at?: string; description?: string | null; id?: string; image_url?: string | null; order?: number; status?: string; title?: string; updated_at?: string }
+        Relationships: []
       }
       daily_challenges: {
         Row: {
