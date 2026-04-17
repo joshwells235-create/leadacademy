@@ -663,6 +663,14 @@ export type Database = {
           { foreignKeyName: "lessons_module_id_fkey"; columns: ["module_id"]; isOneToOne: false; referencedRelation: "modules"; referencedColumns: ["id"] },
         ]
       }
+      messages: {
+        Row: { attachments: Json; body: string; created_at: string; id: string; sender_id: string; thread_id: string }
+        Insert: { attachments?: Json; body: string; created_at?: string; id?: string; sender_id: string; thread_id: string }
+        Update: { attachments?: Json; body?: string; created_at?: string; id?: string; sender_id?: string; thread_id?: string }
+        Relationships: [
+          { foreignKeyName: "messages_thread_id_fkey"; columns: ["thread_id"]; isOneToOne: false; referencedRelation: "threads"; referencedColumns: ["id"] },
+        ]
+      }
       memberships: {
         Row: {
           cohort_id: string | null
@@ -718,6 +726,12 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "modules_course_id_fkey"; columns: ["course_id"]; isOneToOne: false; referencedRelation: "courses"; referencedColumns: ["id"] },
         ]
+      }
+      notifications: {
+        Row: { body: string; created_at: string; id: string; link: string | null; read_at: string | null; title: string; type: string; user_id: string }
+        Insert: { body: string; created_at?: string; id?: string; link?: string | null; read_at?: string | null; title: string; type: string; user_id: string }
+        Update: { body?: string; created_at?: string; id?: string; link?: string | null; read_at?: string | null; title?: string; type?: string; user_id?: string }
+        Relationships: []
       }
       organizations: {
         Row: {
@@ -965,6 +979,22 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      thread_participants: {
+        Row: { created_at: string; id: string; last_read_at: string; thread_id: string; user_id: string }
+        Insert: { created_at?: string; id?: string; last_read_at?: string; thread_id: string; user_id: string }
+        Update: { created_at?: string; id?: string; last_read_at?: string; thread_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "thread_participants_thread_id_fkey"; columns: ["thread_id"]; isOneToOne: false; referencedRelation: "threads"; referencedColumns: ["id"] },
+        ]
+      }
+      threads: {
+        Row: { created_at: string; id: string; kind: string; org_id: string; title: string | null; updated_at: string }
+        Insert: { created_at?: string; id?: string; kind?: string; org_id: string; title?: string | null; updated_at?: string }
+        Update: { created_at?: string; id?: string; kind?: string; org_id?: string; title?: string | null; updated_at?: string }
+        Relationships: [
+          { foreignKeyName: "threads_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
         ]
       }
     }

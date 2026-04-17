@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { logoutAction } from "@/lib/auth/actions";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 type OrgInfo = { id: string; name: string; logo_url: string | null; slug: string } | null;
 
@@ -10,14 +11,18 @@ type Membership = {
 };
 
 export function TopNav({
+  userId,
   userEmail,
   displayName,
   superAdmin,
+  unreadNotifications,
   memberships,
 }: {
+  userId: string;
   userEmail: string;
   displayName: string | null;
   superAdmin: boolean;
+  unreadNotifications: number;
   memberships: Membership[];
 }) {
   const primary = memberships[0]?.org;
@@ -51,7 +56,7 @@ export function TopNav({
           <NavLink href="/reflections">Reflections</NavLink>
           <NavLink href="/assessments">Assessments</NavLink>
           <NavLink href="/learning">Learning</NavLink>
-          <NavLink href="/pre-session">Pre-session</NavLink>
+          <NavLink href="/messages">Messages</NavLink>
           <NavLink href="/coach-chat" accent>Coach</NavLink>
           {isCoach && (
             <Link href="/coach/dashboard" className="rounded-md bg-brand-blue/20 px-2.5 py-1 font-medium text-white hover:bg-brand-blue/30 transition">
@@ -66,6 +71,7 @@ export function TopNav({
         </nav>
 
         <div className="flex items-center gap-3">
+          <NotificationBell userId={userId} initialCount={unreadNotifications} />
           <div className="text-right text-sm">
             <div className="font-medium">{displayName ?? userEmail}</div>
             <div className="text-xs text-white/60">
