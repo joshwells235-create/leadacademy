@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { updateCourse, deleteCourse, createModule, deleteModule, createLesson } from "@/lib/learning/actions";
+import { updateCourse, deleteCourse, createModule, updateModule, deleteModule, createLesson } from "@/lib/learning/actions";
 
 type Course = { id: string; title: string; description: string | null; status: string };
 type Module = { id: string; title: string; description: string | null; status: string; order: number; duration_minutes: number | null };
@@ -18,118 +18,296 @@ export function CourseEditor({ course, modules, lessonsByModule }: {
   const [description, setDescription] = useState(course.description ?? "");
   const [status, setStatus] = useState(course.status);
   const [pending, start] = useTransition();
-  const [newModuleTitle, setNewModuleTitle] = useState("");
-  const [addingModule, setAddingModule] = useState(false);
+  const [saved, setSaved] = useState(false);
   const router = useRouter();
 
   const saveCourse = () => start(async () => {
     await updateCourse(course.id, { title, description: description || undefined, status });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
     router.refresh();
   });
 
   const handleDeleteCourse = () => {
-    if (!confirm("Delete this course and all its modules/lessons?")) return;
+    if (!confirm("Delete this entire course, including all modules and lessons? This cannot be undone.")) return;
     start(async () => { await deleteCourse(course.id); });
   };
 
-  const handleAddModule = () => {
-    if (!newModuleTitle.trim()) return;
-    start(async () => {
-      await createModule(course.id, newModuleTitle);
-      setNewModuleTitle("");
-      setAddingModule(false);
-      router.refresh();
-    });
-  };
-
-  const handleDeleteModule = (moduleId: string) => {
-    if (!confirm("Delete this module and all its lessons?")) return;
-    start(async () => { await deleteModule(moduleId, course.id); router.refresh(); });
-  };
-
-  const handleAddLesson = (moduleId: string) => {
-    const lessonTitle = prompt("Lesson title:");
-    if (!lessonTitle?.trim()) return;
-    start(async () => {
-      const res = await createLesson(moduleId, course.id, lessonTitle);
-      if ("id" in res) router.push(`/super/course-builder/${course.id}/lessons/${res.id}`);
-    });
-  };
+  const totalLessons = modules.reduce((sum, m) => sum + (lessonsByModule[m.id]?.length ?? 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* Course details */}
-      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm space-y-4">
-        <div className="flex items-start justify-between">
-          <h1 className="text-xl font-semibold text-brand-navy">Edit Course</h1>
-          <div className="flex gap-2">
-            <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-md border border-neutral-300 px-2 py-1 text-sm">
-              <option value="draft">Draft</option>
-              <option value="published">Published</option>
+      {/* Course header + details */}
+      <div className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-brand-navy">Course Details</h1>
+            {saved && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700 animate-pulse">Saved</span>}
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-brand-blue focus:ring-1 focus:ring-brand-blue"
+            >
+              <option value="draft">📝 Draft</option>
+              <option value="published">✅ Published</option>
             </select>
-            <button onClick={saveCourse} disabled={pending} className="rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark disabled:opacity-60">Save</button>
-            <button onClick={handleDeleteCourse} className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-700 hover:bg-neutral-50">Delete</button>
+            <button onClick={saveCourse} disabled={pending} className="rounded-md bg-brand-blue px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60">
+              Save course
+            </button>
+            <button onClick={handleDeleteCourse} className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-500 hover:text-brand-pink hover:border-brand-pink">
+              Delete
+            </button>
           </div>
         </div>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-lg font-semibold focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue" placeholder="Course title" />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue" placeholder="Course description..." />
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-brand-navy mb-1">Course title</label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-lg font-semibold focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              placeholder="e.g., Foundations of Leadership"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-navy mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              placeholder="What will learners gain from this course? Write 2-3 sentences."
+            />
+          </div>
+          <div className="text-xs text-neutral-500 pt-1">
+            {modules.length} module{modules.length !== 1 ? "s" : ""} · {totalLessons} lesson{totalLessons !== 1 ? "s" : ""}
+            {status === "draft" && " · This course is not visible to learners until published."}
+          </div>
+        </div>
       </div>
 
       {/* Modules */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-brand-navy">Modules</h2>
-          {!addingModule && (
-            <button onClick={() => setAddingModule(true)} className="rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark">+ Add module</button>
-          )}
+          <h2 className="text-lg font-bold text-brand-navy">Modules & Lessons</h2>
         </div>
 
-        {addingModule && (
-          <div className="mb-3 flex gap-2">
-            <input value={newModuleTitle} onChange={(e) => setNewModuleTitle(e.target.value)} placeholder="Module title..." className="flex-1 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue" autoFocus />
-            <button onClick={handleAddModule} disabled={pending} className="rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark disabled:opacity-60">Create</button>
-            <button onClick={() => setAddingModule(false)} className="text-sm text-neutral-500">Cancel</button>
+        {modules.length === 0 ? (
+          <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-blue-light">
+              <span className="text-lg">📦</span>
+            </div>
+            <h3 className="font-semibold text-brand-navy">Add your first module</h3>
+            <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
+              Modules are the major sections of your course (e.g., "Giving Feedback", "Running 1:1s").
+              Each module contains individual lessons.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {modules.map((m, idx) => (
+              <ModuleCard
+                key={m.id}
+                module={m}
+                index={idx}
+                courseId={course.id}
+                lessons={lessonsByModule[m.id] ?? []}
+                pending={pending}
+                onTransition={start}
+                onRefresh={() => router.refresh()}
+                onNavigate={(path) => router.push(path)}
+              />
+            ))}
           </div>
         )}
 
-        {modules.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-6 text-center text-sm text-neutral-500">
-            No modules yet. Add one to start building lessons.
+        <AddModuleForm courseId={course.id} pending={pending} onTransition={start} onRefresh={() => router.refresh()} />
+      </div>
+    </div>
+  );
+}
+
+function ModuleCard({ module: m, index, courseId, lessons, pending, onTransition, onRefresh, onNavigate }: {
+  module: Module;
+  index: number;
+  courseId: string;
+  lessons: Lesson[];
+  pending: boolean;
+  onTransition: (fn: () => Promise<void>) => void;
+  onRefresh: () => void;
+  onNavigate: (path: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState(m.title);
+  const [editDesc, setEditDesc] = useState(m.description ?? "");
+  const [addingLesson, setAddingLesson] = useState(false);
+  const [newLessonTitle, setNewLessonTitle] = useState("");
+
+  const handleSaveModule = () => {
+    onTransition(async () => {
+      await updateModule(m.id, courseId, { title: editTitle, description: editDesc || undefined });
+      setEditing(false);
+      onRefresh();
+    });
+  };
+
+  const handleDeleteModule = () => {
+    if (!confirm(`Delete "${m.title}" and all its lessons?`)) return;
+    onTransition(async () => { await deleteModule(m.id, courseId); onRefresh(); });
+  };
+
+  const handleAddLesson = () => {
+    if (!newLessonTitle.trim()) return;
+    onTransition(async () => {
+      const res = await createLesson(m.id, courseId, newLessonTitle);
+      setNewLessonTitle("");
+      setAddingLesson(false);
+      if ("id" in res) onNavigate(`/super/course-builder/${courseId}/lessons/${res.id}`);
+    });
+  };
+
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
+      {/* Module header */}
+      <div className="bg-brand-light px-4 py-3">
+        {editing ? (
+          <div className="space-y-2">
+            <input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-semibold focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              autoFocus
+            />
+            <textarea
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              rows={2}
+              className="w-full rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              placeholder="Module description (optional)"
+            />
+            <div className="flex gap-2">
+              <button onClick={handleSaveModule} disabled={pending} className="rounded-md bg-brand-blue px-3 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-60">Save</button>
+              <button onClick={() => setEditing(false)} className="text-xs text-neutral-500">Cancel</button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {modules.map((m) => {
-              const moduleLessons = lessonsByModule[m.id] ?? [];
-              return (
-                <div key={m.id} className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold">{m.title}</h3>
-                      {m.description && <p className="text-sm text-neutral-600 mt-0.5">{m.description}</p>}
-                      <span className="text-xs text-neutral-500">{moduleLessons.length} lesson{moduleLessons.length !== 1 ? "s" : ""}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handleAddLesson(m.id)} className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50">+ Lesson</button>
-                      <button onClick={() => handleDeleteModule(m.id)} className="text-xs text-neutral-400 hover:text-brand-pink">Delete</button>
-                    </div>
-                  </div>
-                  {moduleLessons.length > 0 && (
-                    <ul className="mt-3 space-y-1 border-t border-neutral-100 pt-2">
-                      {moduleLessons.map((l) => (
-                        <li key={l.id}>
-                          <Link href={`/super/course-builder/${course.id}/lessons/${l.id}`} className="flex items-center gap-2 rounded px-2 py-1 text-sm hover:bg-brand-light transition">
-                            <span className={`rounded px-1.5 py-0.5 text-xs ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}>{l.type}</span>
-                            {l.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              );
-            })}
+          <div className="flex items-start justify-between">
+            <div className="cursor-pointer" onClick={() => setEditing(true)}>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-neutral-500">MODULE {index + 1}</span>
+                <h3 className="font-semibold text-brand-navy">{m.title}</h3>
+                <button onClick={(e) => { e.stopPropagation(); setEditing(true); }} className="text-xs text-brand-blue hover:underline">Edit</button>
+              </div>
+              {m.description && <p className="text-sm text-neutral-600 mt-0.5">{m.description}</p>}
+              <span className="text-xs text-neutral-500">{lessons.length} lesson{lessons.length !== 1 ? "s" : ""}</span>
+            </div>
+            <button onClick={handleDeleteModule} className="text-xs text-neutral-400 hover:text-brand-pink ml-4">Delete module</button>
           </div>
         )}
+      </div>
+
+      {/* Lessons list */}
+      <div className="px-4 py-2">
+        {lessons.length === 0 && !addingLesson ? (
+          <p className="text-sm text-neutral-500 py-2">No lessons yet. Add one below.</p>
+        ) : (
+          <ul className="space-y-0.5 py-1">
+            {lessons.map((l, lIdx) => (
+              <li key={l.id}>
+                <Link
+                  href={`/super/course-builder/${courseId}/lessons/${l.id}`}
+                  className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-brand-light transition group"
+                >
+                  <span className="text-xs text-neutral-400 w-4">{lIdx + 1}.</span>
+                  <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}>
+                    {l.type === "quiz" ? "Quiz" : "Lesson"}
+                  </span>
+                  <span className="text-brand-navy group-hover:text-brand-blue">{l.title}</span>
+                  <span className="ml-auto text-xs text-neutral-400 opacity-0 group-hover:opacity-100">Edit →</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Add lesson inline form */}
+        {addingLesson ? (
+          <div className="flex gap-2 py-2 border-t border-neutral-100">
+            <input
+              value={newLessonTitle}
+              onChange={(e) => setNewLessonTitle(e.target.value)}
+              placeholder="Lesson title..."
+              className="flex-1 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === "Enter") handleAddLesson(); if (e.key === "Escape") setAddingLesson(false); }}
+            />
+            <button onClick={handleAddLesson} disabled={pending || !newLessonTitle.trim()} className="rounded-md bg-brand-blue px-3 py-1.5 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-60">
+              Create & edit
+            </button>
+            <button onClick={() => { setAddingLesson(false); setNewLessonTitle(""); }} className="text-xs text-neutral-500">Cancel</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setAddingLesson(true)}
+            className="w-full mt-1 rounded-md border border-dashed border-neutral-300 py-2 text-sm text-neutral-500 hover:border-brand-blue hover:text-brand-blue transition"
+          >
+            + Add lesson
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AddModuleForm({ courseId, pending, onTransition, onRefresh }: {
+  courseId: string;
+  pending: boolean;
+  onTransition: (fn: () => Promise<void>) => void;
+  onRefresh: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+
+  const handleCreate = () => {
+    if (!title.trim()) return;
+    onTransition(async () => {
+      await createModule(courseId, title);
+      setTitle("");
+      setOpen(false);
+      onRefresh();
+    });
+  };
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        className="mt-4 w-full rounded-lg border-2 border-dashed border-neutral-300 py-4 text-sm font-medium text-neutral-500 hover:border-brand-blue hover:text-brand-blue transition"
+      >
+        + Add new module
+      </button>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+      <label className="block text-sm font-medium text-brand-navy mb-1">New module title</label>
+      <div className="flex gap-2">
+        <input
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="e.g., Giving Feedback That Lands"
+          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          autoFocus
+          onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); if (e.key === "Escape") setOpen(false); }}
+        />
+        <button onClick={handleCreate} disabled={pending || !title.trim()} className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60">
+          Create module
+        </button>
+        <button onClick={() => { setOpen(false); setTitle(""); }} className="text-sm text-neutral-500">Cancel</button>
       </div>
     </div>
   );
