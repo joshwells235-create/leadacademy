@@ -161,7 +161,16 @@ function UserMenu({
                 <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-neutral-400">Admin</div>
                 {(isOrgAdmin || superAdmin) && <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>Admin Portal</DropdownLink>}
                 {isCoach && <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>Coach Portal</DropdownLink>}
-                {superAdmin && <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>Course Builder</DropdownLink>}
+                {superAdmin && (
+                  <>
+                    <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>Organizations</DropdownLink>
+                    <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>Course Builder</DropdownLink>
+                    <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>AI Usage</DropdownLink>
+                    <DropdownLink href="/super/conversations" onClick={() => setOpen(false)}>AI Conversations</DropdownLink>
+                    <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>Moderation</DropdownLink>
+                    <DropdownLink href="/super/export" onClick={() => setOpen(false)}>Data Export</DropdownLink>
+                  </>
+                )}
               </>
             )}
 
