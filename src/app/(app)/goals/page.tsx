@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+export const metadata: Metadata = { title: "Growth Goals — LeadAcademy" };
 
 const LENS_LABEL: Record<string, string> = {
   self: "Leading Self",

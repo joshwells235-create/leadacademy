@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AssessmentUploader } from "./assessment-uploader";
+export const metadata: Metadata = { title: "Assessments — LeadAcademy" };
 
 const TYPES: { key: "pi" | "eqi" | "threesixty"; label: string; description: string }[] = [
   { key: "pi", label: "Predictive Index (PI)", description: "Behavioral and cognitive assessment." },

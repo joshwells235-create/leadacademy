@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { PreSessionForm } from "./pre-session-form";
+export const metadata: Metadata = { title: "Pre-session Prep — LeadAcademy" };
 
 export default async function PreSessionPage() {
   const supabase = await createClient();

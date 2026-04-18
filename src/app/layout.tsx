@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LeadAcademy",
+  title: { default: "LeadAcademy", template: "%s — LeadAcademy" },
   description: "Leadership development platform by LeadShift",
+  icons: { icon: "/icon.svg" },
 };
 
 export default function RootLayout({

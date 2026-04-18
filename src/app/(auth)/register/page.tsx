@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegisterForm } from "./register-form";
+export const metadata: Metadata = { title: "Register — LeadAcademy" };
 
 type Props = { searchParams: Promise<{ token?: string }> };
 

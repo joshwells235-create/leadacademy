@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { CoachChat } from "@/components/chat/coach-chat";
+export const metadata: Metadata = { title: "Coach — LeadAcademy" };
 
 type Props = {
   searchParams: Promise<{

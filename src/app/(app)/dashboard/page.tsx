@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
 import { ActionItemToggle } from "@/components/action-item-toggle";
+export const metadata: Metadata = { title: "Dashboard — LeadAcademy" };
 
 export default async function DashboardPage() {
   const supabase = await createClient();

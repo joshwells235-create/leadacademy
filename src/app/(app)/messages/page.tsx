@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+export const metadata: Metadata = { title: "Messages — LeadAcademy" };
 
 export default async function MessagesPage() {
   const supabase = await createClient();
