@@ -14,7 +14,7 @@ export default async function RegisterPage({ searchParams }: Props) {
         <p className="text-neutral-600">
           You need an invitation link from an administrator. If you have one, open it directly.
         </p>
-        <Link href="/login" className="inline-block text-neutral-900 underline">
+        <Link href="/login" className="inline-block text-brand-blue underline">
           Back to sign in
         </Link>
       </div>
@@ -34,7 +34,7 @@ export default async function RegisterPage({ searchParams }: Props) {
         <p className="text-neutral-600">
           It may have expired or already been used. Ask your admin to send a new one.
         </p>
-        <Link href="/login" className="inline-block text-neutral-900 underline">
+        <Link href="/login" className="inline-block text-brand-blue underline">
           Back to sign in
         </Link>
       </div>

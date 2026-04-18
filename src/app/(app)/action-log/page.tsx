@@ -42,7 +42,7 @@ export default async function ActionLogPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Action log</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Action log</h1>
         <p className="mt-1 text-sm text-neutral-600">
           Log what you actually did toward your goals. Small moves count — especially the ones that
           scared you a little.
@@ -52,9 +52,13 @@ export default async function ActionLogPage({ searchParams }: Props) {
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div>
           {dates.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center">
-              <p className="text-sm text-neutral-600">
-                Nothing logged yet. Use the form on the right to log your first action.
+            <div className="rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
+                <span className="text-xl">✍️</span>
+              </div>
+              <h2 className="font-semibold text-brand-navy">No actions logged yet</h2>
+              <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
+                Use the form on the right to log your first action toward a goal.
               </p>
             </div>
           ) : (
@@ -81,7 +85,7 @@ export default async function ActionLogPage({ searchParams }: Props) {
                         {a.goals && (
                           <Link
                             href={`/goals/${a.goal_id}`}
-                            className="mt-2 inline-block text-xs text-neutral-500 hover:text-neutral-700"
+                            className="mt-2 inline-block text-xs text-neutral-500 hover:text-brand-blue"
                           >
                             → {a.goals.title}
                           </Link>

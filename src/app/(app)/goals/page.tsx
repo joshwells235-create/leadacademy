@@ -26,7 +26,7 @@ export default async function GoalsPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Growth goals</h1>
+          <h1 className="text-2xl font-bold text-brand-navy">Growth goals</h1>
           <p className="mt-1 text-sm text-neutral-600">
             Every goal here is integrative — it changes you, the people around you, and the work at
             the organizational level. Click any goal to refine it, or start a new one with the coach.
@@ -42,15 +42,15 @@ export default async function GoalsPage() {
 
       <div className="mb-6 flex gap-2 text-sm">
         <span className="text-neutral-500">Start from a lens:</span>
-        <Link href="/coach-chat?mode=goal&lens=self" className="text-neutral-700 underline hover:text-neutral-900">
+        <Link href="/coach-chat?mode=goal&lens=self" className="text-brand-blue underline hover:text-brand-blue">
           Self
         </Link>
         <span className="text-neutral-300">·</span>
-        <Link href="/coach-chat?mode=goal&lens=others" className="text-neutral-700 underline hover:text-neutral-900">
+        <Link href="/coach-chat?mode=goal&lens=others" className="text-brand-blue underline hover:text-brand-blue">
           Others
         </Link>
         <span className="text-neutral-300">·</span>
-        <Link href="/coach-chat?mode=goal&lens=org" className="text-neutral-700 underline hover:text-neutral-900">
+        <Link href="/coach-chat?mode=goal&lens=org" className="text-brand-blue underline hover:text-brand-blue">
           Organization
         </Link>
       </div>
@@ -58,7 +58,7 @@ export default async function GoalsPage() {
       {(!goals || goals.length === 0) && (
         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
           No goals yet.{" "}
-          <Link href="/coach-chat?mode=goal" className="text-neutral-900 underline">
+          <Link href="/coach-chat?mode=goal" className="text-brand-blue underline">
             Draft your first one with the coach
           </Link>
           .

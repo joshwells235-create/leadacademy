@@ -38,7 +38,7 @@ export default function LoginPage() {
       <SubmitButton pending={pending}>Sign in</SubmitButton>
 
       <div className="flex items-center justify-between text-sm">
-        <Link href="/forgot-password" className="text-neutral-600 hover:text-neutral-900">
+        <Link href="/forgot-password" className="text-neutral-600 hover:text-brand-blue">
           Forgot password?
         </Link>
         <span className="text-neutral-500">Need an invite? Ask your admin.</span>

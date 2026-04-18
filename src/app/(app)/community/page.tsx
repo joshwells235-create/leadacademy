@@ -56,7 +56,7 @@ export default async function CommunityPage() {
     if (!commentsByPost[c.post_id]) commentsByPost[c.post_id] = [];
     commentsByPost[c.post_id].push(c);
   }
-  const likedPostIds = new Set((userLikes ?? []).map((l) => l.post_id));
+  const likedPostIdArray = (userLikes ?? []).map((l) => l.post_id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -75,7 +75,7 @@ export default async function CommunityPage() {
         cohortPosts={cohortPosts}
         alumniPosts={alumniPosts}
         commentsByPost={commentsByPost}
-        likedPostIds={likedPostIds}
+        likedPostIds={likedPostIdArray}
       />
     </div>
   );

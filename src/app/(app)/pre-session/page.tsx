@@ -15,7 +15,7 @@ export default async function PreSessionPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Pre-session prep</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Pre-session prep</h1>
         <p className="mt-1 text-sm text-neutral-600">
           Fill this out before each coaching call so your coach can hit the ground running.
         </p>

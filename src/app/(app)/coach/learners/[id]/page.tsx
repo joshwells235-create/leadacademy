@@ -37,7 +37,7 @@ export default async function CoachLearnerPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-4 text-xs text-neutral-500">
-        <Link href="/coach/dashboard" className="hover:text-neutral-700">← All learners</Link>
+        <Link href="/coach/dashboard" className="hover:text-brand-blue">← All learners</Link>
       </div>
       <h1 className="text-2xl font-semibold mb-1">{name}</h1>
       <p className="text-sm text-neutral-500 mb-6">Learner detail — everything you need before and after a session.</p>

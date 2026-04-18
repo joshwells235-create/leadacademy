@@ -38,7 +38,7 @@ export default async function AssessmentsPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Assessments</h1>
+          <h1 className="text-2xl font-bold text-brand-navy">Assessments</h1>
           <p className="mt-1 text-sm text-neutral-600">
             Upload your PI, EQ-i, and 360 reports. The coach will extract key findings and use them
             to ground your coaching conversations.

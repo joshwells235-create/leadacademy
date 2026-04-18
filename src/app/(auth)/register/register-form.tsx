@@ -67,7 +67,7 @@ export function RegisterForm({
 
       <div className="text-sm text-neutral-500">
         Already registered?{" "}
-        <Link href="/login" className="text-neutral-900 underline">
+        <Link href="/login" className="text-brand-blue underline">
           Sign in
         </Link>
       </div>

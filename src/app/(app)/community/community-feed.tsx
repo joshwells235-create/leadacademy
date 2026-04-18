@@ -25,8 +25,9 @@ export function CommunityFeed({
   cohortPosts: PostWithAuthor[];
   alumniPosts: PostWithAuthor[];
   commentsByPost: Record<string, CommentWithAuthor[]>;
-  likedPostIds: Set<string>;
+  likedPostIds: string[];
 }) {
+  const likedSet = new Set(likedPostIds);
   const [tab, setTab] = useState<"cohort" | "alumni">(cohortId ? "cohort" : "alumni");
   const [newPost, setNewPost] = useState("");
   const [pending, start] = useTransition();
@@ -72,6 +73,7 @@ export function CommunityFeed({
         <div className="mt-2 flex items-center justify-between">
           <span className="text-xs text-neutral-500">
             Posting to: {tab === "cohort" ? `${cohortName ?? "your cohort"}` : "alumni network (org-wide)"}
+            <span className={`ml-2 ${newPost.length > 4500 ? "text-brand-pink" : ""}`}>{newPost.length}/5000</span>
           </span>
           <button
             onClick={handlePost}
@@ -97,7 +99,7 @@ export function CommunityFeed({
               key={post.id}
               post={post}
               comments={commentsByPost[post.id] ?? []}
-              isLiked={likedPostIds.has(post.id)}
+              isLiked={likedSet.has(post.id)}
               isOwn={post.user_id === userId}
             />
           ))}

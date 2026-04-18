@@ -15,9 +15,9 @@ export default async function CoachDashboardPage() {
   if (!assignments || assignments.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="text-2xl font-semibold">Coach Portal</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Coach Portal</h1>
         <p className="mt-2 text-sm text-neutral-600">No learners assigned to you yet. Ask an admin to set up coach assignments.</p>
-        <Link href="/dashboard" className="mt-4 inline-block text-sm text-neutral-900 underline">Back to dashboard</Link>
+        <Link href="/dashboard" className="mt-4 inline-block text-sm text-brand-blue underline">Back to dashboard</Link>
       </div>
     );
   }
@@ -41,10 +41,10 @@ export default async function CoachDashboardPage() {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Coach Portal</h1>
+          <h1 className="text-2xl font-bold text-brand-navy">Coach Portal</h1>
           <p className="mt-1 text-sm text-neutral-600">{assignments.length} learner{assignments.length === 1 ? "" : "s"} assigned to you.</p>
         </div>
-        <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-neutral-900">← Learner view</Link>
+        <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-brand-blue">← Learner view</Link>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

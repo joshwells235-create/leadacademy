@@ -25,7 +25,7 @@ export default async function CoachChatPage({ searchParams }: Props) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <div className="mb-4">
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-bold text-brand-navy">
           {mode === "goal"
             ? lensLabel
               ? `Draft a goal — starting from ${lensLabel}`

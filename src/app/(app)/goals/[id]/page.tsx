@@ -45,7 +45,7 @@ export default async function GoalDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-4 text-xs text-neutral-500">
-        <Link href="/goals" className="hover:text-neutral-700">
+        <Link href="/goals" className="hover:text-brand-blue">
           ← All goals
         </Link>
       </div>
@@ -57,7 +57,7 @@ export default async function GoalDetailPage({ params }: Props) {
               started from {LENS_LABELS[goal.primary_lens] ?? goal.primary_lens}
             </div>
           )}
-          <h1 className="mt-1 text-2xl font-semibold">{goal.title}</h1>
+          <h1 className="mt-1 text-2xl font-bold text-brand-navy">{goal.title}</h1>
           {goal.target_date && (
             <p className="mt-1 text-sm text-neutral-500">Target: {goal.target_date}</p>
           )}
@@ -127,7 +127,7 @@ export default async function GoalDetailPage({ params }: Props) {
               <h2 className="text-sm font-semibold">Recent actions toward this goal</h2>
               <Link
                 href={`/action-log?goalId=${goal.id}`}
-                className="text-xs text-neutral-600 hover:text-neutral-900"
+                className="text-xs text-neutral-600 hover:text-brand-blue"
               >
                 Log an action →
               </Link>

@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
       <SubmitButton pending={pending}>Send reset link</SubmitButton>
 
       <div className="text-sm">
-        <Link href="/login" className="text-neutral-600 hover:text-neutral-900">
+        <Link href="/login" className="text-neutral-600 hover:text-brand-blue">
           Back to sign in
         </Link>
       </div>

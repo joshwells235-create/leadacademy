@@ -41,7 +41,7 @@ export default async function ReflectionsPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold">Reflection journal</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Reflection journal</h1>
         <p className="mt-1 text-sm text-neutral-600">
           Write about what happened, what you noticed, what's sitting with you. The coach will
           reflect back patterns and connections to your goals.
@@ -53,8 +53,14 @@ export default async function ReflectionsPage() {
           <ReflectionForm />
 
           {dates.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
-              No reflections yet. Write your first one above.
+            <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
+                <span className="text-xl">📝</span>
+              </div>
+              <h2 className="font-semibold text-brand-navy">No reflections yet</h2>
+              <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
+                Write your first one above — even one sentence about what you noticed today counts.
+              </p>
             </div>
           ) : (
             <div className="mt-6 space-y-6">

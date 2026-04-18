@@ -66,10 +66,10 @@ export function ActionItemsPanel({ learnerId, items }: { learnerId: string; item
           />
           <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className="rounded-md border border-neutral-300 px-2 py-1.5 text-xs" />
           <button type="submit" disabled={pending} className="rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark disabled:opacity-60">Add</button>
-          <button type="button" onClick={() => setShowForm(false)} className="text-xs text-neutral-500 hover:text-neutral-700">Cancel</button>
+          <button type="button" onClick={() => setShowForm(false)} className="text-xs text-neutral-500 hover:text-brand-blue">Cancel</button>
         </form>
       ) : (
-        <button type="button" onClick={() => setShowForm(true)} className="text-sm text-neutral-700 underline hover:text-neutral-900">
+        <button type="button" onClick={() => setShowForm(true)} className="text-sm text-brand-blue underline hover:text-brand-blue">
           + Add action item
         </button>
       )}
