@@ -23,14 +23,13 @@ export function TopNav({
     <header className="bg-brand-navy text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
-        <div className="flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
           {primary?.logo_url ? (
-            <img src={primary.logo_url} alt={primary.name} className="h-7 w-7 rounded" />
+            <img src={primary.logo_url} alt={primary.name} className="h-7 rounded" />
           ) : (
-            <div className="flex h-7 w-7 items-center justify-center rounded bg-brand-blue text-xs font-bold text-white">LA</div>
+            <img src="/leadshift-logo.svg" alt="LeadShift" className="h-6 brightness-0 invert" />
           )}
-          <Link href="/dashboard" className="text-sm font-bold tracking-tight">{primary?.name ?? "LeadAcademy"}</Link>
-        </div>
+        </Link>
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 text-sm">
@@ -88,8 +87,9 @@ export function TopNav({
             </>
           )}
           <div className="my-2 border-t border-white/10" />
-          <div className="px-3 py-2 text-xs text-white/50">
-            {displayName ?? userEmail} · {memberships[0]?.role ?? (superAdmin ? "super admin" : "")}
+          <div className="px-3 py-2">
+            <div className="text-sm font-medium text-white">{displayName ?? userEmail}</div>
+            <div className="text-xs text-white/50">{memberships[0]?.role ?? (superAdmin ? "super admin" : "")}</div>
           </div>
           <form action={logoutAction}>
             <button type="submit" onClick={() => setMobileOpen(false)} className="w-full text-left rounded-md px-3 py-2 text-sm text-white/75 hover:bg-white/10 transition">

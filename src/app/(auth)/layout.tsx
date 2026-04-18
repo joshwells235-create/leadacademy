@@ -6,12 +6,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Left: brand panel */}
       <div className="hidden lg:flex lg:w-[45%] bg-brand-navy flex-col justify-between p-10 text-white">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-blue text-sm font-bold">
-              LA
-            </div>
-            <span className="text-lg font-bold tracking-tight">LeadAcademy</span>
-          </div>
+          <img src="/leadshift-logo.svg" alt="LeadShift" className="h-8 brightness-0 invert" />
+          <p className="mt-2 text-sm text-white/60">LeadAcademy Platform</p>
         </div>
         <div>
           <h2 className="text-3xl font-bold leading-tight">
@@ -34,11 +30,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         <div className="w-full max-w-md">
           {/* Mobile-only logo */}
           <div className="mb-8 text-center lg:hidden">
-            <div className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-navy text-sm font-bold text-white mb-3">
-              LA
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-brand-navy">LeadAcademy</h1>
-            <p className="mt-1 text-sm text-neutral-500">by LeadShift</p>
+            <img src="/leadshift-logo.svg" alt="LeadShift" className="h-7 mx-auto mb-2" />
+            <p className="text-sm text-neutral-500">LeadAcademy Platform</p>
           </div>
           <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
             {children}
