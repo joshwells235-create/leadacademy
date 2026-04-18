@@ -33,13 +33,19 @@ export default async function DashboardPage() {
   const assessmentsReady = assessmentDocs.filter((d) => d.status === "ready").length;
   const hasActionItems = (actionItemsRes.data ?? []).length > 0;
 
+  const isFirstTime = totalGoals === 0 && (reflectionsRes.data?.length ?? 0) === 0 && !convRes.data;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-navy">Hi, {firstName}</h1>
+      {/* Header — warmer for first time */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-brand-navy">
+          {isFirstTime ? `Welcome, ${firstName}` : `Hi, ${firstName}`}
+        </h1>
         <p className="mt-1 text-sm text-neutral-600">
-          {membership ? (
+          {isFirstTime ? (
+            "You're in the right place. Let's get started on your leadership growth."
+          ) : membership ? (
             <>
               {membership.organizations?.name}
               {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
@@ -48,50 +54,85 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* ── SECTION 1: What to do today ── */}
-      <div className="mb-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">Today</h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <DailyChallengeWidget />
-
-          {/* Coach action items or coach CTA */}
-          {hasActionItems ? (
-            <div className="rounded-lg border border-brand-blue/20 bg-white p-5 shadow-sm">
-              <h3 className="text-sm font-semibold text-brand-navy">From your coach</h3>
-              <ul className="mt-3 space-y-2">
-                {(actionItemsRes.data ?? []).map((item) => (
-                  <ActionItemToggle key={item.id} item={item} />
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-brand-navy">Talk to the coach</h3>
-                <p className="mt-1 text-sm text-neutral-600">
-                  {convRes.data
-                    ? `Last session ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}.`
-                    : "Your AI coach knows your goals, reflections, and assessments."}{" "}
-                  Ask anything.
-                </p>
-              </div>
-              <Link href="/coach-chat" className="mt-3 self-start rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark">
-                Open coach →
-              </Link>
-            </div>
-          )}
+      {/* ── FIRST TIME: Getting started steps ── */}
+      {isFirstTime && (
+        <div className="mb-10 rounded-2xl border border-brand-blue/20 bg-gradient-to-br from-white to-brand-blue-light/30 p-8 shadow-sm">
+          <h2 className="text-lg font-bold text-brand-navy mb-1">Your first steps</h2>
+          <p className="text-sm text-neutral-600 mb-6">Complete these in any order — each takes about 5 minutes.</p>
+          <div className="grid gap-4 md:grid-cols-3">
+            <StepCard
+              number="1"
+              title="Talk to the coach"
+              description="Your AI coach is ready. Tell it what you're working on as a leader."
+              href="/coach-chat"
+              cta="Start a conversation"
+              done={!!convRes.data}
+            />
+            <StepCard
+              number="2"
+              title="Set a growth goal"
+              description="Draft a SMART goal that changes you, your team, and your organization."
+              href="/coach-chat?mode=goal"
+              cta="Draft a goal"
+              done={totalGoals > 0}
+            />
+            <StepCard
+              number="3"
+              title="Upload your assessments"
+              description="PI, EQ-i, and 360 reports ground the coaching in your real data."
+              href="/assessments"
+              cta="Upload assessments"
+              done={assessmentsReady > 0}
+            />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ── SECTION 1: What to do today (only after first time) ── */}
+      {!isFirstTime && (
+        <div className="mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">Today</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <DailyChallengeWidget />
+
+            {hasActionItems ? (
+              <div className="rounded-xl border-2 border-brand-blue/20 bg-white p-5 shadow-sm">
+                <h3 className="text-sm font-bold text-brand-navy">From your coach</h3>
+                <ul className="mt-3 space-y-2">
+                  {(actionItemsRes.data ?? []).map((item) => (
+                    <ActionItemToggle key={item.id} item={item} />
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-brand-navy">Talk to the coach</h3>
+                  <p className="mt-1 text-sm text-neutral-600">
+                    {convRes.data
+                      ? `Last session ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}.`
+                      : "Your AI coach knows your goals, reflections, and assessments."}{" "}
+                    Ask anything.
+                  </p>
+                </div>
+                <Link href="/coach-chat" className="mt-3 self-start rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition">
+                  Open coach →
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── SECTION 2: Your growth ── */}
-      {totalGoals === 0 ? (
-        <div className="mb-8 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+      {totalGoals === 0 && !isFirstTime ? (
+        <div className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-brand-navy">Set your first growth goal</h2>
           <p className="mt-1 text-sm text-neutral-600">
             Chat with the coach to draft an integrative SMART goal — one that changes you, the people
             around you, and the work at the organizational level.
           </p>
-          <Link href="/coach-chat?mode=goal" className="mt-4 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark">
+          <Link href="/coach-chat?mode=goal" className="mt-4 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition">
             Draft a goal with the coach →
           </Link>
         </div>
@@ -157,8 +198,8 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── SECTION 4: Setup tasks (contextual — only show what needs attention) ── */}
-      {(assessmentsReady < 3 || !preSessionRes.data) && (
+      {/* ── SECTION 4: Setup tasks (contextual — only after first-time onboarding) ── */}
+      {!isFirstTime && (assessmentsReady < 3 || !preSessionRes.data) && (
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">Setup</h2>
           <div className="grid gap-3 md:grid-cols-2">
@@ -200,9 +241,32 @@ function StatCard({ label, value, color }: { label: string; value: number; color
     neutral: "border-neutral-200 text-brand-navy",
   };
   return (
-    <div className={`rounded-lg border bg-white p-4 shadow-sm ${colors[color]}`}>
+    <div className={`rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md ${colors[color]}`}>
       <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${colors[color].split(" ").pop()}`}>{value}</div>
+    </div>
+  );
+}
+
+function StepCard({ number, title, description, href, cta, done }: {
+  number: string; title: string; description: string; href: string; cta: string; done: boolean;
+}) {
+  return (
+    <div className={`rounded-xl border p-5 transition ${done ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-white shadow-sm hover:shadow-md hover:border-brand-blue/30"}`}>
+      <div className="flex items-center gap-2 mb-2">
+        <span className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-emerald-500 text-white" : "bg-brand-navy text-white"}`}>
+          {done ? "✓" : number}
+        </span>
+        <h3 className={`text-sm font-bold ${done ? "text-emerald-700" : "text-brand-navy"}`}>{title}</h3>
+      </div>
+      <p className="text-xs text-neutral-600 mb-3">{description}</p>
+      {!done ? (
+        <Link href={href} className="inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark transition">
+          {cta} →
+        </Link>
+      ) : (
+        <span className="text-xs text-emerald-600 font-medium">Done</span>
+      )}
     </div>
   );
 }

@@ -18,8 +18,8 @@ export default function LoginPage() {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Sign in</h2>
-        <p className="mt-1 text-sm text-neutral-500">Welcome back.</p>
+        <h2 className="text-lg font-bold text-brand-navy">Sign in to your account</h2>
+        <p className="mt-1 text-sm text-neutral-500">Enter the credentials from your invitation email.</p>
       </div>
 
       {state.status === "error" && <FormError message={state.message} />}

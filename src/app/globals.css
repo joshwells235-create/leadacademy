@@ -25,3 +25,39 @@ body {
   outline: 2px solid var(--color-brand-blue);
   outline-offset: 2px;
 }
+
+/* Global micro-transitions for interactive elements */
+button,
+a,
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+/* Cards get a subtle lift on hover */
+[class*="shadow-sm"]:hover {
+  transition: box-shadow 200ms ease, border-color 200ms ease;
+}
+
+/* Smooth page content fade-in */
+main {
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Skeleton pulse animation */
+.animate-pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
