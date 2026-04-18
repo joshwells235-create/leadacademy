@@ -48,6 +48,7 @@ export function TopNav({
           <NavLink href="/dashboard">Dashboard</NavLink>
           <GrowthDropdown />
           <NavLink href="/learning">Learning</NavLink>
+          <NavLink href="/community">Community</NavLink>
           <NavLink href="/messages">Messages</NavLink>
           <NavLink href="/coach-chat" accent>Coach</NavLink>
         </nav>
@@ -90,6 +91,7 @@ function GrowthDropdown() {
             <DropdownLink href="/action-log" onClick={() => setOpen(false)}>Action Log</DropdownLink>
             <DropdownLink href="/reflections" onClick={() => setOpen(false)}>Reflections</DropdownLink>
             <DropdownLink href="/assessments" onClick={() => setOpen(false)}>Assessments</DropdownLink>
+            <DropdownLink href="/resources" onClick={() => setOpen(false)}>Resources</DropdownLink>
           </div>
         </>
       )}

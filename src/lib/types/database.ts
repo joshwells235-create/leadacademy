@@ -884,6 +884,12 @@ export type Database = {
           },
         ]
       }
+      resources: {
+        Row: { category: string | null; created_at: string; created_by: string | null; description: string | null; id: string; title: string; type: string; url: string }
+        Insert: { category?: string | null; created_at?: string; created_by?: string | null; description?: string | null; id?: string; title: string; type: string; url: string }
+        Update: { category?: string | null; created_at?: string; created_by?: string | null; description?: string | null; id?: string; title?: string; type?: string; url?: string }
+        Relationships: []
+      }
       session_recaps: {
         Row: {
           ai_draft: Json
@@ -926,6 +932,31 @@ export type Database = {
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      community_comments: {
+        Row: { content: string; created_at: string; id: string; post_id: string; user_id: string }
+        Insert: { content: string; created_at?: string; id?: string; post_id: string; user_id: string }
+        Update: { content?: string; created_at?: string; id?: string; post_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "community_comments_post_id_fkey"; columns: ["post_id"]; isOneToOne: false; referencedRelation: "community_posts"; referencedColumns: ["id"] },
+        ]
+      }
+      community_likes: {
+        Row: { created_at: string; id: string; post_id: string; user_id: string }
+        Insert: { created_at?: string; id?: string; post_id: string; user_id: string }
+        Update: { created_at?: string; id?: string; post_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "community_likes_post_id_fkey"; columns: ["post_id"]; isOneToOne: false; referencedRelation: "community_posts"; referencedColumns: ["id"] },
+        ]
+      }
+      community_posts: {
+        Row: { cohort_id: string | null; content: string; created_at: string; id: string; likes_count: number; org_id: string; user_id: string }
+        Insert: { cohort_id?: string | null; content: string; created_at?: string; id?: string; likes_count?: number; org_id: string; user_id: string }
+        Update: { cohort_id?: string | null; content?: string; created_at?: string; id?: string; likes_count?: number; org_id?: string; user_id?: string }
+        Relationships: [
+          { foreignKeyName: "community_posts_cohort_id_fkey"; columns: ["cohort_id"]; isOneToOne: false; referencedRelation: "cohorts"; referencedColumns: ["id"] },
+          { foreignKeyName: "community_posts_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
         ]
       }
       courses: {
