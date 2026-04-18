@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ReflectionForm } from "./reflection-form";
+import { DeleteReflectionButton } from "./delete-reflection-button";
 
 export default async function ReflectionsPage() {
   const supabase = await createClient();
@@ -75,7 +76,10 @@ export default async function ReflectionsPage() {
                         key={r.id}
                         className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
                       >
-                        <p className="whitespace-pre-wrap text-sm text-neutral-900">{r.content}</p>
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="whitespace-pre-wrap text-sm text-neutral-900 flex-1">{r.content}</p>
+                          <DeleteReflectionButton id={r.id} />
+                        </div>
                         {r.themes && r.themes.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-1">
                             {r.themes.map((t: string) => (

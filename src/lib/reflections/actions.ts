@@ -65,6 +65,15 @@ export async function createReflection(
   return { status: "success", message: "Reflection saved.", reflectionId: data.id };
 }
 
+export async function deleteReflection(reflectionId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("reflections").delete().eq("id", reflectionId);
+  if (error) return { error: error.message };
+  revalidatePath("/reflections");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function completeDailyChallenge(challengeId: string, reflection?: string) {
   const supabase = await createClient();
   const { error } = await supabase
