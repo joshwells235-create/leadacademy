@@ -25,6 +25,7 @@ export function TopNav({
 }) {
   const primary = memberships[0]?.org;
   const isCoach = superAdmin || memberships.some((m) => m.role === "coach" || m.role === "org_admin");
+  const isOrgAdmin = superAdmin || memberships.some((m) => m.role === "org_admin");
 
   return (
     <header className="bg-brand-navy text-white">
@@ -61,6 +62,7 @@ export function TopNav({
             userEmail={userEmail}
             superAdmin={superAdmin}
             isCoach={isCoach}
+            isOrgAdmin={isOrgAdmin}
             role={memberships[0]?.role}
           />
         </div>
@@ -105,12 +107,14 @@ function UserMenu({
   userEmail,
   superAdmin,
   isCoach,
+  isOrgAdmin,
   role,
 }: {
   displayName: string | null;
   userEmail: string;
   superAdmin: boolean;
   isCoach: boolean;
+  isOrgAdmin: boolean;
   role?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -151,10 +155,11 @@ function UserMenu({
 
             <DropdownLink href="/pre-session" onClick={() => setOpen(false)}>Pre-session Prep</DropdownLink>
 
-            {(isCoach || superAdmin) && (
+            {(isCoach || isOrgAdmin || superAdmin) && (
               <>
                 <div className="my-1 border-t border-neutral-100" />
                 <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-neutral-400">Admin</div>
+                {(isOrgAdmin || superAdmin) && <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>Admin Portal</DropdownLink>}
                 {isCoach && <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>Coach Portal</DropdownLink>}
                 {superAdmin && <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>Course Builder</DropdownLink>}
               </>
