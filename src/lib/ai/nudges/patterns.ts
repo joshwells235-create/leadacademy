@@ -175,13 +175,18 @@ export const detectUndebriefedAssessment: Detector = async ({ supabase, userId, 
 export const detectSprintQuiet: Detector = async ({ supabase, userId, now }) => {
   const todayIso = now.toISOString().slice(0, 10);
   const tenDaysAgo = daysAgoDate(10, now);
+  // A brand-new sprint trivially has "no action in 10 days" because it
+  // hasn't existed that long. Only consider sprints that have had time
+  // for the learner to get going.
+  const sprintAgeCutoff = daysAgoDate(10, now);
 
   const { data: sprints } = await supabase
     .from("goal_sprints")
     .select("id, goal_id, title, practice, planned_end_date, goals(title)")
     .eq("user_id", userId)
     .eq("status", "active")
-    .gt("planned_end_date", todayIso);
+    .gt("planned_end_date", todayIso)
+    .lte("created_at", sprintAgeCutoff);
   if (!sprints || sprints.length === 0) return null;
 
   for (const sprint of sprints) {
@@ -321,11 +326,16 @@ export const detectMomentumSurge: Detector = async ({ supabase, userId, now }) =
 export const detectGoalCheckIn: Detector = async ({ supabase, userId, now }) => {
   const fortyFiveDaysAgo = daysAgoDate(45, now);
 
+  // Only consider goals that have existed for at least 45 days. A brand-new
+  // goal trivially has "no action in 45 days" because it's been around for
+  // five minutes — firing this nudge on a just-created goal reads as the
+  // thought partner ghosting the learner seconds after a conversation.
   const { data: goals } = await supabase
     .from("goals")
     .select("id, title, goal_sprints(id, status)")
     .eq("user_id", userId)
-    .in("status", ["not_started", "in_progress"]);
+    .in("status", ["not_started", "in_progress"])
+    .lte("created_at", fortyFiveDaysAgo);
   if (!goals || goals.length === 0) return null;
 
   for (const goal of goals) {
