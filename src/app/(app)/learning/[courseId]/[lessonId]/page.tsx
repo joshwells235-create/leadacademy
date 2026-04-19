@@ -1,8 +1,9 @@
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { LessonViewer } from "@/components/editor/lesson-viewer";
 import { type PlayerQuestion, QuizPlayer } from "@/components/quiz/quiz-player";
+import { computeSingleLessonGate } from "@/lib/learning/access-gate";
 import { resolveVideoEmbed } from "@/lib/learning/video-embed";
 import { createClient } from "@/lib/supabase/server";
 import { MarkCompleteButton } from "./mark-complete-button";
@@ -24,6 +25,24 @@ export default async function LessonViewerPage({ params }: Props) {
     .eq("id", lessonId)
     .maybeSingle();
   if (!lesson) notFound();
+
+  // Prereq gate. If blocked, redirect to course overview with a flash so the
+  // learner sees *why* and which lessons/courses they need to complete first.
+  // Super-admins bypass — they need to be able to preview locked content.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("super_admin")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+  if (!profile?.super_admin) {
+    const gate = await computeSingleLessonGate(supabase, user!.id, lessonId);
+    if (!gate.unlocked) {
+      const blocker = gate.blockedBy[0]?.title ?? "another lesson";
+      redirect(
+        `/learning/${courseId}?locked=${encodeURIComponent(lesson.title)}&blocker=${encodeURIComponent(blocker)}`,
+      );
+    }
+  }
 
   const isQuiz = lesson.type === "quiz";
 

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PrereqPicker } from "@/components/learning/prereq-picker";
 import { createClient } from "@/lib/supabase/server";
 import { LessonEditorWrapper } from "./lesson-editor-wrapper";
 
@@ -37,6 +38,8 @@ export default async function LessonEditorPage({ params }: Props) {
     quizSettingsRes,
     quizQuestionsRes,
     quizAttemptsRes,
+    courseModulesRes,
+    lessonPrereqsRes,
   ] = await Promise.all([
     supabase.from("courses").select("title").eq("id", courseId).maybeSingle(),
     supabase.from("modules").select("title").eq("id", lesson.module_id).maybeSingle(),
@@ -66,6 +69,13 @@ export default async function LessonEditorPage({ params }: Props) {
       .select("user_id, score_percent, passed, answers, completed_at")
       .eq("lesson_id", lessonId)
       .not("completed_at", "is", null),
+    // Sibling-course lessons (across modules) for the prereq picker.
+    supabase
+      .from("modules")
+      .select("id, title, order, lessons(id, title, order)")
+      .eq("course_id", courseId)
+      .order("order"),
+    supabase.from("lesson_prerequisites").select("required_lesson_id").eq("lesson_id", lessonId),
   ]);
 
   const attemptsForAnalytics = quizAttemptsRes.data ?? [];
@@ -126,6 +136,25 @@ export default async function LessonEditorPage({ params }: Props) {
   const currentIdx = siblings.findIndex((s) => s.id === lessonId);
   const prevLesson = currentIdx > 0 ? siblings[currentIdx - 1] : null;
   const nextLesson = currentIdx < siblings.length - 1 ? siblings[currentIdx + 1] : null;
+
+  // Build prereq picker options: every other lesson in this course, scoped
+  // by module so the author can locate them quickly. The DB cycle trigger
+  // catches loops; we don't pre-filter here (allowing cross-module prereqs).
+  type ModuleWithLessons = {
+    id: string;
+    title: string;
+    order: number;
+    lessons: { id: string; title: string; order: number }[] | null;
+  };
+  const courseModules = (courseModulesRes.data ?? []) as ModuleWithLessons[];
+  const prereqOptions = courseModules.flatMap((m) =>
+    (m.lessons ?? [])
+      .slice()
+      .sort((a, b) => a.order - b.order)
+      .filter((l) => l.id !== lessonId)
+      .map((l) => ({ id: l.id, title: l.title, sublabel: m.title })),
+  );
+  const selectedPrereqIds = (lessonPrereqsRes.data ?? []).map((r) => r.required_lesson_id);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -195,6 +224,15 @@ export default async function LessonEditorPage({ params }: Props) {
               : {},
         }))}
       />
+
+      <div className="mt-6">
+        <PrereqPicker
+          kind="lesson"
+          targetId={lessonId}
+          initialSelected={selectedPrereqIds}
+          options={prereqOptions}
+        />
+      </div>
     </div>
   );
 }

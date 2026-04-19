@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { PrereqPicker } from "@/components/learning/prereq-picker";
 import { createClient } from "@/lib/supabase/server";
 import { CourseEditor } from "./course-editor";
 
@@ -61,6 +62,17 @@ export default async function CourseEditorPage({ params }: Props) {
     lessonsByModule[l.module_id].push(l);
   }
 
+  // Course-prereq picker: every other course in the catalog. Show status as
+  // sublabel so the author isn't tempted to require a draft.
+  const [allCoursesRes, coursePrereqsRes] = await Promise.all([
+    supabase.from("courses").select("id, title, status").order("title"),
+    supabase.from("course_prerequisites").select("required_course_id").eq("course_id", courseId),
+  ]);
+  const prereqOptions = (allCoursesRes.data ?? [])
+    .filter((c) => c.id !== courseId)
+    .map((c) => ({ id: c.id, title: c.title, sublabel: c.status }));
+  const selectedPrereqIds = (coursePrereqsRes.data ?? []).map((r) => r.required_course_id);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
@@ -72,6 +84,15 @@ export default async function CourseEditorPage({ params }: Props) {
       </nav>
 
       <CourseEditor course={course} modules={modules ?? []} lessonsByModule={lessonsByModule} />
+
+      <div className="mt-6">
+        <PrereqPicker
+          kind="course"
+          targetId={courseId}
+          initialSelected={selectedPrereqIds}
+          options={prereqOptions}
+        />
+      </div>
     </div>
   );
 }

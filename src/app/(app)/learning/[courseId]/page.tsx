@@ -1,11 +1,16 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { computeCourseGates, computeCourseLessonGates } from "@/lib/learning/access-gate";
 import { createClient } from "@/lib/supabase/server";
 
-type Props = { params: Promise<{ courseId: string }> };
+type Props = {
+  params: Promise<{ courseId: string }>;
+  searchParams: Promise<{ locked?: string; blocker?: string }>;
+};
 
-export default async function CourseDetailPage({ params }: Props) {
+export default async function CourseDetailPage({ params, searchParams }: Props) {
   const { courseId } = await params;
+  const { locked, blocker } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -40,6 +45,15 @@ export default async function CourseDetailPage({ params }: Props) {
     .eq("completed", true);
   const completedIds = new Set((progress ?? []).map((p) => p.lesson_id));
 
+  // Per-lesson + course-level gates. Course-level gate (this course requires
+  // another course to be done) blocks the entire lesson list.
+  const [lessonGates, courseGates] = await Promise.all([
+    computeCourseLessonGates(supabase, user!.id, courseId),
+    computeCourseGates(supabase, user!.id, [courseId]),
+  ]);
+  const courseGate = courseGates.get(courseId);
+  const courseLocked = courseGate && !courseGate.unlocked ? courseGate : null;
+
   type LessonRow = {
     id: string;
     module_id: string;
@@ -62,8 +76,14 @@ export default async function CourseDetailPage({ params }: Props) {
   const completedCount = allLessons.filter((l) => completedIds.has(l.id)).length;
   const pct = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
 
-  // Find the first uncompleted lesson for the "Continue" button.
-  const nextUncompletedLesson = allLessons.find((l) => !completedIds.has(l.id));
+  // First uncompleted *and unlocked* lesson — never push the learner into a
+  // locked lesson via the Continue button.
+  const nextUncompletedLesson = allLessons.find((l) => {
+    if (completedIds.has(l.id)) return false;
+    if (courseLocked) return false;
+    const g = lessonGates.get(l.id);
+    return !g || g.unlocked;
+  });
   // Roll up duration from lessons first, fall back to author-set module
   // duration when no lesson durations exist. Either way the learner gets
   // a real time budget instead of zero.
@@ -88,6 +108,26 @@ export default async function CourseDetailPage({ params }: Props) {
 
       <h1 className="text-2xl font-bold text-brand-navy">{course.title}</h1>
       {course.description && <p className="mt-1 text-sm text-neutral-600">{course.description}</p>}
+
+      {locked && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900">🔒 "{locked}" is locked</p>
+          <p className="mt-0.5 text-xs text-amber-800">
+            {blocker
+              ? `Finish "${blocker}" first to unlock it.`
+              : "Complete the prerequisite lessons first to unlock it."}
+          </p>
+        </div>
+      )}
+
+      {courseLocked && (
+        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-sm font-semibold text-amber-900">🔒 This course is locked</p>
+          <p className="mt-0.5 text-xs text-amber-800">
+            Finish {courseLocked.blockedBy.map((b) => `"${b.title}"`).join(", ")} first.
+          </p>
+        </div>
+      )}
 
       {courseComplete && (
         <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -180,44 +220,76 @@ export default async function CourseDetailPage({ params }: Props) {
                     const isComplete = completedIds.has(l.id);
                     // Calculate overall lesson index for "Lesson N of M" context.
                     const overallIdx = allLessons.findIndex((al) => al.id === l.id) + 1;
-                    return (
-                      <li key={l.id}>
-                        <Link
-                          href={`/learning/${courseId}/${l.id}`}
-                          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-brand-light transition group"
+                    const lessonGate = lessonGates.get(l.id);
+                    const isLocked = !!courseLocked || (lessonGate ? !lessonGate.unlocked : false);
+                    const lockReason = courseLocked
+                      ? `Course locked: finish ${courseLocked.blockedBy.map((b) => b.title).join(", ")}`
+                      : lessonGate && !lessonGate.unlocked
+                        ? `Finish ${lessonGate.blockedBy.map((b) => b.title).join(", ")} first`
+                        : null;
+                    const inner = (
+                      <>
+                        <span
+                          className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-xs shrink-0 ${
+                            isLocked
+                              ? "border-neutral-300 bg-neutral-100 text-neutral-400"
+                              : isComplete
+                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                : "border-neutral-300 text-neutral-400 group-hover:border-brand-blue"
+                          }`}
                         >
-                          <span
-                            className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-xs shrink-0 ${isComplete ? "border-emerald-500 bg-emerald-500 text-white" : "border-neutral-300 text-neutral-400 group-hover:border-brand-blue"}`}
-                          >
-                            {isComplete ? "✓" : overallIdx}
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <div
-                              className={
-                                isComplete
+                          {isLocked ? "🔒" : isComplete ? "✓" : overallIdx}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className={
+                              isLocked
+                                ? "text-neutral-400"
+                                : isComplete
                                   ? "text-neutral-500"
                                   : "text-brand-navy group-hover:text-brand-blue"
-                              }
-                            >
-                              {l.title}
-                            </div>
-                            {l.description && (
-                              <div className="text-[11px] text-neutral-500 mt-0.5 line-clamp-1">
-                                {l.description}
-                              </div>
-                            )}
-                          </div>
-                          {l.duration_minutes ? (
-                            <span className="text-[10px] text-neutral-400 shrink-0">
-                              {l.duration_minutes} min
-                            </span>
-                          ) : null}
-                          <span
-                            className={`ml-2 rounded px-1.5 py-0.5 text-xs shrink-0 ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}
+                            }
                           >
-                            {l.type === "quiz" ? "Quiz" : "Lesson"}
+                            {l.title}
+                          </div>
+                          {isLocked && lockReason ? (
+                            <div className="text-[11px] text-amber-700 mt-0.5">{lockReason}</div>
+                          ) : l.description ? (
+                            <div className="text-[11px] text-neutral-500 mt-0.5 line-clamp-1">
+                              {l.description}
+                            </div>
+                          ) : null}
+                        </div>
+                        {l.duration_minutes ? (
+                          <span className="text-[10px] text-neutral-400 shrink-0">
+                            {l.duration_minutes} min
                           </span>
-                        </Link>
+                        ) : null}
+                        <span
+                          className={`ml-2 rounded px-1.5 py-0.5 text-xs shrink-0 ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}
+                        >
+                          {l.type === "quiz" ? "Quiz" : "Lesson"}
+                        </span>
+                      </>
+                    );
+                    return (
+                      <li key={l.id}>
+                        {isLocked ? (
+                          <div
+                            aria-disabled
+                            title={lockReason ?? "Locked"}
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm cursor-not-allowed opacity-70"
+                          >
+                            {inner}
+                          </div>
+                        ) : (
+                          <Link
+                            href={`/learning/${courseId}/${l.id}`}
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-brand-light transition group"
+                          >
+                            {inner}
+                          </Link>
+                        )}
                       </li>
                     );
                   })}

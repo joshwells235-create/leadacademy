@@ -988,6 +988,42 @@ export type Database = {
           },
         ]
       }
+      course_prerequisites: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          required_course_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          required_course_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          required_course_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_prerequisites_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_prerequisites_required_course_id_fkey"
+            columns: ["required_course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           created_at: string
@@ -1312,6 +1348,42 @@ export type Database = {
             columns: ["source_conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lesson_prerequisites: {
+        Row: {
+          created_at: string
+          id: string
+          lesson_id: string
+          required_lesson_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lesson_id: string
+          required_lesson_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          required_lesson_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_prerequisites_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_prerequisites_required_lesson_id_fkey"
+            columns: ["required_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]

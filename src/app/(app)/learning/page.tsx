@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { computeCourseGates } from "@/lib/learning/access-gate";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Learning — Leadership Academy" };
 
@@ -83,6 +84,13 @@ export default async function LearningPage() {
     };
   }
 
+  // Course-level gates so the list shows lock state up front.
+  const courseGates = await computeCourseGates(
+    supabase,
+    user!.id,
+    courses.map((c) => c.id),
+  );
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
@@ -107,35 +115,48 @@ export default async function LearningPage() {
             const p = progressMap[c.id] ?? { total: 0, completed: 0 };
             const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
             const isComplete = p.completed === p.total && p.total > 0;
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/learning/${c.id}`}
-                  className={`block rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md ${isComplete ? "border-emerald-200" : "border-neutral-200 hover:border-brand-blue/30"}`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h2 className="font-semibold text-brand-navy">{c.title}</h2>
-                      {c.description && (
-                        <p className="mt-1 text-sm text-neutral-600 line-clamp-2">
-                          {c.description}
-                        </p>
-                      )}
-                    </div>
-                    <span
-                      className={`text-sm font-bold ${isComplete ? "text-emerald-600" : "text-brand-blue"}`}
-                    >
-                      {isComplete ? "✓" : `${pct}%`}
-                    </span>
+            const gate = courseGates.get(c.id);
+            const isLocked = gate ? !gate.unlocked : false;
+            const lockReason =
+              gate && !gate.unlocked
+                ? `Finish ${gate.blockedBy.map((b) => b.title).join(", ")} first`
+                : null;
+            const cardInner = (
+              <>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h2 className="font-semibold text-brand-navy flex items-center gap-2">
+                      {isLocked && <span aria-hidden>🔒</span>}
+                      {c.title}
+                    </h2>
+                    {c.description && (
+                      <p className="mt-1 text-sm text-neutral-600 line-clamp-2">{c.description}</p>
+                    )}
+                    {isLocked && lockReason && (
+                      <p className="mt-1 text-xs text-amber-700">{lockReason}</p>
+                    )}
                   </div>
-                  {p.total > 0 && (
-                    <div className="mt-3 h-1.5 rounded-full bg-neutral-200">
-                      <div
-                        className={`h-full rounded-full transition-all ${isComplete ? "bg-emerald-500" : "bg-brand-blue"}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  )}
+                  <span
+                    className={`text-sm font-bold ${
+                      isLocked
+                        ? "text-neutral-400"
+                        : isComplete
+                          ? "text-emerald-600"
+                          : "text-brand-blue"
+                    }`}
+                  >
+                    {isLocked ? "Locked" : isComplete ? "✓" : `${pct}%`}
+                  </span>
+                </div>
+                {!isLocked && p.total > 0 && (
+                  <div className="mt-3 h-1.5 rounded-full bg-neutral-200">
+                    <div
+                      className={`h-full rounded-full transition-all ${isComplete ? "bg-emerald-500" : "bg-brand-blue"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                )}
+                {!isLocked && (
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-xs text-neutral-500">
                       {p.completed}/{p.total} lessons completed
@@ -149,7 +170,27 @@ export default async function LearningPage() {
                       <span className="text-xs text-emerald-600 font-medium">Course complete!</span>
                     )}
                   </div>
-                </Link>
+                )}
+              </>
+            );
+            return (
+              <li key={c.id}>
+                {isLocked ? (
+                  <div
+                    aria-disabled
+                    title={lockReason ?? "Locked"}
+                    className="block rounded-lg border border-neutral-200 bg-white p-5 shadow-sm opacity-70 cursor-not-allowed"
+                  >
+                    {cardInner}
+                  </div>
+                ) : (
+                  <Link
+                    href={`/learning/${c.id}`}
+                    className={`block rounded-lg border bg-white p-5 shadow-sm transition hover:shadow-md ${isComplete ? "border-emerald-200" : "border-neutral-200 hover:border-brand-blue/30"}`}
+                  >
+                    {cardInner}
+                  </Link>
+                )}
               </li>
             );
           })}
