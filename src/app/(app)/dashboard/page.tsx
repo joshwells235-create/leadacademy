@@ -150,8 +150,10 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* ── FIRST TIME: Getting started steps ── */}
-      {isFirstTime && (
+      {/* ── FIRST TIME: Getting started steps. Suppressed while intake is pending — the
+           intake is the very first thing a new learner should do, and the steps card
+           overlaps with it (both pitch "start a conversation"). ── */}
+      {isFirstTime && !intakePending && (
         <div className="mb-10 rounded-2xl border border-brand-blue/20 bg-gradient-to-br from-white to-brand-blue-light/30 p-8 shadow-sm">
           <h2 className="text-lg font-bold text-brand-navy mb-1">Your first steps</h2>
           <p className="text-sm text-neutral-600 mb-6">
@@ -186,8 +188,9 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Intake CTA — surfaces when the learner hasn't told their thought partner about themselves yet ── */}
-      {intakePending && !isFirstTime && (
+      {/* ── Intake CTA — surfaces any time intake is pending (first-time or returning),
+           so a freshly-reset learner or a new invitee always sees it. ── */}
+      {intakePending && (
         <div className="mb-6 rounded-2xl border-2 border-brand-blue/30 bg-gradient-to-br from-brand-blue-light/30 to-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
