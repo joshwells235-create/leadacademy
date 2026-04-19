@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { startIntakeSession } from "@/lib/intake/actions";
 import { reopenIntake, type UpdateProfileInput, updateProfile } from "@/lib/profile/actions";
 
 type Initial = {
@@ -98,7 +98,9 @@ export function ProfileForm({
   const handleReopenIntake = () => {
     start(async () => {
       await reopenIntake();
-      router.push("/coach-chat?mode=intake");
+      // Redirects into the seeded intake conversation. If a recent one
+      // exists it resumes that; otherwise a fresh opener is seeded.
+      await startIntakeSession();
     });
   };
 
@@ -248,9 +250,18 @@ export function ProfileForm({
             Re-run the intake conversation instead
           </button>
         ) : (
-          <Link href="/coach-chat?mode=intake" className="text-xs text-brand-blue hover:underline">
+          <button
+            type="button"
+            onClick={() =>
+              start(async () => {
+                await startIntakeSession();
+              })
+            }
+            disabled={pending}
+            className="text-xs text-brand-blue hover:underline disabled:opacity-60"
+          >
             Prefer to chat it through? Open the intake →
-          </Link>
+          </button>
         )}
       </div>
     </form>

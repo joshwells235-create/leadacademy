@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { startIntakeSession } from "@/lib/intake/actions";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
 
@@ -28,9 +28,11 @@ export default async function ProfilePage() {
         <p className="mt-1 text-sm text-neutral-600">
           Your thought partner uses this to ground every conversation. You can edit any of it here,
           or{" "}
-          <Link href="/coach-chat?mode=intake" className="text-brand-blue hover:underline">
-            walk through it conversationally
-          </Link>
+          <form action={startIntakeSession} className="inline">
+            <button type="submit" className="text-brand-blue hover:underline">
+              walk through it conversationally
+            </button>
+          </form>
           .
         </p>
       </header>
