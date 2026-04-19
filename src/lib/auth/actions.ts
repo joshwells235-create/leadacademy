@@ -89,28 +89,38 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
     return { status: "error", message: signUpError.message };
   }
 
-  // If email confirmation is off, a session exists now and we can consume immediately.
+  // If the Supabase project has email confirmation OFF, signUp produces a
+  // confirmed user + session immediately and we can consume the invite inline.
+  // If confirmation is ON, getUser() may still surface the user object from
+  // the in-memory signUp result even though there's no real session yet — in
+  // that case email_confirmed_at is null and calling consume_invitation would
+  // fail with "invitation invalid" (the SECURITY DEFINER RPC sees no valid
+  // auth.uid()). Gate on email_confirmed_at to avoid that trap: if the user
+  // isn't actually confirmed, fall through to the "check your email" message
+  // and let /auth/consume handle consumption after they click the email link.
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) {
+  if (user?.email_confirmed_at) {
     const { error: consumeError } = await supabase.rpc("consume_invitation", {
       p_token: parsed.data.token,
     });
     if (consumeError) {
       return {
         status: "error",
-        message: `Account created but invite couldn't be consumed: ${consumeError.message}`,
+        message: `Account created but invite couldn't be consumed: ${consumeError.message}. Try signing in — if the problem persists, ask your admin to resend the invite.`,
       };
     }
     revalidatePath("/", "layout");
     redirect("/dashboard");
   }
 
-  // Otherwise, Supabase sent a confirmation email.
+  // Otherwise, Supabase sent a confirmation email. Invitation is consumed
+  // later, when they click the email link and land on /auth/consume.
   return {
     status: "success",
-    message: "Account created. Check your email to verify, then log in.",
+    message:
+      "Account created. Check your email for a confirmation link — clicking it will sign you in and finish setup. If nothing arrives in a minute, check spam.",
   };
 }
 
