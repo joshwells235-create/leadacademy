@@ -1,129 +1,193 @@
+import { labelForRole, roleBadgeClass } from "@/lib/admin/roles";
 import { createClient } from "@/lib/supabase/server";
+import { CoachLoadPanel, type CoachLoadRow } from "./coach-load-panel";
+import { InvitationsPanel, type InviteRow } from "./invitations-panel";
 import { InviteForm } from "./invite-form";
-import { MemberActions } from "./member-actions";
-import { AssignCoachForm } from "./assign-coach-form";
+import { type AtRiskFlag, type PeopleRow, PeopleTable } from "./people-table";
 
 export default async function PeoplePage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user!.id).eq("status", "active").limit(1).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: mem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user!.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
   if (!mem) return <div className="p-8">No org.</div>;
+  const orgId = mem.org_id;
 
-  const [membersRes, cohortsRes, assignmentsRes, invitationsRes] = await Promise.all([
-    supabase.from("memberships").select("id, user_id, role, status, cohort_id, cohorts(name), profiles:user_id(display_name)").eq("org_id", mem.org_id).order("created_at"),
-    supabase.from("cohorts").select("id, name").eq("org_id", mem.org_id),
-    supabase.from("coach_assignments").select("coach_user_id, learner_user_id, profiles:coach_user_id(display_name)").eq("org_id", mem.org_id).is("active_to", null),
-    supabase.from("invitations").select("id, email, role, token, consumed_at, expires_at, created_at").eq("org_id", mem.org_id).order("created_at", { ascending: false }).limit(20),
+  const fourteenDaysAgo = new Date();
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+  const fourteenDaysAgoIso = fourteenDaysAgo.toISOString().slice(0, 10);
+  const fourteenDaysAgoTs = fourteenDaysAgo.toISOString();
+
+  const [
+    membersRes,
+    cohortsRes,
+    assignmentsRes,
+    invitationsRes,
+    profilesRes,
+    actionsRes,
+    reflectionsRes,
+    aiConvosRes,
+  ] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("id, user_id, role, status, cohort_id, created_at")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false }),
+    supabase.from("cohorts").select("id, name").eq("org_id", orgId).order("name"),
+    supabase
+      .from("coach_assignments")
+      .select("coach_user_id, learner_user_id")
+      .eq("org_id", orgId)
+      .is("active_to", null),
+    supabase
+      .from("invitations")
+      .select("id, email, role, consumed_at, expires_at, created_at")
+      .eq("org_id", orgId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    supabase.from("profiles").select("user_id, display_name, intake_completed_at"),
+    supabase
+      .from("action_logs")
+      .select("user_id, occurred_on")
+      .eq("org_id", orgId)
+      .gte("occurred_on", fourteenDaysAgoIso),
+    supabase
+      .from("reflections")
+      .select("user_id, reflected_on")
+      .eq("org_id", orgId)
+      .gte("reflected_on", fourteenDaysAgoIso),
+    supabase
+      .from("ai_conversations")
+      .select("user_id, last_message_at")
+      .eq("org_id", orgId)
+      .gte("last_message_at", fourteenDaysAgoTs),
   ]);
 
   const members = membersRes.data ?? [];
   const cohorts = cohortsRes.data ?? [];
   const assignments = assignmentsRes.data ?? [];
-  const invitations = invitationsRes.data ?? [];
-  const coaches = members.filter((m) => m.role === "coach" || m.role === "org_admin");
-  const assignmentMap: Record<string, string> = {};
-  for (const a of assignments) {
-    const coachName = (a.profiles as unknown as { display_name: string | null })?.display_name;
-    if (coachName) assignmentMap[a.learner_user_id] = coachName;
+  const profiles = profilesRes.data ?? [];
+  const actions = actionsRes.data ?? [];
+  const reflections = reflectionsRes.data ?? [];
+  const aiConvos = aiConvosRes.data ?? [];
+
+  const profileByUser = new Map(profiles.map((p) => [p.user_id, p] as const));
+  const cohortName = new Map(cohorts.map((c) => [c.id, c.name] as const));
+  const coachByLearner = new Map(
+    assignments.map((a) => [a.learner_user_id, a.coach_user_id] as const),
+  );
+
+  // Build coach name map (from memberships where role = coach/org_admin).
+  const coachCandidates = members.filter(
+    (m) => (m.role === "coach" || m.role === "org_admin") && m.status === "active",
+  );
+  const coachOptions = coachCandidates.map((m) => ({
+    userId: m.user_id,
+    name: profileByUser.get(m.user_id)?.display_name ?? "Unnamed",
+  }));
+  const coachNameById = new Map(coachOptions.map((c) => [c.userId, c.name] as const));
+
+  // NOTE: emails aren't fetched from auth.users here — org_admin's
+  // RLS-scoped client can't read auth schema. Name + internal id are
+  // enough to identify members in the current views; when we want email
+  // visibility we'll expose a view or use the service-role client.
+
+  // Last activity per user — max of recent actions / reflections / AI convos.
+  const lastByUser = new Map<string, string>();
+  for (const a of actions) {
+    const cur = lastByUser.get(a.user_id);
+    if (!cur || a.occurred_on > cur) lastByUser.set(a.user_id, a.occurred_on);
+  }
+  for (const r of reflections) {
+    const cur = lastByUser.get(r.user_id);
+    if (!cur || r.reflected_on > cur) lastByUser.set(r.user_id, r.reflected_on);
+  }
+  for (const c of aiConvos) {
+    if (!c.last_message_at) continue;
+    const dateOnly = c.last_message_at.slice(0, 10);
+    const cur = lastByUser.get(c.user_id);
+    if (!cur || dateOnly > cur) lastByUser.set(c.user_id, dateOnly);
   }
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const rows: PeopleRow[] = members.map((m) => {
+    const p = profileByUser.get(m.user_id);
+    const coachUserId = coachByLearner.get(m.user_id) ?? null;
+    const lastActivityDate = lastByUser.get(m.user_id) ?? null;
+    const daysSinceActivity = lastActivityDate
+      ? Math.floor(
+          (new Date(todayIso).getTime() - new Date(lastActivityDate).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+
+    const flags: AtRiskFlag[] = [];
+    if (m.status === "active") {
+      if (m.role === "learner" && !coachUserId) flags.push("no-coach");
+      if (m.role === "learner" && !p?.intake_completed_at) flags.push("intake-incomplete");
+      if (daysSinceActivity == null || daysSinceActivity >= 14) flags.push("no-activity-14d");
+    }
+
+    return {
+      membershipId: m.id,
+      userId: m.user_id,
+      name: p?.display_name ?? "Unnamed",
+      email: "", // populated separately if/when we expose an email view
+      role: m.role,
+      roleLabel: labelForRole(m.role),
+      roleBadgeClass: roleBadgeClass(m.role),
+      cohortId: m.cohort_id,
+      cohortName: m.cohort_id ? (cohortName.get(m.cohort_id) ?? null) : null,
+      coachUserId,
+      coachName: coachUserId ? (coachNameById.get(coachUserId) ?? "Unnamed") : null,
+      status: m.status,
+      intakeCompleted: !!p?.intake_completed_at,
+      lastActivityDate,
+      daysSinceActivity,
+      atRiskFlags: flags,
+    };
+  });
+
+  const invites: InviteRow[] = (invitationsRes.data ?? []).map((i) => ({
+    id: i.id,
+    email: i.email,
+    role: i.role,
+    consumed_at: i.consumed_at,
+    expires_at: i.expires_at,
+    created_at: i.created_at,
+  }));
+
+  // Coach-load panel rows.
+  const coachLoad: CoachLoadRow[] = coachOptions.map((c) => ({
+    userId: c.userId,
+    name: c.name,
+    learnerCount: assignments.filter((a) => a.coach_user_id === c.userId).length,
+  }));
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="flex items-start justify-between mb-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 space-y-6">
+      <div>
         <h2 className="text-xl font-bold text-brand-navy">People</h2>
+        <p className="mt-0.5 text-sm text-neutral-600">
+          Invite, organize, and manage everyone in your organization.
+        </p>
       </div>
 
-      {/* Invite form */}
       <InviteForm cohorts={cohorts} />
 
-      {/* Members table */}
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-neutral-100">
-          <h3 className="text-sm font-semibold text-brand-navy">Members ({members.filter((m) => m.status === "active").length} active)</h3>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-neutral-100 text-xs text-neutral-500 uppercase tracking-wide">
-              <th className="text-left px-4 py-2 font-medium">Name</th>
-              <th className="text-left px-3 py-2 font-medium">Role</th>
-              <th className="text-left px-3 py-2 font-medium">Cohort</th>
-              <th className="text-left px-3 py-2 font-medium">Coach</th>
-              <th className="text-left px-3 py-2 font-medium">Status</th>
-              <th className="text-right px-4 py-2 font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members.map((m) => {
-              const name = (m.profiles as unknown as { display_name: string | null })?.display_name ?? "Unnamed";
-              const cohortName = m.cohorts?.name ?? "—";
-              const coachName = assignmentMap[m.user_id] ?? "—";
-              return (
-                <tr key={m.id} className={`border-b border-neutral-50 hover:bg-brand-light transition ${m.status === "archived" ? "opacity-50" : ""}`}>
-                  <td className="px-4 py-3 font-medium text-brand-navy">{name}</td>
-                  <td className="px-3 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                      m.role === "org_admin" ? "bg-brand-pink-light text-brand-pink" :
-                      m.role === "coach" ? "bg-brand-blue-light text-brand-blue" :
-                      "bg-neutral-100 text-neutral-700"
-                    }`}>{m.role}</span>
-                  </td>
-                  <td className="px-3 py-3 text-neutral-600">{cohortName}</td>
-                  <td className="px-3 py-3 text-neutral-600">
-                    {m.role === "learner" ? (
-                      coachName === "—" ? (
-                        <AssignCoachForm learnerId={m.user_id} coaches={coaches.map((c) => ({ id: c.user_id, name: (c.profiles as unknown as { display_name: string | null })?.display_name ?? "Unnamed" }))} />
-                      ) : coachName
-                    ) : "—"}
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs ${m.status === "active" ? "bg-emerald-100 text-emerald-700" : "bg-neutral-100 text-neutral-500"}`}>
-                      {m.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <MemberActions membershipId={m.id} currentRole={m.role} status={m.status} />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <PeopleTable rows={rows} coaches={coachOptions} cohorts={cohorts} />
 
-      {/* Pending invitations */}
-      {invitations.length > 0 && (
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-neutral-100">
-            <h3 className="text-sm font-semibold text-brand-navy">Recent Invitations</h3>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-neutral-100 text-xs text-neutral-500 uppercase tracking-wide">
-                <th className="text-left px-4 py-2 font-medium">Email</th>
-                <th className="text-left px-3 py-2 font-medium">Role</th>
-                <th className="text-left px-3 py-2 font-medium">Status</th>
-                <th className="text-left px-3 py-2 font-medium">Sent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invitations.map((inv) => (
-                <tr key={inv.id} className="border-b border-neutral-50">
-                  <td className="px-4 py-2 text-brand-navy">{inv.email}</td>
-                  <td className="px-3 py-2">{inv.role}</td>
-                  <td className="px-3 py-2">
-                    {inv.consumed_at
-                      ? <span className="text-emerald-600 text-xs">Accepted</span>
-                      : new Date(inv.expires_at) < new Date()
-                        ? <span className="text-neutral-400 text-xs">Expired</span>
-                        : <span className="text-amber-600 text-xs">Pending</span>}
-                  </td>
-                  <td className="px-3 py-2 text-xs text-neutral-500">{new Date(inv.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {coachLoad.length > 0 && <CoachLoadPanel coaches={coachLoad} />}
+
+      <InvitationsPanel invitations={invites} />
     </div>
   );
 }
