@@ -92,7 +92,12 @@ export default async function DashboardPage() {
   const assessmentsReady = assessmentDocs.filter((d) => d.status === "ready").length;
   const hasActionItems = (actionItemsRes.data ?? []).length > 0;
 
-  const isFirstTime = totalGoals === 0 && (reflectionsRes.data?.length ?? 0) === 0 && !convRes.data;
+  // "First time" = no real practice yet (no goals, no reflections). We
+  // intentionally don't key off conversations — intake creates one, and if
+  // that flipped the learner out of first-time state the next-steps card
+  // would vanish the moment they finished intake, skipping their cue to
+  // set a goal and upload assessments.
+  const isFirstTime = totalGoals === 0 && (reflectionsRes.data?.length ?? 0) === 0;
 
   // Run proactive nudge detection on dashboard visits (skip first-time — no
   // signal to nudge on). Respects `proactivity_enabled` and rate limits
