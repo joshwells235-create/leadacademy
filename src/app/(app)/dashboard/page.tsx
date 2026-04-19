@@ -3,8 +3,8 @@ import Link from "next/link";
 import { ActionItemToggle } from "@/components/action-item-toggle";
 import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
 import { CoachNudgeCard } from "@/components/dashboard/coach-nudge-card";
+import { IntakeCtaButton } from "@/components/intake/intake-cta-button";
 import { detectAndFireNudge } from "@/lib/ai/nudges/detect";
-import { startIntakeSession } from "@/lib/intake/actions";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Dashboard — Leadership Academy" };
 
@@ -206,14 +206,7 @@ export default async function DashboardPage() {
                 role, team, company, and anything else worth knowing. Takes about five minutes.
               </p>
             </div>
-            <form action={startIntakeSession}>
-              <button
-                type="submit"
-                className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-              >
-                Start intake →
-              </button>
-            </form>
+            <IntakeCtaButton>Start intake →</IntakeCtaButton>
           </div>
         </div>
       )}

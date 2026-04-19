@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { startIntakeSession } from "@/lib/intake/actions";
+import { IntakeCtaButton } from "@/components/intake/intake-cta-button";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
 
@@ -28,12 +28,7 @@ export default async function ProfilePage() {
         <p className="mt-1 text-sm text-neutral-600">
           Your thought partner uses this to ground every conversation. You can edit any of it here,
           or{" "}
-          <form action={startIntakeSession} className="inline">
-            <button type="submit" className="text-brand-blue hover:underline">
-              walk through it conversationally
-            </button>
-          </form>
-          .
+          <IntakeCtaButton variant="inline">walk through it conversationally</IntakeCtaButton>.
         </p>
       </header>
 
