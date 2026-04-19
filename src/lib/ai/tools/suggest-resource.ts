@@ -36,7 +36,7 @@ export function buildSuggestResourceTool(
 ) {
   return tool({
     description:
-      "Search the resource library for articles, templates, or videos matching a topic and surface them as cards. Use this when an external reference would genuinely help, not as a lazy closer. If no good match is found, the coach should acknowledge and move on — never invent resources.",
+      "Search the resource library for articles, templates, or videos matching a topic and surface them as cards. Use this when an external reference would genuinely help, not as a lazy closer. If no good match is found, acknowledge it and move on — never invent resources.",
     inputSchema: suggestResourceInputSchema,
     execute: handler,
   });

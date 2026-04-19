@@ -24,6 +24,6 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach asks the learner what company they work at, or what their cohort is, or what their existing goal is."
+    criterion: "The thought partner asks the learner what company they work at, or what their cohort is, or what their existing goal is."
   - expect: false
-    criterion: "The coach asks 'do you have a goal around this?' when a directly-relevant goal is already visible in context."
+    criterion: "The thought partner asks 'do you have a goal around this?' when a directly-relevant goal is already visible in context."

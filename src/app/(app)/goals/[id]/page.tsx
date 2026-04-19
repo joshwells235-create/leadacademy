@@ -107,8 +107,8 @@ export default async function GoalDetailPage({ params }: Props) {
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold">Impact across the three lenses</h2>
             <p className="mt-1 text-xs text-neutral-500">
-              Every goal lives across all three. If any of these feel thin, refine with the coach on
-              the right.
+              Every goal lives across all three. If any of these feel thin, refine with your thought
+              partner on the right.
             </p>
             <dl className="mt-3 space-y-3 text-sm">
               <div>
@@ -165,7 +165,7 @@ export default async function GoalDetailPage({ params }: Props) {
 
         <div>
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold">Refine with coach</h2>
+            <h2 className="text-sm font-semibold">Refine with thought partner</h2>
             <span className="text-xs text-neutral-500">goal mode · scoped to this goal</span>
           </div>
           <CoachChat
@@ -174,11 +174,11 @@ export default async function GoalDetailPage({ params }: Props) {
               primaryLens: (goal.primary_lens as "self" | "others" | "org" | null) ?? undefined,
               goalId: goal.id,
             }}
-            placeholder="Ask the coach about this goal…"
+            placeholder="Ask your thought partner about this goal…"
             emptyHint={
               <p>
-                Think this goal needs sharpening? Ask the coach to poke at it. They already know the
-                current SMART criteria and your recent actions.
+                Think this goal needs sharpening? Ask your thought partner to poke at it. They
+                already know the current SMART criteria and your recent actions.
               </p>
             }
           />

@@ -21,4 +21,4 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the suggest_lesson tool with a query related to 1:1s, one-on-ones, or running effective check-ins."
+    criterion: "The thought partner calls the suggest_lesson tool with a query related to 1:1s, one-on-ones, or running effective check-ins."

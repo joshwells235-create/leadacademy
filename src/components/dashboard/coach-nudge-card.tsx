@@ -34,7 +34,7 @@ export function CoachNudgeCard({ nudge }: Props) {
       <div className="flex items-start gap-4">
         <div className="flex-1 min-w-0">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-blue">
-            From your coach
+            From your thought partner
           </p>
           <h2 className="mt-1 text-base font-bold text-brand-navy">{nudge.title}</h2>
           <p className="mt-1 text-sm text-neutral-700">{nudge.body}</p>

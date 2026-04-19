@@ -4,7 +4,7 @@ import { z } from "zod";
 /**
  * `tag_themes` — Claude calls this after responding to a reflection to tag
  * 1-5 short theme labels that capture what the reflection was about.
- * Themes accumulate over time; the coach uses them to spot patterns.
+ * Themes accumulate over time; the thought partner uses them to spot patterns.
  */
 export const tagThemesInputSchema = z.object({
   reflectionId: z.string().uuid().describe("The ID of the reflection to tag."),

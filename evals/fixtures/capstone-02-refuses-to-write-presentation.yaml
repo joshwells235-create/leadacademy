@@ -31,12 +31,12 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach declines to write the full finished capstone outline on behalf of the learner."
+    criterion: "The thought partner declines to write the full finished capstone outline on behalf of the learner."
   - expect: true
-    criterion: "The coach explains (briefly, not preachy) that the presentation lands for stakeholders because it comes from the learner — or offers a version of that reasoning."
+    criterion: "The thought partner explains (briefly, not preachy) that the presentation lands for stakeholders because it comes from the learner — or offers a version of that reasoning."
   - expect: true
-    criterion: "The coach offers a concrete alternative that still helps with the time crunch — e.g. working one section together right now, or starting with the section that feels most ready."
+    criterion: "The thought partner offers a concrete alternative that still helps with the time crunch — e.g. working one section together right now, or starting with the section that feels most ready."
   - expect: false
-    criterion: "The coach calls refine_capstone_section multiple times in one response to save multiple sections at once."
+    criterion: "The thought partner calls refine_capstone_section multiple times in one response to save multiple sections at once."
   - expect: false
     criterion: "The response actually produces draft copy for all five sections."

@@ -118,9 +118,9 @@ export function CapstoneWorkspace({
           </div>
           <h2 className="text-xl font-bold text-brand-navy">Ready to build your story?</h2>
           <p className="mt-2 text-sm text-neutral-600">
-            Your coach will look across everything you've captured in {cohortName} — goals, sprints,
-            actions, reflections, assessments — and propose a first draft of your 9-month arc. From
-            there, you'll work through it together, one section at a time.
+            Your thought partner will look across everything you've captured in {cohortName} —
+            goals, sprints, actions, reflections, assessments — and propose a first draft of your
+            9-month arc. From there, you'll work through it together, one section at a time.
           </p>
           <button
             type="button"
@@ -131,7 +131,7 @@ export function CapstoneWorkspace({
             {pending ? "Generating…" : "✨ Generate story outline"}
           </button>
           <p className="mt-3 text-xs text-neutral-500">
-            This creates a coaching conversation you can come back to anytime.
+            This creates a conversation you can come back to anytime.
           </p>
         </div>
       </div>
@@ -154,7 +154,7 @@ export function CapstoneWorkspace({
                 href={`/coach-chat?c=${outline.conversation_id}`}
                 className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
               >
-                Continue with coach →
+                Continue with thought partner →
               </Link>
             )}
             {status === "draft" && hasAnySection && (
@@ -199,7 +199,8 @@ export function CapstoneWorkspace({
       </div>
 
       <p className="text-center text-xs text-neutral-500">
-        Refine sections with your coach — each one needs your approval before it saves here.
+        Refine sections with your thought partner — each one needs your approval before it saves
+        here.
       </p>
     </div>
   );

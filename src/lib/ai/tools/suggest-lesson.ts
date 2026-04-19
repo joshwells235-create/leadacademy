@@ -27,7 +27,7 @@ export function buildSuggestLessonTool(
 ) {
   return tool({
     description:
-      "Search the learner's assigned courses for lessons matching a topic, and surface the top matches as clickable cards in the chat. Use this when the conversation uncovers a concept the learner could go deeper on — don't just tell them to 'check the library'. Only searches courses that have been assigned to their cohort. Returns up to 3 hits, ranked by match strength. If nothing matches, the coach should acknowledge and move on, not invent lessons.",
+      "Search the learner's assigned courses for lessons matching a topic, and surface the top matches as clickable cards in the chat. Use this when the conversation uncovers a concept the learner could go deeper on — don't just tell them to 'check the library'. Only searches courses that have been assigned to their cohort. Returns up to 3 hits, ranked by match strength. If nothing matches, acknowledge it and move on — do not invent lessons.",
     inputSchema: suggestLessonInputSchema,
     execute: handler,
   });

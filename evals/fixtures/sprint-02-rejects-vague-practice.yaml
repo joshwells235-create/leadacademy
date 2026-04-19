@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls the start_goal_sprint tool on this turn. The practice 'being more present in meetings' is too vague to commit to — the coach should keep asking for something more specific before calling the tool."
+    criterion: "The thought partner calls the start_goal_sprint tool on this turn. The practice 'being more present in meetings' is too vague to commit to — the thought partner should keep asking for something more specific before calling the tool."
   - expect: true
-    criterion: "The coach asks a clarifying question that would surface a more specific, verb-first practice (e.g. 'what would being more present look like in your next meeting?' or 'what specifically would you be noticing yourself doing?')."
+    criterion: "The thought partner asks a clarifying question that would surface a more specific, verb-first practice (e.g. 'what would being more present look like in your next meeting?' or 'what specifically would you be noticing yourself doing?')."

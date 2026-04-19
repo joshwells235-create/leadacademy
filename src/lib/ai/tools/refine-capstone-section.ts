@@ -2,7 +2,7 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * `refine_capstone_section` — the coach proposes an updated version of one
+ * `refine_capstone_section` — the thought partner proposes an updated version of one
  * section of the learner's capstone outline. The learner approves before the
  * outline row is updated. Not for draft-level content; only call when the
  * section's shape is clear enough to be worth saving.

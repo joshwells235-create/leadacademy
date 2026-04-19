@@ -4,9 +4,9 @@ import { assembleLearnerContext } from "./assemble";
 import { formatLearnerContext } from "./format";
 
 /**
- * Assembles the learner's context for the coach and returns it as a
- * human-readable string for the system prompt. Runs every turn of every
- * chat so the coach always sees the full person.
+ * Assembles the learner's context for the thought partner and returns it
+ * as a human-readable string for the system prompt. Runs every turn of
+ * every chat so the thought partner always sees the full person.
  *
  * Prefer `assembleLearnerContext` directly when you need the structured
  * object (evals, proactive notifications, analytics).

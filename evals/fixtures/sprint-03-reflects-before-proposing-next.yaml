@@ -32,6 +32,6 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls the start_goal_sprint tool on this turn. Before proposing the next sprint, the coach should draw out what the learner noticed across the 9 actions logged — not rush to the next commitment."
+    criterion: "The thought partner calls the start_goal_sprint tool on this turn. Before proposing the next sprint, the thought partner should draw out what the learner noticed across the 9 actions logged — not rush to the next commitment."
   - expect: true
-    criterion: "The coach asks a reflective question about what the learner noticed, what stuck, or what surprised them during the sprint — rather than immediately framing the next one."
+    criterion: "The thought partner asks a reflective question about what the learner noticed, what stuck, or what surprised them during the sprint — rather than immediately framing the next one."

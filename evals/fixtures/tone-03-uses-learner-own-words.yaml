@@ -16,6 +16,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach's response uses the learner's phrase 'safety net' or directly engages with that metaphor, rather than substituting different language like 'enabling' or 'rescuing pattern'."
+    criterion: "The thought partner's response uses the learner's phrase 'safety net' or directly engages with that metaphor, rather than substituting different language like 'enabling' or 'rescuing pattern'."
   - expect: false
-    criterion: "The coach paraphrases the learner's goal into clinical or coaching jargon (e.g. 'codependent rescue pattern', 'enabler dynamic') without reflecting their own phrase 'safety net'."
+    criterion: "The thought partner paraphrases the learner's goal into clinical or coaching jargon (e.g. 'codependent rescue pattern', 'enabler dynamic') without reflecting their own phrase 'safety net'."

@@ -3,17 +3,17 @@ import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
 import type { Fixture, JudgedCriterion, RunnerOutput } from "./types";
 
-const JUDGE_SYSTEM = `You are grading the behavior of an AI leadership coach against a rubric. You will receive:
-1. The transcript of a conversation between a learner and their coach
-2. The coach's final response under test (assistant text + any tool calls)
-3. A list of rubric criteria — each is a statement about the coach's final response
+const JUDGE_SYSTEM = `You are grading the behavior of an AI leadership thought partner against a rubric. You will receive:
+1. The transcript of a conversation between a learner and their thought partner
+2. The thought partner's final response under test (assistant text + any tool calls)
+3. A list of rubric criteria — each is a statement about the thought partner's final response
 
-For each criterion, decide whether the statement is TRUE or FALSE of the coach's response. Use only what the coach actually said or did. Do not grade on what you wish the coach had said.
+For each criterion, decide whether the statement is TRUE or FALSE of the thought partner's response. Use only what the thought partner actually said or did. Do not grade on what you wish the thought partner had said.
 
 Rules:
 - If a criterion is about a specific tool being called, check the tool calls list. If the tool was called with appropriate input, the statement about that tool is TRUE.
-- If a criterion is about what the coach said, check the assistant text. Quote specifically in your reasoning.
-- Be strict. "Roughly references the goal" is FALSE if the goal is not named. "Tends toward language" is FALSE if the coach used "is" instead.
+- If a criterion is about what the thought partner said, check the assistant text. Quote specifically in your reasoning.
+- Be strict. "Roughly references the goal" is FALSE if the goal is not named. "Tends toward language" is FALSE if the thought partner used "is" instead.
 - Give one sentence of reasoning per criterion, citing specific evidence.`;
 
 const judgeResponseSchema = z.object({
@@ -23,7 +23,7 @@ const judgeResponseSchema = z.object({
       observed: z
         .boolean()
         .describe(
-          "Whether the statement IS true of the coach's response. Not whether it SHOULD be — purely what is observed.",
+          "Whether the statement IS true of the thought partner's response. Not whether it SHOULD be — purely what is observed.",
         ),
       reasoning: z.string().min(1).max(500),
     }),
@@ -40,7 +40,7 @@ export async function judgeFixture(
   output: RunnerOutput,
 ): Promise<JudgedCriterion[]> {
   const transcriptBlock = fixture.transcript
-    .map((m) => `${m.role === "user" ? "Learner" : "Coach"}: ${m.text}`)
+    .map((m) => `${m.role === "user" ? "Learner" : "Thought Partner"}: ${m.text}`)
     .join("\n\n");
 
   const toolCallsBlock =
@@ -58,7 +58,7 @@ export async function judgeFixture(
   const prompt = `## Conversation so far
 ${transcriptBlock}
 
-## Coach's final response under test
+## Thought Partner's final response under test
 Assistant text:
 """
 ${output.assistantText || "(no text produced)"}
@@ -70,7 +70,7 @@ ${toolCallsBlock}
 ## Rubric — evaluate each criterion
 ${criteriaBlock}
 
-Return one entry per criterion, in the same order. For each, state whether the statement is TRUE or FALSE of the coach's response and cite specific evidence.`;
+Return one entry per criterion, in the same order. For each, state whether the statement is TRUE or FALSE of the thought partner's response and cite specific evidence.`;
 
   const result = await generateObject({
     model: claude(MODELS.opus),

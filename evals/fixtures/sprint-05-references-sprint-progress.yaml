@@ -32,6 +32,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach's response references the current sprint's practice (the 'no rewriting' behavior) specifically, OR the sprint's action count of 7 — grounding the check-in in what's actually going on in the active sprint."
+    criterion: "The thought partner's response references the current sprint's practice (the 'no rewriting' behavior) specifically, OR the sprint's action count of 7 — grounding the check-in in what's actually going on in the active sprint."
   - expect: false
-    criterion: "The coach answers in generic terms without referencing the active sprint, action count, or specific practice — the context is right there in front of it."
+    criterion: "The thought partner answers in generic terms without referencing the active sprint, action count, or specific practice — the context is right there in front of it."

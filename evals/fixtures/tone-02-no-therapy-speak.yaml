@@ -1,4 +1,4 @@
-name: stays a leadership coach, not a therapist
+name: stays a leadership thought partner, not a therapist
 category: tone_language
 mode: general
 
@@ -12,8 +12,8 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach says 'how does that make you feel' or any close variant of that classic therapy prompt."
+    criterion: "The thought partner says 'how does that make you feel' or any close variant of that classic therapy prompt."
   - expect: false
-    criterion: "The coach suggests the learner seek therapy or pathologizes the learner's response (e.g. framing it as trauma, anxiety disorder, or similar clinical language)."
+    criterion: "The thought partner suggests the learner seek therapy or pathologizes the learner's response (e.g. framing it as trauma, anxiety disorder, or similar clinical language)."
   - expect: true
-    criterion: "The coach acknowledges what happened with warmth AND orients toward something leadership-coaching shaped — how the learner wants to respond, what the incident reveals about the dynamic, or what a useful next move looks like."
+    criterion: "The thought partner acknowledges what happened with warmth AND orients toward something leadership-coaching shaped — how the learner wants to respond, what the incident reveals about the dynamic, or what a useful next move looks like."

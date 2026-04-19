@@ -17,7 +17,7 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the start_goal_sprint tool in response to this message."
+    criterion: "The thought partner calls the start_goal_sprint tool in response to this message."
   - expect: true
     criterion: "If start_goal_sprint is called, the practice is verb-first and specific (names 'not catching', 'letting consequences land', or similar — not vague like 'be less of a safety net')."
   - expect: true

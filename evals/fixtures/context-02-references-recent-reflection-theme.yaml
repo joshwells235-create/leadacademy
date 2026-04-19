@@ -19,6 +19,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach connects this upcoming conversation to the learner's recent pattern of hedging or conflict avoidance visible in their reflections."
+    criterion: "The thought partner connects this upcoming conversation to the learner's recent pattern of hedging or conflict avoidance visible in their reflections."
   - expect: false
-    criterion: "The coach treats this as a first-time mention of difficult conversations, with no reference to the existing pattern in context."
+    criterion: "The thought partner treats this as a first-time mention of difficult conversations, with no reference to the existing pattern in context."

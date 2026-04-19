@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Build the learner context — it goes on every turn so the coach stays grounded.
+  // Build the learner context — it goes on every turn so the thought partner stays grounded.
   const learnerContext = await buildLearnerContext(supabase, user.id);
   const systemPrompt = [
     PERSONA,

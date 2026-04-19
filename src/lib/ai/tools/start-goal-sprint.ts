@@ -58,7 +58,7 @@ export function buildStartGoalSprintTool(
 ) {
   return tool({
     description:
-      "Propose starting a new sprint on one of the learner's goals. Use when the learner names a concrete behavior to practice over a specific near-term window. If the goal already has an active sprint, this closes it automatically — the transition is meant to happen inside the conversation where the coach and learner reflect on what the last sprint taught them and what's next. The learner confirms before the sprint is saved. Do NOT use this for the goal itself (that's finalize_goal). Do NOT use with a vague practice — if the learner hasn't named a specific behavior, keep asking first.",
+      "Propose starting a new sprint on one of the learner's goals. Use when the learner names a concrete behavior to practice over a specific near-term window. If the goal already has an active sprint, this closes it automatically — the transition is meant to happen inside the conversation where you and the learner reflect on what the last sprint taught them and what's next. The learner confirms before the sprint is saved. Do NOT use this for the goal itself (that's finalize_goal). Do NOT use with a vague practice — if the learner hasn't named a specific behavior, keep asking first.",
     inputSchema: startGoalSprintInputSchema,
     needsApproval: true,
     execute: handler,

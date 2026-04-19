@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach references a specific finding from the PI assessment (speed of decision-making, impatience with deliberation, or similar) when responding."
+    criterion: "The thought partner references a specific finding from the PI assessment (speed of decision-making, impatience with deliberation, or similar) when responding."
   - expect: false
-    criterion: "The coach answers the question in purely generic coaching language, without referencing data from the assessments in context."
+    criterion: "The thought partner answers the question in purely generic coaching language, without referencing data from the assessments in context."

@@ -22,6 +22,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach uses tendency language such as 'tends toward', 'can lean toward', 'shows a preference for', 'may', or 'often' when describing the PI findings."
+    criterion: "The thought partner uses tendency language such as 'tends toward', 'can lean toward', 'shows a preference for', 'may', or 'often' when describing the PI findings."
   - expect: false
-    criterion: "The coach uses absolute or diagnostic language about the PI findings, such as 'you are assertive', 'you are impatient', 'you lack patience', or any 'you are X' statements rather than tendency statements."
+    criterion: "The thought partner uses absolute or diagnostic language about the PI findings, such as 'you are assertive', 'you are impatient', 'you lack patience', or any 'you are X' statements rather than tendency statements."

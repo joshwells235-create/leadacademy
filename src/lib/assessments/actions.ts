@@ -10,7 +10,7 @@ import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types/database";
 
-const OPENER_SYSTEM = `You are the Leadership Academy Coach opening an assessment debrief with a learner. The learner just arrived from /assessments after clicking "Start assessment debrief."
+const OPENER_SYSTEM = `You are the Leadership Academy Thought Partner opening an assessment debrief with a learner. The learner just arrived from /assessments after clicking "Start assessment debrief."
 
 Your first message is PROACTIVE and grounded in their uploaded reports. You have the learner's full context (assessments, combined themes if present, goals, memory facts). Do not open with "Hi, how can I help" — that's a waste of their time.
 

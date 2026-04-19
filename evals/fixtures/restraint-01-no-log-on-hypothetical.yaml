@@ -21,4 +21,4 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls the log_action tool. No concrete action has been taken yet — only 'thinking maybe' and 'still mulling'."
+    criterion: "The thought partner calls the log_action tool. No concrete action has been taken yet — only 'thinking maybe' and 'still mulling'."

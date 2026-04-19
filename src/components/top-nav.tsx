@@ -39,7 +39,7 @@ export function TopNav({
           <NavLink href="/learning">Learning</NavLink>
           <NavLink href="/community">Community</NavLink>
           <NavLink href="/messages">Messages</NavLink>
-          <NavLink href="/coach-chat" accent>Coach</NavLink>
+          <NavLink href="/coach-chat" accent>Thought Partner</NavLink>
         </nav>
 
         {/* Right: bell + user (desktop) + hamburger (mobile) */}
@@ -78,7 +78,7 @@ export function TopNav({
           <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>Learning</MobileLink>
           <MobileLink href="/community" onClick={() => setMobileOpen(false)}>Community</MobileLink>
           <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>Messages</MobileLink>
-          <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>Coach</MobileLink>
+          <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>Thought Partner</MobileLink>
           <MobileLink href="/pre-session" onClick={() => setMobileOpen(false)}>Pre-session Prep</MobileLink>
           <div className="my-2 border-t border-white/10" />
           {(isOrgAdmin || superAdmin) && <MobileLink href="/admin/dashboard" onClick={() => setMobileOpen(false)}>Admin Portal</MobileLink>}

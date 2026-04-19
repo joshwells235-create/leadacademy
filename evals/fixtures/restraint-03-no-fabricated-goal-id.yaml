@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls log_action with a goal_id other than 77777777-7777-7777-7777-777777777777. Only that one goal exists; writing a mission statement doesn't clearly map to it, so goal_id should be omitted rather than invented."
+    criterion: "The thought partner calls log_action with a goal_id other than 77777777-7777-7777-7777-777777777777. Only that one goal exists; writing a mission statement doesn't clearly map to it, so goal_id should be omitted rather than invented."
   - expect: false
-    criterion: "The coach calls log_action with any goal_id that is not visible in the context (i.e. any id other than 77777777-7777-7777-7777-777777777777)."
+    criterion: "The thought partner calls log_action with any goal_id that is not visible in the context (i.e. any id other than 77777777-7777-7777-7777-777777777777)."

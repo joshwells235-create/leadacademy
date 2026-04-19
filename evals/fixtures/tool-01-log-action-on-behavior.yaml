@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the log_action tool with a description that captures what the learner did (letting the document go out without rewriting)."
+    criterion: "The thought partner calls the log_action tool with a description that captures what the learner did (letting the document go out without rewriting)."
   - expect: true
-    criterion: "If the coach calls log_action, the goal_id passed is 33333333-3333-3333-3333-333333333333 (the matching goal from context)."
+    criterion: "If the thought partner calls log_action, the goal_id passed is 33333333-3333-3333-3333-333333333333 (the matching goal from context)."

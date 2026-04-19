@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ReflectionForm } from "./reflection-form";
 import { DeleteReflectionButton } from "./delete-reflection-button";
+import { ReflectionForm } from "./reflection-form";
 export const metadata: Metadata = { title: "Reflections — Leadership Academy" };
 
 export default async function ReflectionsPage() {
@@ -46,8 +46,8 @@ export default async function ReflectionsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-navy">Reflection journal</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Write about what happened, what you noticed, what's sitting with you. The coach will
-          reflect back patterns and connections to your goals.
+          Write about what happened, what you noticed, what's sitting with you. Your thought partner
+          will reflect back patterns and connections to your goals.
         </p>
       </div>
 
@@ -79,7 +79,9 @@ export default async function ReflectionsPage() {
                         className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="whitespace-pre-wrap text-sm text-neutral-900 flex-1">{r.content}</p>
+                          <p className="whitespace-pre-wrap text-sm text-neutral-900 flex-1">
+                            {r.content}
+                          </p>
                           <DeleteReflectionButton id={r.id} />
                         </div>
                         {r.themes && r.themes.length > 0 && (
@@ -98,7 +100,9 @@ export default async function ReflectionsPage() {
                           typeof r.ai_insights === "object" &&
                           "summary" in (r.ai_insights as object) && (
                             <div className="mt-3 rounded border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-700">
-                              <div className="mb-1 font-medium text-neutral-500">Coach's take</div>
+                              <div className="mb-1 font-medium text-neutral-500">
+                                Thought partner's take
+                              </div>
                               {(r.ai_insights as { summary?: string }).summary}
                             </div>
                           )}
@@ -116,7 +120,7 @@ export default async function ReflectionsPage() {
             <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
               <h2 className="text-sm font-semibold">Recurring themes</h2>
               <p className="mt-1 text-xs text-neutral-500">
-                Patterns surfaced by the coach across your reflections.
+                Patterns surfaced by your thought partner across your reflections.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {topThemes.map(([theme, count]) => (
@@ -124,8 +128,7 @@ export default async function ReflectionsPage() {
                     key={theme}
                     className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-800"
                   >
-                    {theme}{" "}
-                    <span className="text-neutral-500">×{count}</span>
+                    {theme} <span className="text-neutral-500">×{count}</span>
                   </span>
                 ))}
               </div>
@@ -135,13 +138,13 @@ export default async function ReflectionsPage() {
           <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold">Talk it through</h2>
             <p className="mt-1 text-xs text-neutral-500">
-              Want the coach to help you process something?
+              Want your thought partner to help you process something?
             </p>
             <Link
               href="/coach-chat"
               className="mt-3 inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-sm text-white hover:bg-brand-blue-dark"
             >
-              Open coach chat
+              Open thought partner
             </Link>
           </div>
         </aside>

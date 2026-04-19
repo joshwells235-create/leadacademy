@@ -9,7 +9,9 @@ export function DeleteReflectionButton({ id }: { id: string }) {
     <button
       onClick={() => {
         if (!confirm("Delete this reflection?")) return;
-        start(async () => { await deleteReflection(id); });
+        start(async () => {
+          await deleteReflection(id);
+        });
       }}
       disabled={pending}
       className="text-xs text-neutral-400 hover:text-brand-pink transition disabled:opacity-50"

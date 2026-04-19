@@ -22,11 +22,11 @@ const distillSchema = z.object({
   ops: z.array(opSchema).max(MAX_OPS_PER_CONVERSATION),
 });
 
-const SYSTEM_PROMPT = `You extract DURABLE FACTS about a leadership-coaching learner from one of their coach conversations, so future conversations can pick up naturally.
+const SYSTEM_PROMPT = `You extract DURABLE FACTS about a leadership-development learner from one of their thought-partner conversations, so future conversations can pick up naturally.
 
 You will be given:
 1. The existing facts the system already knows about this learner (each with an id).
-2. One conversation transcript between the learner and their AI coach.
+2. One conversation transcript between the learner and their AI thought partner.
 
 Return up to 8 operations capturing what this conversation reveals that is worth remembering for months. Types:
 - preference — how they want to be coached, work, or communicate. "prefers written feedback", "learns by doing", "wants bluntness over hedging"
@@ -93,7 +93,8 @@ export async function distillConversation(args: {
     .map((m) => {
       const text = extractText(m.content);
       if (!text) return null;
-      const role = m.role === "user" ? "Learner" : m.role === "assistant" ? "Coach" : m.role;
+      const role =
+        m.role === "user" ? "Learner" : m.role === "assistant" ? "Thought Partner" : m.role;
       return `${role}: ${text}`;
     })
     .filter((x): x is string => !!x)

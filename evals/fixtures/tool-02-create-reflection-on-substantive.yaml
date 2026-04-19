@@ -13,6 +13,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the create_reflection tool with content that captures the learner's own observation about over-committing."
+    criterion: "The thought partner calls the create_reflection tool with content that captures the learner's own observation about over-committing."
   - expect: true
-    criterion: "If the coach calls create_reflection, the themes array includes at least one relevant theme like 'over-committing', 'people-pleasing', 'boundaries', or 'saying no'."
+    criterion: "If the thought partner calls create_reflection, the themes array includes at least one relevant theme like 'over-committing', 'people-pleasing', 'boundaries', or 'saying no'."

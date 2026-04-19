@@ -29,9 +29,9 @@ export function ProactivityToggle({ initialEnabled }: Props) {
         <div>
           <h2 className="text-sm font-semibold text-brand-navy">Proactive check-ins</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            Let your coach reach out when they notice something worth talking about — a quiet
-            stretch on a goal, a challenge that didn't get marked, momentum worth naming. Max 2
-            messages per week, never spammy.
+            Let your thought partner reach out when they notice something worth talking about — a
+            quiet stretch on a goal, a challenge that didn't get marked, momentum worth naming. Max
+            2 messages per week, never spammy.
           </p>
         </div>
         <button

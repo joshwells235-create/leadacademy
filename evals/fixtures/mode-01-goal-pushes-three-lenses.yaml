@@ -19,6 +19,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach pushes back — gently — on the 'team only' framing and asks what has to shift in the learner themselves, or in the organization, for this to actually land."
+    criterion: "The thought partner pushes back — gently — on the 'team only' framing and asks what has to shift in the learner themselves, or in the organization, for this to actually land."
   - expect: false
-    criterion: "The coach calls finalize_goal. The goal is not yet fully articulated across all three lenses (impact_self and impact_org are thin)."
+    criterion: "The thought partner calls finalize_goal. The goal is not yet fully articulated across all three lenses (impact_self and impact_org are thin)."

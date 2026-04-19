@@ -5,10 +5,10 @@ import { z } from "zod";
  * `set_daily_challenge` — Claude proposes a concrete, 1-day challenge the
  * learner will try today or tomorrow. Requires approval because it writes
  * (or overwrites) the learner's daily challenge. The `for_date` is
- * mandatory so the coach must be explicit about today vs tomorrow.
+ * mandatory so the thought partner must be explicit about today vs tomorrow.
  *
  * Table has a UNIQUE(user_id, for_date) constraint. The handler detects
- * collisions and either returns the existing row (so the coach can ask
+ * collisions and either returns the existing row (so the thought partner can ask
  * "replace your current one?") or upserts based on `replace_existing`.
  */
 export const setDailyChallengeInputSchema = z.object({

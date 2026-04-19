@@ -55,7 +55,7 @@ transcript:
 
       **Evidence.** 44 logged actions across the three sprints. Priya's decks going to exec without your edits.
 
-      **What's next.** The chapter where you're no longer the safety net — you're the coach.
+      **What's next.** The chapter where you're no longer the safety net — you're the one coaching others instead.
 
       Which beat do you want to work first? My instinct says Shift — the language there still feels a little clean.
   - role: user
@@ -63,7 +63,7 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach proposes a refined Shift section that captures the learner's point — that the shift wasn't a single clean reframe but a repeated re-entry into fear, held together by coaching."
+    criterion: "The thought partner proposes a refined Shift section that captures the learner's point — that the shift wasn't a single clean reframe but a repeated re-entry into fear, held together by coaching."
   - expect: true
     criterion: "If refine_capstone_section is called, kind='shift' and the body uses the learner's own framing ('kept getting scared again', 'stay in it', or similar) rather than generic leadership-book language."
   - expect: true
@@ -71,4 +71,4 @@ rubric:
   - expect: false
     criterion: "The response uses generic leadership-book phrasing like 'authentic leadership journey', 'servant leadership', or 'emotional intelligence growth'."
   - expect: false
-    criterion: "The coach calls start_goal_sprint, finalize_goal, update_goal_status, log_action, or set_daily_challenge (those tools don't belong in capstone mode)."
+    criterion: "The thought partner calls start_goal_sprint, finalize_goal, update_goal_status, log_action, or set_daily_challenge (those tools don't belong in capstone mode)."

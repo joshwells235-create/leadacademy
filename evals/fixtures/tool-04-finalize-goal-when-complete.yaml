@@ -31,6 +31,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the finalize_goal tool with a title, smart criteria, and non-empty impact_self, impact_others, and impact_org fields."
+    criterion: "The thought partner calls the finalize_goal tool with a title, smart criteria, and non-empty impact_self, impact_others, and impact_org fields."
   - expect: true
     criterion: "If finalize_goal is called, the target_date is 2026-08-31 (matching the learner's 'end of Q3, so August 31' statement)."

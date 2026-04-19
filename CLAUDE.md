@@ -8,10 +8,17 @@
 Internally called `leadacademy` (repo name, package name, folder) — treat this as a dev shorthand only.
 Never surface "LeadAcademy" in user-visible strings.
 
-Combines a deeply-context-aware AI coach (Claude) with structured learning (courses/modules/lessons),
-assessment ingestion (PI, EQ-i, 360), integrative goal-setting with sprints, reflections, daily
-challenges, community, messaging, long-term memory, proactive coaching, and coach/admin portals —
-all in one multi-tenant app.
+Combines a deeply-context-aware AI **thought partner** (Claude) with structured learning
+(courses/modules/lessons), assessment ingestion (PI, EQ-i, 360), integrative goal-setting with
+sprints, reflections, daily challenges, community, messaging, long-term memory, proactive
+check-ins, and coach/admin/consultant portals — all in one multi-tenant app.
+
+**Naming — important.** User-facing, the AI chatbot is **"Thought Partner"**. The word "coach" in
+the UI refers to the learner's human **executive coach**. Internally many routes (`/coach-chat`),
+DB tables (`coach_nudges`, `coach_notes`, `coach_assignments`), and helpers (`is_coach_of`) still
+say "coach" — those pre-date the rename and refer to either the AI chat surface or the human coach
+role; don't rename code without a reason. When writing new user-visible strings, always say
+"thought partner" for the AI and "coach" only for the human role.
 
 **Live:** https://leadacademy.vercel.app
 **Repo:** https://github.com/joshwells235-create/leadacademy
@@ -44,7 +51,7 @@ all in one multi-tenant app.
 Colors defined as Tailwind theme tokens in `src/app/globals.css`:
 - `brand-navy: #101d51` — nav background, primary headings, body text
 - `brand-light: #f3f3f3` — page backgrounds
-- `brand-pink: #EA0C67` — accent, destructive actions, Coach link
+- `brand-pink: #EA0C67` — accent, destructive actions, Thought Partner nav link
 - `brand-blue: #007efa` — CTAs, buttons, links, focus rings
 - `brand-blue-dark: #0066cc` — button hover states
 
@@ -67,15 +74,15 @@ Logo: `public/leadshift-logo.svg` (full wordmark), `public/icon.svg` (icon mark 
 - **Three lenses, not three silos.** Goals are integrative — `impact_self`, `impact_others`, `impact_org` are all NOT NULL. `primary_lens` is optional metadata about where the learner started, not a silo.
 - **Goals are program-long; sprints make them practicable.** A goal like "stop being the safety net" is the long aspiration. Sprints (`goal_sprints`) are 4-8 week practice windows with a specific behavior and a visible action count — that's what makes progress feelable. A goal has many sprints, at most one active.
 - **LeadShift creates all content.** Courses/modules/lessons/resources have no `org_id` — they're global catalog. Assigned to cohorts via `cohort_courses`.
-- **Unified AI coach** with swappable modes (`general`, `goal`, `reflection`, `assessment`). Prompts in `src/lib/ai/prompts/`.
+- **Unified AI thought partner** with swappable modes (`general`, `goal`, `reflection`, `assessment`, `capstone`). Prompts in `src/lib/ai/prompts/`.
 - **Invite-only signup.** No public registration. Org admins send invite tokens.
 - **Models:** Sonnet 4.6 for chat + synthesis; Opus 4.6 for heavy judgment (eval judge); Haiku 4.5 for cheap labeling (conversation titles).
-- **Assessments are tendencies, not diagnoses.** PI findings are rendered with "tends toward" language, not "is X". EQ-i and 360 use direct language. Participants no longer see raw extraction on `/assessments` — they see a "Ready" state and debrief with the coach.
-- **Proactive coaching is opt-in-by-default but learner-controllable.** The coach can reach out with up to 2 messages/week (global cap) + 14-day per-pattern cooldown. Opt-out toggle at `/memory`.
+- **Assessments are tendencies, not diagnoses.** PI findings are rendered with "tends toward" language, not "is X". EQ-i and 360 use direct language. Participants no longer see raw extraction on `/assessments` — they see a "Ready" state and debrief with the thought partner.
+- **Proactive check-ins are opt-in-by-default but learner-controllable.** The thought partner can reach out with up to 2 messages/week (global cap) + 14-day per-pattern cooldown. Opt-out toggle at `/memory`.
 
-## The coach product (the core)
+## The thought-partner product (the core)
 
-Everything below is the AI coaching loop. Most production value lives here.
+Everything below is the AI thought-partner loop. Most production value lives here.
 
 ### Context assembled on every chat turn (`src/lib/ai/context/`)
 
@@ -99,9 +106,9 @@ One canonical learner context is built on every turn from the real DB — shared
 - Rename, delete, and per-conversation mode stickiness
 - Tool-part replay works for resumed transcripts (approval pills on old turns render as "no longer actionable")
 
-### Tools the coach can call (`src/lib/ai/tools/`)
+### Tools the thought partner can call (`src/lib/ai/tools/`)
 
-Coach doesn't just talk — it acts. Registered in the chat route.
+The thought partner doesn't just talk — it acts. Registered in the chat route.
 
 | Tool | Needs approval | What it does |
 |---|---|---|
@@ -136,7 +143,7 @@ Tool renderers live in `src/components/chat/tool-renderers/` with a registry-bas
 ### Assessment debrief
 
 - `/assessments` no longer shows rendered per-report summaries — just a "Ready" state once processed
-- "Debrief with coach" button calls `startAssessmentDebrief` server action which creates a conversation with a proactive Sonnet-generated opener grounded in the learner's full context (including combined themes)
+- "Debrief with thought partner" button calls `startAssessmentDebrief` server action which creates a conversation with a proactive Sonnet-generated opener grounded in the learner's full context (including combined themes)
 - Extraction prompt is per-type: PI forbids absolute language (requires "tends toward...", "can lean toward..."); EQ-i and 360 keep direct language
 - Combined-themes synthesis runs on rollup when ≥2 reports are ready, stored as `assessments.ai_summary._combined_themes`
 
@@ -174,13 +181,13 @@ Key cross-references:
 - `/goals`, `/goals/[id]` — goal detail with **sprint section** (active + history + start), SMART criteria, three-lens impacts, action log
 - `/action-log` — logged actions grouped by day + form (stamps sprint_id)
 - `/reflections` — journal with AI theme tagging + delete
-- `/assessments` — upload PI/EQ-i/360 PDFs; "Debrief with coach" seeds proactive conversation
+- `/assessments` — upload PI/EQ-i/360 PDFs; "Debrief with thought partner" seeds proactive conversation
 - `/learning`, `/learning/[courseId]`, `/learning/[courseId]/[lessonId]` — course progress + lesson viewer
 - `/coach-chat` — streaming Claude, auto-resumes ≤30d, sidebar
 - `/coach-chat/new` — explicit new conversation
 - `/coach-chat?c=<id>` — resume specific
 - `/coach-chat/from-nudge/[id]` — click handler for proactive nudges; generates opener + redirects
-- `/memory` — what the coach remembers + proactivity toggle
+- `/memory` — what the thought partner remembers + proactivity toggle
 - `/community` — two-tab feed (cohort + alumni)
 - `/resources` — filterable card grid
 - `/messages`, `/messages/[threadId]` — real-time DM with Supabase Realtime
@@ -268,5 +275,5 @@ Near-term candidates:
 
 Later / bigger:
 - Semantic search over memory facts (pgvector) — if the top-N approach starts missing relevance
-- Voice + multi-modal in coach chat (PWA polish, browser speech API, image upload)
+- Voice + multi-modal in thought-partner chat (PWA polish, browser speech API, image upload)
 - Coach/admin rollup views for sprint progress + goal arcs across a cohort

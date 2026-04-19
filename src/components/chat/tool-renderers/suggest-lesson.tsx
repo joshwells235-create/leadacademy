@@ -30,7 +30,7 @@ export function SuggestLessonRenderer({ part }: ToolRendererProps) {
 
   const lessons = "lessons" in output ? (output.lessons ?? []) : [];
   if (lessons.length === 0) {
-    return null; // coach will acknowledge in text; no card needed
+    return null; // thought partner will acknowledge in text; no card needed
   }
 
   return (

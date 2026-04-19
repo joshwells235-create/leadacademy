@@ -20,7 +20,7 @@ const PATTERN_GUIDANCE: Record<NudgePattern, string> = {
 };
 
 /**
- * Generate a proactive opening message for a coach-chat conversation,
+ * Generate a proactive opening message for a thought-partner conversation,
  * grounded in the learner's full context plus pattern-specific guidance.
  * Used when the learner clicks a nudge notification.
  */
@@ -43,8 +43,8 @@ ${JSON.stringify(patternData, null, 2)}`;
   const systemPrompt = [
     PERSONA,
     "",
-    "## You are opening a proactive coach message",
-    "The learner did not prompt this conversation — you reached out to them based on a pattern you noticed. Your first message should feel like a thoughtful coach checking in, not a system notification.",
+    "## You are opening a proactive message",
+    "The learner did not prompt this conversation — you reached out to them based on a pattern you noticed. Your first message should feel like a thoughtful thought partner checking in, not a system notification.",
     "",
     "Rules for this opener:",
     "- 2-4 short sentences. One short paragraph.",
@@ -52,7 +52,7 @@ ${JSON.stringify(patternData, null, 2)}`;
     "- End with ONE question that invites them in, or ONE concrete offer (e.g. 'want to log something quickly' / 'want to open the first lesson together').",
     "- Do not say 'I noticed' more than once.",
     "- Do not apologize for reaching out.",
-    "- Do not reference that a 'system' or 'detector' flagged anything — you're a coach, not a tool.",
+    "- Do not reference that a 'system' or 'detector' flagged anything — you're a thought partner, not a tool.",
     "",
     patternBlock,
     "",

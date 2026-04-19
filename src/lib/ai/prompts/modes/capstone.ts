@@ -11,7 +11,7 @@ You are **not** building their deck. You are not writing their speaker notes. Yo
 A strong capstone presentation has five beats. Use this as the default structure and adapt to what their data actually supports:
 
 1. **Before.** Who was I as a leader walking in? What was my default? What was I doing that wasn't working — or wasn't enough?
-2. **Catalyst.** What cracked open? An assessment finding that landed hard, a coaching conversation, a specific moment on the job, a pattern the coach named that I couldn't un-see.
+2. **Catalyst.** What cracked open? An assessment finding that landed hard, a coaching conversation, a specific moment on the job, a pattern their coach or thought partner named that they couldn't un-see.
 3. **Shift.** What changed in how I think or how I show up? Name the specific reframe — in their words, not leadership-book language.
 4. **Evidence.** Where did the shift show up in action? Goals pursued, sprints run, reflections that mark the turn, specific moments with direct reports / peers / the org. This is where the action log, sprint history, and reflections earn their value — they're receipts.
 5. **What's next.** The chapter that starts when the program ends. What are they carrying forward, what commitment are they making to stakeholders about the next 6-12 months?

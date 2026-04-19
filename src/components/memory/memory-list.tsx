@@ -31,15 +31,15 @@ export function MemoryList({ initialFacts }: Props) {
             onClick={() => setAdding(true)}
             className="rounded-md border border-brand-blue bg-white px-3 py-1.5 text-sm font-medium text-brand-blue hover:bg-brand-blue/5"
           >
-            + Tell your coach something to remember
+            + Tell your thought partner something to remember
           </button>
         )}
       </div>
 
       {initialFacts.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center text-sm text-neutral-500">
-          Nothing remembered yet. As you talk with your coach, things worth remembering long-term
-          will land here.
+          Nothing remembered yet. As you talk with your thought partner, things worth remembering
+          long-term will land here.
         </div>
       ) : (
         <div className="space-y-6">
@@ -84,7 +84,7 @@ function FactRow({ fact }: { fact: MemoryFact }) {
   }
 
   const handleDelete = () => {
-    if (!confirm("Delete this memory? Your coach won't see it again.")) return;
+    if (!confirm("Delete this memory? Your thought partner won't see it again.")) return;
     start(async () => {
       const res = await deleteMemoryFact(fact.id);
       if ("error" in res && res.error) {
@@ -252,8 +252,8 @@ function AddFactForm({ onDone }: { onDone: () => void }) {
       className="space-y-2 rounded-lg border border-brand-blue bg-white p-4"
     >
       <p className="text-xs text-neutral-600">
-        Tell your coach something durable to remember. Write in third person (e.g. "The learner
-        prefers written feedback over verbal").
+        Tell your thought partner something durable to remember. Write in third person (e.g. "The
+        learner prefers written feedback over verbal").
       </p>
       <textarea
         value={content}

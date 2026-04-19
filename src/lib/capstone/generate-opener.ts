@@ -11,7 +11,7 @@ import type { Database } from "@/lib/types/database";
  * Generates the opening message for a capstone conversation — a first-pass
  * story-arc draft grounded in the learner's full 9-month data (goals,
  * sprints, reflections, action logs, assessment findings). The learner
- * reacts and the coach refines one section at a time via refine_capstone_section.
+ * reacts and the thought partner refines one section at a time via refine_capstone_section.
  *
  * This is NOT the final outline; it's the starting point the conversation
  * shapes. We lean on Sonnet because capstone synthesis wants depth and

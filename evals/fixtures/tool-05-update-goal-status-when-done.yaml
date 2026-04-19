@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the update_goal_status tool with goal_id=55555555-5555-5555-5555-555555555555 and status='completed'."
+    criterion: "The thought partner calls the update_goal_status tool with goal_id=55555555-5555-5555-5555-555555555555 and status='completed'."
   - expect: true
     criterion: "If update_goal_status is called, the rationale names that the behavior has become automatic / integrated."

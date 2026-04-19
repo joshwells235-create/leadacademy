@@ -31,28 +31,38 @@ export default async function GoalsPage() {
           <h1 className="text-2xl font-bold text-brand-navy">Growth goals</h1>
           <p className="mt-1 text-sm text-neutral-600">
             Every goal here is integrative — it changes you, the people around you, and the work at
-            the organizational level. Click any goal to refine it, or start a new one with the coach.
+            the organizational level. Click any goal to refine it, or start a new one with your
+            thought partner.
           </p>
         </div>
         <Link
           href="/coach-chat?mode=goal"
           className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
         >
-          + Draft with coach
+          + Draft with thought partner
         </Link>
       </div>
 
       <div className="mb-6 flex gap-2 text-sm">
         <span className="text-neutral-500">Start from a lens:</span>
-        <Link href="/coach-chat?mode=goal&lens=self" className="text-brand-blue underline hover:text-brand-blue">
+        <Link
+          href="/coach-chat?mode=goal&lens=self"
+          className="text-brand-blue underline hover:text-brand-blue"
+        >
           Self
         </Link>
         <span className="text-neutral-300">·</span>
-        <Link href="/coach-chat?mode=goal&lens=others" className="text-brand-blue underline hover:text-brand-blue">
+        <Link
+          href="/coach-chat?mode=goal&lens=others"
+          className="text-brand-blue underline hover:text-brand-blue"
+        >
           Others
         </Link>
         <span className="text-neutral-300">·</span>
-        <Link href="/coach-chat?mode=goal&lens=org" className="text-brand-blue underline hover:text-brand-blue">
+        <Link
+          href="/coach-chat?mode=goal&lens=org"
+          className="text-brand-blue underline hover:text-brand-blue"
+        >
           Organization
         </Link>
       </div>
@@ -61,7 +71,7 @@ export default async function GoalsPage() {
         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
           No goals yet.{" "}
           <Link href="/coach-chat?mode=goal" className="text-brand-blue underline">
-            Draft your first one with the coach
+            Draft your first one with your thought partner
           </Link>
           .
         </div>
@@ -111,15 +121,21 @@ export default async function GoalsPage() {
 
                   <div className="mt-4 grid gap-2 border-t border-neutral-100 pt-3 text-xs text-neutral-600 md:grid-cols-3">
                     <div>
-                      <div className="font-medium uppercase tracking-wide text-neutral-500">Self</div>
+                      <div className="font-medium uppercase tracking-wide text-neutral-500">
+                        Self
+                      </div>
                       <p className="mt-0.5 line-clamp-2">{g.impact_self}</p>
                     </div>
                     <div>
-                      <div className="font-medium uppercase tracking-wide text-neutral-500">Others</div>
+                      <div className="font-medium uppercase tracking-wide text-neutral-500">
+                        Others
+                      </div>
                       <p className="mt-0.5 line-clamp-2">{g.impact_others}</p>
                     </div>
                     <div>
-                      <div className="font-medium uppercase tracking-wide text-neutral-500">Org</div>
+                      <div className="font-medium uppercase tracking-wide text-neutral-500">
+                        Org
+                      </div>
                       <p className="mt-0.5 line-clamp-2">{g.impact_org}</p>
                     </div>
                   </div>

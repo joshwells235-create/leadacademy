@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
             },
             {
               type: "text",
-              text: `You are extracting findings from a ${TYPE_LABELS[assessmentType]} report for a participant in a leadership development program. The output will be given to an AI coach (not the participant) to ground future coaching conversations.
+              text: `You are extracting findings from a ${TYPE_LABELS[assessmentType]} report for a participant in a leadership development program. The output will be given to an AI thought partner (not the participant) to ground future coaching conversations.
 
 ${EXTRACTION_GUIDANCE[assessmentType]}
 
@@ -199,7 +199,7 @@ Return ONLY valid JSON, no markdown fences.`,
     }
 
     // Synthesize integrated themes when 2+ reports are ready. These help the
-    // coach see the person across the reports rather than in isolated silos.
+    // thought partner see the person across the reports rather than in isolated silos.
     if ((allDocs ?? []).length >= 2) {
       try {
         const combinedThemes = await synthesizeCombinedThemes(anthropic, rolledUp);

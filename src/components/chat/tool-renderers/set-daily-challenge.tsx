@@ -32,7 +32,7 @@ export function SetDailyChallengeRenderer({
       );
     }
     if ("collision" in output && output.collision) {
-      // Coach will handle in follow-up text; don't show a confusing card.
+      // Thought partner will handle in follow-up text; don't show a confusing card.
       return null;
     }
     if ("id" in output && output.id) {

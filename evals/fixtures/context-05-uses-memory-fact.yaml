@@ -23,6 +23,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach's response acknowledges either the tense history with Derek OR the learner's preference for processing by writing (e.g. offering to help them draft it in writing first)."
+    criterion: "The thought partner's response acknowledges either the tense history with Derek OR the learner's preference for processing by writing (e.g. offering to help them draft it in writing first)."
   - expect: false
-    criterion: "The coach asks 'who is Derek?' or 'how do you like to prepare for feedback?' when both are already captured in the memory facts."
+    criterion: "The thought partner asks 'who is Derek?' or 'how do you like to prepare for feedback?' when both are already captured in the memory facts."

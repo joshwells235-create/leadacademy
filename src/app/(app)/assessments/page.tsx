@@ -46,8 +46,8 @@ export default async function AssessmentsPage() {
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Assessments</h1>
           <p className="mt-1 text-sm text-neutral-600">
-            Upload your PI, EQ-i, and 360 reports. The coach will extract key findings and use them
-            to ground your coaching conversations.
+            Upload your PI, EQ-i, and 360 reports. Your thought partner will extract key findings
+            and use them to ground your conversations.
           </p>
         </div>
         {readyCount > 0 && (
@@ -56,7 +56,7 @@ export default async function AssessmentsPage() {
               type="submit"
               className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
             >
-              Debrief with coach
+              Debrief with thought partner
             </button>
           </form>
         )}
@@ -92,8 +92,8 @@ export default async function AssessmentsPage() {
 
               {doc?.status === "ready" ? (
                 <p className="mt-3 text-sm text-neutral-600">
-                  Ready. The coach has your findings — start the debrief below to walk through them
-                  together.
+                  Ready. Your thought partner has your findings — start the debrief below to walk
+                  through them together.
                 </p>
               ) : doc?.status === "error" ? (
                 <div className="mt-3 text-sm text-red-700">
@@ -113,8 +113,9 @@ export default async function AssessmentsPage() {
         <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold">Ready to debrief</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            {readyCount === 1 ? "1 assessment" : `${readyCount} assessments`} processed. The coach
-            can walk you through the key findings and help you connect them to your goals.
+            {readyCount === 1 ? "1 assessment" : `${readyCount} assessments`} processed. Your
+            thought partner can walk you through the key findings and help you connect them to your
+            goals.
           </p>
           <form action={startAssessmentDebrief} className="mt-3">
             <button

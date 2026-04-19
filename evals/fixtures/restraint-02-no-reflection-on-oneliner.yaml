@@ -12,4 +12,4 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls the create_reflection tool. The input is too thin to capture — just a throwaway comment with no substance to save."
+    criterion: "The thought partner calls the create_reflection tool. The input is too thin to capture — just a throwaway comment with no substance to save."

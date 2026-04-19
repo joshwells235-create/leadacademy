@@ -13,6 +13,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach mirrors or names what the learner said, then asks one question that deepens the observation — rather than handing them advice on how to speak up more."
+    criterion: "The thought partner mirrors or names what the learner said, then asks one question that deepens the observation — rather than handing them advice on how to speak up more."
   - expect: false
-    criterion: "The coach's response prescribes a concrete action plan (e.g. 'try this in your next meeting', 'here are three strategies for speaking up', 'pick one meeting this week to...') before the learner has had more space to sit with the observation."
+    criterion: "The thought partner's response prescribes a concrete action plan (e.g. 'try this in your next meeting', 'here are three strategies for speaking up', 'pick one meeting this week to...') before the learner has had more space to sit with the observation."

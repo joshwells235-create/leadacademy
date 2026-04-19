@@ -42,7 +42,7 @@ function formatMemory(ctx: LearnerContext): string {
     list.push(f);
     grouped.set(f.type, list);
   }
-  const parts: string[] = ["What the coach remembers about this learner (long-term memory):"];
+  const parts: string[] = ["What you remember about this learner (long-term memory):"];
   const ORDER: MemoryType[] = [
     "commitment",
     "pattern",
@@ -98,7 +98,7 @@ function formatAssessments(ctx: LearnerContext): string {
     if (summary.summary) parts.push(`  Summary: ${summary.summary}`);
     if (kind === "pi") {
       // PI results describe preferences, not fixed traits. Frame accordingly
-      // so the coach doesn't treat the lists as diagnostic labels.
+      // so the thought partner doesn't treat the lists as diagnostic labels.
       if (summary.key_strengths?.length) {
         parts.push(`  Natural tendencies: ${summary.key_strengths.join(", ")}`);
       }

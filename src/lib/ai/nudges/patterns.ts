@@ -115,7 +115,7 @@ export const detectChallengeFollowup: Detector = async ({ supabase, userId, now 
     pattern: "challenge_followup",
     targetId: data.id,
     title: "How did your challenge land?",
-    body: `"${truncate(data.challenge, 140)}" — whether it happened or not, your coach wants to hear how it went.`,
+    body: `"${truncate(data.challenge, 140)}" — whether it happened or not, your thought partner wants to hear how it went.`,
     patternData: {
       challenge_id: data.id,
       challenge_text: data.challenge,
@@ -162,7 +162,7 @@ export const detectUndebriefedAssessment: Detector = async ({ supabase, userId, 
     pattern: "undebriefed_assessment",
     targetId: assessment.id,
     title: "Your assessments are waiting to be unpacked",
-    body: "You uploaded a report a while back but haven't walked through it with your coach yet. Worth 15 minutes.",
+    body: "You uploaded a report a while back but haven't walked through it with your thought partner yet. Worth 15 minutes.",
     patternData: { assessment_id: assessment.id },
   };
 };

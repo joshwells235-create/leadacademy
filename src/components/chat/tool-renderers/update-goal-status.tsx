@@ -51,7 +51,7 @@ export function UpdateGoalStatusRenderer({ part, isLatestMessage, onApproval }: 
         onApproval={onApproval}
         body={
           <p className="text-xs">
-            {input.rationale ?? "The coach proposes updating this goal's status."}
+            {input.rationale ?? "Your thought partner proposes updating this goal's status."}
           </p>
         }
       />

@@ -21,6 +21,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls the set_daily_challenge tool with a challenge that captures opening the 1:1 with the direct, unhedged sentence."
+    criterion: "The thought partner calls the set_daily_challenge tool with a challenge that captures opening the 1:1 with the direct, unhedged sentence."
   - expect: true
     criterion: "If set_daily_challenge is called, the for_date is set to 'tomorrow' (the learner said 'tomorrow')."

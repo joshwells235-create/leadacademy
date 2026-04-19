@@ -22,6 +22,6 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach's response references the delegation goal by name OR references Maria specifically."
+    criterion: "The thought partner's response references the delegation goal by name OR references Maria specifically."
   - expect: false
-    criterion: "The coach asks a clarifying question about who Maria is or what the 'Maria thing' refers to."
+    criterion: "The thought partner asks a clarifying question about who Maria is or what the 'Maria thing' refers to."

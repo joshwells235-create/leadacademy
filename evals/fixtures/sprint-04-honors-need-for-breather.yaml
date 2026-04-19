@@ -28,6 +28,6 @@ transcript:
 
 rubric:
   - expect: false
-    criterion: "The coach calls the start_goal_sprint tool on this turn. The learner explicitly said they want a breather — the coach should honor that."
+    criterion: "The thought partner calls the start_goal_sprint tool on this turn. The learner explicitly said they want a breather — the thought partner should honor that."
   - expect: true
-    criterion: "The coach acknowledges and honors the need for a pause without pushing for the next sprint right now."
+    criterion: "The thought partner acknowledges and honors the need for a pause without pushing for the next sprint right now."

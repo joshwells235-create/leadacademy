@@ -182,7 +182,7 @@ function buildEvalTools() {
 /**
  * Run a single fixture against the real persona + mode prompts, capturing
  * the assistant text and any tool calls. Mirrors the production chat
- * route's configuration so eval results reflect real coach behavior.
+ * route's configuration so eval results reflect real thought partner behavior.
  */
 export async function runFixture(fixture: Fixture): Promise<RunnerOutput> {
   const systemPrompt = buildSystemPrompt(fixture);

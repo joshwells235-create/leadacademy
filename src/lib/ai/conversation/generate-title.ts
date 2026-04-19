@@ -1,7 +1,7 @@
 import { generateText } from "ai";
 import { claude, MODELS } from "@/lib/ai/client";
 
-const SYSTEM_PROMPT = `You name coaching conversations with a short, specific label.
+const SYSTEM_PROMPT = `You name thought-partner conversations with a short, specific label.
 
 Rules:
 - 2-6 words, Title Case, no trailing punctuation.
@@ -24,7 +24,7 @@ export async function generateConversationTitle(args: {
   const prompt = `Learner said:
 ${args.userMessage.slice(0, 2000)}
 
-Coach replied:
+Thought partner replied:
 ${args.assistantMessage.slice(0, 2000)}
 
 Generate the title.`;

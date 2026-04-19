@@ -7,7 +7,7 @@ import { listConversations } from "@/lib/ai/conversation/list-conversations";
 import { loadConversation } from "@/lib/ai/conversation/load-conversation";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "Coach — Leadership Academy" };
+export const metadata: Metadata = { title: "Thought Partner — Leadership Academy" };
 
 const AUTO_RESUME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -86,16 +86,19 @@ export default async function CoachChatPage({ searchParams }: Props) {
             <p className="mt-1 text-sm text-neutral-600">
               {activeMode === "goal" ? (
                 <>
-                  Every goal in Leadership Academy has to land across all three lenses — how it changes{" "}
-                  <em>you</em>, the people <em>around</em> you, and the <em>organization</em>. The
-                  coach will help you get there.
+                  Every goal in Leadership Academy has to land across all three lenses — how it
+                  changes <em>you</em>, the people <em>around</em> you, and the{" "}
+                  <em>organization</em>. Your thought partner will help you get there.
                 </>
               ) : target ? (
-                <>Continuing your conversation — the coach remembers where you left off.</>
+                <>
+                  Continuing your conversation — your thought partner remembers where you left off.
+                </>
               ) : (
                 <>
                   Talk through anything — a situation at work, something you're noticing, a
-                  half-formed goal. The coach knows your active goals and recent reflections.
+                  half-formed goal. Your thought partner knows your active goals and recent
+                  reflections.
                 </>
               )}
             </p>
@@ -110,7 +113,7 @@ export default async function CoachChatPage({ searchParams }: Props) {
             emptyHint={
               activeMode === "goal" ? (
                 <p>
-                  Start by telling the coach what you want to grow in
+                  Start by telling your thought partner what you want to grow in
                   {lensLabel ? ` — starting from ${lensLabel.toLowerCase()} is fine` : ""}. They'll
                   help you see how it lights up the other two lenses too.
                 </p>
@@ -151,8 +154,8 @@ function headingFor(mode: Mode, lensLabel: string | null, title: string | null):
   if (mode === "goal") {
     return lensLabel ? `Draft a goal — starting from ${lensLabel}` : "Draft a goal";
   }
-  if (mode === "reflection") return "Reflect with your coach";
+  if (mode === "reflection") return "Reflect with your thought partner";
   if (mode === "assessment") return "Debrief your assessment";
   if (mode === "capstone") return "Shape your capstone story";
-  return "Coach";
+  return "Thought Partner";
 }

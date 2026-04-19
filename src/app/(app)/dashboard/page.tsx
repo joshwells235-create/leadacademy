@@ -155,8 +155,8 @@ export default async function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <StepCard
               number="1"
-              title="Talk to the coach"
-              description="Your AI coach is ready. Tell it what you're working on as a leader."
+              title="Talk to your thought partner"
+              description="Your AI thought partner is ready. Tell it what you're working on as a leader."
               href="/coach-chat"
               cta="Start a conversation"
               done={!!convRes.data}
@@ -172,7 +172,7 @@ export default async function DashboardPage() {
             <StepCard
               number="3"
               title="Upload your assessments"
-              description="PI, EQ-i, and 360 reports ground the coaching in your real data."
+              description="PI, EQ-i, and 360 reports ground your thought partner in your real data."
               href="/assessments"
               cta="Upload assessments"
               done={assessmentsReady > 0}
@@ -181,7 +181,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── Proactive message from the coach (when a nudge has fired) ── */}
+      {/* ── Proactive message from the thought partner (when a nudge has fired) ── */}
       {!isFirstTime && nudgeForCard && <CoachNudgeCard nudge={nudgeForCard} />}
 
       {/* ── SECTION 1: What to do today (only after first time) ── */}
@@ -205,11 +205,13 @@ export default async function DashboardPage() {
             ) : (
               <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-brand-navy">Talk to the coach</h3>
+                  <h3 className="text-sm font-bold text-brand-navy">
+                    Talk to your thought partner
+                  </h3>
                   <p className="mt-1 text-sm text-neutral-600">
                     {convRes.data
                       ? `Last session ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}.`
-                      : "Your AI coach knows your goals, reflections, and assessments."}{" "}
+                      : "Your thought partner knows your goals, reflections, and assessments."}{" "}
                     Ask anything.
                   </p>
                 </div>
@@ -217,7 +219,7 @@ export default async function DashboardPage() {
                   href="/coach-chat"
                   className="mt-3 self-start rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition"
                 >
-                  Open coach →
+                  Open thought partner →
                 </Link>
               </div>
             )}
@@ -230,14 +232,14 @@ export default async function DashboardPage() {
         <div className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-bold text-brand-navy">Set your first growth goal</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            Chat with the coach to draft an integrative SMART goal — one that changes you, the
-            people around you, and the work at the organizational level.
+            Chat with your thought partner to draft an integrative SMART goal — one that changes
+            you, the people around you, and the work at the organizational level.
           </p>
           <Link
             href="/coach-chat?mode=goal"
             className="mt-4 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition"
           >
-            Draft a goal with the coach →
+            Draft a goal with your thought partner →
           </Link>
         </div>
       ) : (

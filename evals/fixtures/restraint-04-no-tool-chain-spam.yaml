@@ -21,8 +21,8 @@ transcript:
 
 rubric:
   - expect: true
-    criterion: "The coach calls log_action for the feedback moment with Theo."
+    criterion: "The thought partner calls log_action for the feedback moment with Theo."
   - expect: false
-    criterion: "The coach calls create_reflection in the same turn. This single reported event doesn't warrant both a log and a saved journal entry — one strong tool beats two shallow ones."
+    criterion: "The thought partner calls create_reflection in the same turn. This single reported event doesn't warrant both a log and a saved journal entry — one strong tool beats two shallow ones."
   - expect: false
-    criterion: "The coach calls three or more write-oriented tools (log_action, create_reflection, set_daily_challenge, finalize_goal, set_goal_focus, update_goal_status) in a single response."
+    criterion: "The thought partner calls three or more write-oriented tools (log_action, create_reflection, set_daily_challenge, finalize_goal, set_goal_focus, update_goal_status) in a single response."

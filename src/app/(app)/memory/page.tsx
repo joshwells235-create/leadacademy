@@ -5,7 +5,9 @@ import { ProactivityToggle } from "@/components/memory/proactivity-toggle";
 import { listMemoryFacts } from "@/lib/ai/memory/list-facts";
 import { createClient } from "@/lib/supabase/server";
 
-export const metadata: Metadata = { title: "What your coach remembers — Leadership Academy" };
+export const metadata: Metadata = {
+  title: "What your thought partner remembers — Leadership Academy",
+};
 
 export default async function MemoryPage() {
   const supabase = await createClient();
@@ -24,11 +26,12 @@ export default async function MemoryPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">What your coach remembers</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">What your thought partner remembers</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          These are durable things your coach has noticed about you, distilled from your
-          conversations over time. The coach sees the most recent of these on every turn. Edit or
-          delete anything that isn't right — your edits are preserved and won't be overwritten.
+          These are durable things your thought partner has noticed about you, distilled from your
+          conversations over time. Your thought partner sees the most recent of these on every turn.
+          Edit or delete anything that isn't right — your edits are preserved and won't be
+          overwritten.
         </p>
       </div>
 

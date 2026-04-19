@@ -2,13 +2,14 @@ import { tool } from "ai";
 import { z } from "zod";
 
 /**
- * `finalize_goal` — Claude calls this when the coach and learner have agreed
- * on a complete, integrative goal. Every goal must articulate impact across
- * all three lenses (self, others, organization) — that's the product point.
+ * `finalize_goal` — Claude calls this when the thought partner and learner
+ * have agreed on a complete, integrative goal. Every goal must articulate
+ * impact across all three lenses (self, others, organization) — that's the
+ * product point.
  *
  * `primary_lens` is optional metadata about where the learner started
- * thinking, not a silo classification. The coach can set it if the learner
- * clearly began from one lens.
+ * thinking, not a silo classification. The thought partner can set it if the
+ * learner clearly began from one lens.
  */
 export const finalizeGoalInputSchema = z.object({
   title: z
@@ -62,7 +63,7 @@ export function buildFinalizeGoalTool(
 ) {
   return tool({
     description:
-      "Save a finalized integrative goal for the learner. Call this only after the coach and learner have agreed on the title, all five SMART criteria, AND impact across ALL THREE lenses (self, others, org). Every goal must touch all three — do not call this tool unless all three impacts have real content, not placeholders. The learner will be asked to confirm before the goal is saved.",
+      "Save a finalized integrative goal for the learner. Call this only after you and the learner have agreed on the title, all five SMART criteria, AND impact across ALL THREE lenses (self, others, org). Every goal must touch all three — do not call this tool unless all three impacts have real content, not placeholders. The learner will be asked to confirm before the goal is saved.",
     inputSchema: finalizeGoalInputSchema,
     needsApproval: true,
     execute: handler,

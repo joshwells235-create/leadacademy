@@ -51,7 +51,7 @@ export function ConversationsSidebar({ conversations, activeId }: Props) {
               href="/memory"
               className="block text-center text-xs text-neutral-500 hover:text-brand-blue"
             >
-              What your coach remembers about you →
+              What your thought partner remembers about you →
             </Link>
           </div>
         </div>

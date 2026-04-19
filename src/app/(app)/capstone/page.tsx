@@ -72,9 +72,9 @@ export default async function CapstonePage() {
         <h1 className="mt-1 text-3xl font-bold">Capstone Builder</h1>
         <p className="mt-2 max-w-2xl text-sm text-white/80">
           Your capstone is the 10-15 minute story you'll tell your stakeholders about who you've
-          become as a leader over the last 9 months. The coach will help you synthesize your goals,
-          sprints, actions, and reflections into an arc — but the story, and the presentation, are
-          yours.
+          become as a leader over the last 9 months. Your thought partner will help you synthesize
+          your goals, sprints, actions, and reflections into an arc — but the story, and the
+          presentation, are yours.
         </p>
       </header>
 
