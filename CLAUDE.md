@@ -24,6 +24,23 @@ role; don't rename code without a reason. When writing new user-visible strings,
 **Repo:** https://github.com/joshwells235-create/leadacademy
 **Supabase project:** `vcpuxpbncltyihnfnaim` in Leadshift org (`zuvrkjogtldbfqbpspkw`), us-east-2
 
+## Product positioning — premium LMS + coaching platform
+
+Leadership Academy isn't a "coaching tool with some lessons bolted on." The ambition is to match or beat **Lessonly (Seismic Learn) / Docebo / Articulate Rise / Northpass / Workramp** on their own turf *and* offer something none of them can — AI thought partnership and human-coach infrastructure grounded in the learner's full leadership journey.
+
+**The competitive moat: contextual AI.** Lessonly and peers have bolted AI onto course delivery in the last year. Ours is built from the ground up: the thought partner knows the learner's goals, sprints, assessments (PI / EQ-i / 360), reflections, memory facts, and capstone arc. A quiz result can trigger a reflection conversation. A completed course can seed a goal. A coach recap can feed a practice-scenario rubric. That's not a feature peers can ship in a quarter.
+
+**Feature-parity roadmap (LMS phases).** A + B are shipped; C–F stage the rest.
+
+- **Phase A — Course builder foundations.** Shipped. Security + data integrity + reorder + duplicate + description + linked resources. (See Phases-completed #8.)
+- **Phase B — Rich content + quiz engine.** Shipped. Tables, responsive images, video resolver, and a full quiz engine (six question types, author + player + analytics). (Same commit as A.)
+- **Phase C — Paths, prereqs, certificates.** Up next. Sequenced courses, per-lesson + per-course prerequisites, scheduled unlock per cohort, due dates, brandable PDF certificates with re-cert expiry. This is where "a course" becomes "a program."
+- **Phase D — Engagement + analytics.** Per-lesson notes + highlights, discussion threads, scroll-position resume, completion celebration that seeds a thought-partner debrief, completion / drop-off / time-to-complete dashboards for super / admin / coach.
+- **Phase E — Practice scenarios (the Lessonly moat).** Learner records video/audio response to a prompt; coach reviews + rubric-scores; thought partner drafts the first-pass feedback grounded in goals/assessments/memory. This is the single feature that wins a bake-off against Lessonly.
+- **Phase F — Enterprise hygiene.** Version history + diff/rollback on lessons, approval workflows (draft → review → published), scheduled publish, template library, author collaboration (soft-lock or last-write-wins warning), SCORM import if an enterprise client demands it. Not a moat — a floor that keeps us credible in RFP conversations.
+
+If a new feature sits outside this roadmap, check that it doesn't duplicate work a later phase will cover. Phases should ship in order — D depends on C's completion-tracking bones, E depends on D's coach-review surfaces.
+
 ## Tech stack
 
 - **Framework:** Next.js 16 App Router (Turbopack), React 19, TypeScript
@@ -384,6 +401,14 @@ Open design questions for Phase C:
 
 **LMS Phase E — practice scenarios (the Lessonly moat)** (after D):
 - Practice lesson type: learner records video/audio response to a prompt. Coach reviews + rubric-scored feedback. Thought partner gives an AI-drafted first-pass review grounded in goals/assessments/memory. Their AI is bolt-on; ours is contextual — this is the pitch-against-Lessonly feature.
+
+**LMS Phase F — enterprise hygiene** (last, ship per-client demand):
+- Lesson version history with diff + rollback (super can see the draft trail and restore a prior version).
+- Approval workflows (`courses.status`: `draft` → `in_review` → `published`, with reviewer assignment).
+- Scheduled publish (a course flips `draft` → `published` at a timestamp).
+- Template library — pre-built course skeletons super can clone from on create.
+- Multi-author collaboration guardrail (soft lock on the lesson editor, or a last-write-wins banner when another author edited since load).
+- SCORM 1.2 / 2004 import + launch (optional; only if an enterprise client demands it — non-trivial engineering, worth scoping only when named).
 
 Near-term candidates (not LMS-track):
 - **Run the first `pnpm eval` baseline** — critical before further prompt tuning.
