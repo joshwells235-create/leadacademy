@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { setCohortCapstoneUnlocksAt } from "@/lib/capstone/actions";
 import { setCohortConsultant } from "@/lib/consultant/actions";
+import { superCreateCohort } from "@/lib/super/cohort-actions";
 
 type Cohort = {
   id: string;
@@ -37,12 +38,15 @@ export function CohortCapstonePanel({
     <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-brand-navy">Cohorts ({cohorts.length})</h2>
-        <Link
-          href={`/super/orgs/${orgId}/assign-courses`}
-          className="text-xs text-brand-blue hover:underline"
-        >
-          Assign courses →
-        </Link>
+        <div className="flex items-center gap-3">
+          <CreateCohortButton orgId={orgId} />
+          <Link
+            href={`/super/orgs/${orgId}/assign-courses`}
+            className="text-xs text-brand-blue hover:underline"
+          >
+            Assign courses →
+          </Link>
+        </div>
       </div>
       {cohorts.length === 0 ? (
         <p className="text-xs text-neutral-500">No cohorts.</p>
@@ -51,6 +55,7 @@ export function CohortCapstonePanel({
           {cohorts.map((c) => (
             <CohortRow
               key={c.id}
+              orgId={orgId}
               cohort={c}
               candidates={consultantCandidates}
               consultantName={
@@ -72,10 +77,12 @@ export function CohortCapstonePanel({
 }
 
 function CohortRow({
+  orgId,
   cohort,
   candidates,
   consultantName,
 }: {
+  orgId: string;
   cohort: Cohort;
   candidates: ConsultantCandidate[];
   consultantName: string | null;
@@ -107,7 +114,12 @@ function CohortRow({
     <li className="rounded-md border border-neutral-100 bg-brand-light/40 p-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-brand-navy">{cohort.name}</p>
+          <Link
+            href={`/super/orgs/${orgId}/cohorts/${cohort.id}`}
+            className="text-sm font-medium text-brand-navy hover:text-brand-blue"
+          >
+            {cohort.name}
+          </Link>
           <p className="text-[11px] text-neutral-500">
             {cohort.starts_at ?? "no start date"} → {cohort.ends_at ?? "no end date"}
           </p>
@@ -224,5 +236,101 @@ function CohortRow({
         )}
       </div>
     </li>
+  );
+}
+
+function CreateCohortButton({ orgId }: { orgId: string }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const create = () => {
+    setError(null);
+    start(async () => {
+      const res = await superCreateCohort(orgId, {
+        name,
+        starts_at: startsAt || null,
+        ends_at: endsAt || null,
+      });
+      if ("error" in res && res.error) {
+        setError(res.error);
+        return;
+      }
+      setOpen(false);
+      setName("");
+      setStartsAt("");
+      setEndsAt("");
+      router.refresh();
+    });
+  };
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs text-brand-blue hover:underline"
+      >
+        + New cohort
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-80 rounded-md border border-neutral-200 bg-brand-light/40 p-3">
+      <p className="mb-2 text-xs font-semibold text-brand-navy">Create cohort</p>
+      <div className="space-y-2">
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Cohort name"
+          className="w-full rounded-md border border-neutral-300 px-2 py-1 text-xs focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+        />
+        <div className="grid gap-2 grid-cols-2">
+          <input
+            type="date"
+            value={startsAt}
+            onChange={(e) => setStartsAt(e.target.value)}
+            className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
+            aria-label="Starts"
+          />
+          <input
+            type="date"
+            value={endsAt}
+            onChange={(e) => setEndsAt(e.target.value)}
+            className="rounded-md border border-neutral-300 px-2 py-1 text-xs"
+            aria-label="Ends"
+          />
+        </div>
+      </div>
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={create}
+          disabled={pending || !name.trim()}
+          className="rounded-md bg-brand-blue px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60"
+        >
+          {pending ? "Creating…" : "Create"}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setOpen(false);
+            setError(null);
+            setName("");
+            setStartsAt("");
+            setEndsAt("");
+          }}
+          className="text-[11px] text-neutral-500"
+        >
+          Cancel
+        </button>
+        {error && <span className="text-[11px] text-red-700">{error}</span>}
+      </div>
+    </div>
   );
 }

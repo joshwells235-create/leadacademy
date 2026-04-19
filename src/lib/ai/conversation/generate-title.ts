@@ -1,5 +1,6 @@
 import { generateText } from "ai";
 import { claude, MODELS } from "@/lib/ai/client";
+import { logAiError } from "@/lib/ai/errors/log-error";
 
 const SYSTEM_PROMPT = `You name thought-partner conversations with a short, specific label.
 
@@ -43,7 +44,8 @@ Generate the title.`;
       .trim();
     if (cleaned.length === 0 || cleaned.toLowerCase() === "untitled") return null;
     return cleaned.slice(0, 80);
-  } catch {
+  } catch (e) {
+    await logAiError({ feature: "title", error: e, model: MODELS.haiku });
     return null;
   }
 }

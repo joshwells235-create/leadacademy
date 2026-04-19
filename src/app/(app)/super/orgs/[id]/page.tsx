@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CohortCapstonePanel } from "./cohort-capstone-panel";
+import { type OrgMemberRow, OrgMembersList } from "./org-members-list";
 import { OrgSettings } from "./org-settings";
 
 type Props = { params: Promise<{ id: string }> };
@@ -105,49 +106,22 @@ export default async function OrgDetailPage({ params }: Props) {
           />
         </div>
 
-        {/* Right: members */}
-        <div className="rounded-lg border border-neutral-200 bg-white shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-neutral-100">
-            <h2 className="text-sm font-semibold text-brand-navy">Members ({members.length})</h2>
-          </div>
-          <ul className="divide-y divide-neutral-50">
-            {members.map((m) => {
-              const name =
-                (m.profiles as unknown as { display_name: string | null })?.display_name ??
-                "Unnamed";
-              return (
-                <li
-                  key={m.id}
-                  className="px-4 py-3 flex items-center justify-between hover:bg-brand-light transition"
-                >
-                  <div>
-                    <Link
-                      href={`/super/orgs/${orgId}/members/${m.user_id}`}
-                      className="text-sm font-medium text-brand-navy hover:text-brand-blue"
-                    >
-                      {name}
-                    </Link>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${m.role === "org_admin" ? "bg-brand-pink-light text-brand-pink" : m.role === "coach" ? "bg-brand-blue-light text-brand-blue" : "bg-neutral-100 text-neutral-600"}`}
-                      >
-                        {m.role}
-                      </span>
-                      {m.cohorts?.name && (
-                        <span className="text-[10px] text-neutral-400">{m.cohorts.name}</span>
-                      )}
-                    </div>
-                  </div>
-                  <span
-                    className={`text-xs ${m.status === "active" ? "text-emerald-600" : "text-neutral-400"}`}
-                  >
-                    {m.status}
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
+        {/* Right: members (searchable/filterable) */}
+        <OrgMembersList
+          orgId={orgId}
+          rows={members.map<OrgMemberRow>((m) => ({
+            membershipId: m.id,
+            userId: m.user_id,
+            name:
+              (m.profiles as unknown as { display_name: string | null } | null)?.display_name ??
+              "Unnamed",
+            role: m.role,
+            status: m.status,
+            cohortId: m.cohort_id,
+            cohortName: m.cohorts?.name ?? null,
+          }))}
+          cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+        />
       </div>
     </div>
   );

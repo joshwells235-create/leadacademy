@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { generateObject } from "ai";
 import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
+import { logAiError } from "@/lib/ai/errors/log-error";
 import type { Database } from "@/lib/types/database";
 import { listMemoryFacts } from "./list-facts";
 import { MEMORY_CONFIDENCES, MEMORY_TYPES } from "./types";
@@ -134,6 +135,14 @@ Extract the durable facts. Return JSON per the schema. If nothing durable is pre
     });
     result = response.object;
   } catch (e) {
+    await logAiError({
+      feature: "distill",
+      error: e,
+      model: MODELS.sonnet,
+      orgId,
+      userId,
+      conversationId,
+    });
     return { ok: false, error: e instanceof Error ? e.message : "distill failed" };
   }
 

@@ -30,11 +30,17 @@ export function ConsultantOverridePanel({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(currentOverrideUserId ?? "");
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   const save = (next: string | null) => {
+    setError(null);
     start(async () => {
-      await setLearnerConsultantOverride(learnerUserId, next);
+      const res = await setLearnerConsultantOverride(learnerUserId, next);
+      if (res && "error" in res && res.error) {
+        setError(res.error);
+        return;
+      }
       setEditing(false);
       router.refresh();
     });
@@ -106,6 +112,12 @@ export function ConsultantOverridePanel({
             </button>
           )}
         </div>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-2 py-1.5 text-xs text-red-700">
+          {error}
+        </p>
       )}
 
       <p className="mt-3 border-t border-neutral-100 pt-3 text-[11px] leading-relaxed text-neutral-500">

@@ -29,9 +29,26 @@ export async function loginAction(_prev: ActionState, formData: FormData): Promi
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword(parsed.data);
+  const { data: signIn, error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
     return { status: "error", message: error.message };
+  }
+
+  // Soft-deleted users can't proceed even if auth succeeded. Sign them
+  // back out and surface a neutral "account disabled" message.
+  if (signIn.user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("deleted_at")
+      .eq("user_id", signIn.user.id)
+      .maybeSingle();
+    if (profile?.deleted_at) {
+      await supabase.auth.signOut();
+      return {
+        status: "error",
+        message: "This account has been deactivated. Contact your administrator.",
+      };
+    }
   }
 
   revalidatePath("/", "layout");

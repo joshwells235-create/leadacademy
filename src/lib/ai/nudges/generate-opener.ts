@@ -3,6 +3,7 @@ import { generateText } from "ai";
 import { claude, MODELS } from "@/lib/ai/client";
 import { assembleLearnerContext } from "@/lib/ai/context/assemble";
 import { formatLearnerContext } from "@/lib/ai/context/format";
+import { logAiError } from "@/lib/ai/errors/log-error";
 import { PERSONA } from "@/lib/ai/prompts/base/persona";
 import type { Database } from "@/lib/types/database";
 import type { NudgePattern } from "./types";
@@ -69,7 +70,14 @@ ${JSON.stringify(patternData, null, 2)}`;
     });
     const text = result.text.trim();
     if (text.length > 0) return text;
-  } catch {
+  } catch (e) {
+    await logAiError({
+      feature: "nudge_opener",
+      error: e,
+      model: MODELS.sonnet,
+      userId,
+      details: { pattern },
+    });
     // fall through to fallback
   }
   return fallbackForPattern(pattern);

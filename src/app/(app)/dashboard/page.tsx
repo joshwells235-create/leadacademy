@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ActionItemToggle } from "@/components/action-item-toggle";
+import { AnnouncementBanner } from "@/components/announcements/announcement-banner";
 import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
 import { CoachNudgeCard } from "@/components/dashboard/coach-nudge-card";
 import { IntakeCtaButton } from "@/components/intake/intake-cta-button";
 import { detectAndFireNudge } from "@/lib/ai/nudges/detect";
+import { getVisibleAnnouncements } from "@/lib/announcements/get-visible";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Dashboard — Leadership Academy" };
 
@@ -133,8 +135,20 @@ export default async function DashboardPage() {
   // unassigned newcomers) don't need it.
   const intakePending = membership && !profile?.intake_completed_at;
 
+  // System announcements for this user — global, org-scoped, cohort-scoped,
+  // or role-targeted. Dismissed ones are filtered out server-side.
+  const announcements = await getVisibleAnnouncements(supabase, user!.id);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      {announcements.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {announcements.map((a) => (
+            <AnnouncementBanner key={a.id} announcement={a} />
+          ))}
+        </div>
+      )}
+
       {/* Header — warmer for first time */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-brand-navy">

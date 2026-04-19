@@ -59,6 +59,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "action_items_coach_user_id_profiles_fk"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "action_items_learner_user_id_profiles_fk"
+            columns: ["learner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "action_items_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
@@ -226,6 +240,57 @@ export type Database = {
           },
         ]
       }
+      ai_errors: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          error_details: Json | null
+          error_message: string
+          feature: string
+          id: string
+          model: string | null
+          org_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message: string
+          feature: string
+          id?: string
+          model?: string | null
+          org_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          error_details?: Json | null
+          error_message?: string
+          feature?: string
+          id?: string
+          model?: string | null
+          org_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_errors_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_errors_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: Json
@@ -316,6 +381,95 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "ai_usage_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcement_dismissals: {
+        Row: {
+          announcement_id: string
+          dismissed_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          dismissed_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_id?: string
+          dismissed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_dismissals_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          body: string
+          cohort_id: string | null
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          org_id: string | null
+          role: string | null
+          scope: string
+          starts_at: string
+          title: string
+          tone: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          org_id?: string | null
+          role?: string | null
+          scope: string
+          starts_at?: string
+          title: string
+          tone?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          cohort_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          org_id?: string | null
+          role?: string | null
+          scope?: string
+          starts_at?: string
+          title?: string
+          tone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcements_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "announcements_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -508,11 +662,25 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "coach_assignments_coach_user_id_profiles_fk"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "coach_assignments_cohort_id_fkey"
             columns: ["cohort_id"]
             isOneToOne: false
             referencedRelation: "cohorts"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_assignments_learner_user_id_profiles_fk"
+            columns: ["learner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "coach_assignments_org_id_fkey"
@@ -698,6 +866,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cohorts_consultant_user_id_profiles_fk"
+            columns: ["consultant_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "cohorts_org_id_fkey"
             columns: ["org_id"]
@@ -1275,11 +1450,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "memberships_consultant_user_id_profiles_fk"
+            columns: ["consultant_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "memberships_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_user_id_profiles_fk"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -1487,6 +1676,7 @@ export type Database = {
           company_size: string | null
           context_notes: string | null
           created_at: string
+          deleted_at: string | null
           display_name: string | null
           function_area: string | null
           industry: string | null
@@ -1507,6 +1697,7 @@ export type Database = {
           company_size?: string | null
           context_notes?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
           function_area?: string | null
           industry?: string | null
@@ -1527,6 +1718,7 @@ export type Database = {
           company_size?: string | null
           context_notes?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
           function_area?: string | null
           industry?: string | null
@@ -1656,6 +1848,20 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "session_recaps_coach_user_id_profiles_fk"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "session_recaps_learner_user_id_profiles_fk"
+            columns: ["learner_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "session_recaps_org_id_fkey"
             columns: ["org_id"]

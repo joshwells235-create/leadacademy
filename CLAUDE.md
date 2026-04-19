@@ -58,6 +58,10 @@ role; don't rename code without a reason. When writing new user-visible strings,
 - **Invite-consumption is email-confirmation-gated.** `registerAction` only calls `consume_invitation` when `supabase.auth.getUser().email_confirmed_at` is truthy — otherwise the Supabase SDK can surface the user object from the in-memory signUp result without a real session cookie, and the RPC fails with "invitation invalid" because `auth.uid()` resolves to null inside the SECURITY DEFINER function. When confirmation is needed, fall through to the "check your email" branch and let `/auth/consume` handle the consume step after the link is clicked.
 - **Email delivery in production requires custom SMTP.** Supabase's built-in email sender is development-only even on Pro tier (rate-limited at ~30/hour). Configure custom SMTP (Resend / SendGrid / Postmark) in Supabase Dashboard → Auth → SMTP Settings before any real invite batch. The `manuallyAddMember` action exists as an escape hatch when SMTP is down: creates a confirmed user directly with a temp password, bypasses the email flow entirely.
 - **Supabase auth redirect allowlist must include `/auth/callback` wildcards.** Redirect URLs (dashboard) must include `https://leadacademy.vercel.app/**` (and the localhost equivalent). Without the wildcard, Supabase rejects the session exchange with an `invalid_grant`-style error when `?next=...` query strings are present.
+- **Super-admin actions log as `super.*` in activity_logs.** Every mutating action in `src/lib/super/*-actions.ts` goes through `requireSuperAdmin` + emits an activity log (`super.org.*`, `super.cohort.*`, `super.user.*`, `super.membership.*`, `super.artifact.*`, `super.resource.*`, `super.announcement.*`, `super.ai.*`, `super.invitation.*`, `super.post.deleted`, `super.comment.deleted`). The `/super/activity` view knows how to humanize all of these — when adding a new super action, extend the `ACTION_LABEL` map in `super/activity/activity-view.tsx`.
+- **Soft-delete is the super-admin user-deletion pattern.** `profiles.deleted_at` is set via `softDeleteUser`; memberships are archived and sessions revoked in the same action. `loginAction` (in `lib/auth/actions.ts`) checks `deleted_at` after successful auth and signs the user back out with a neutral "account deactivated" message — don't bypass this.
+- **AI errors should be logged, not silently swallowed.** Any catch block around a `generateText` / `generateObject` / streaming call should call `logAiError({ feature, error, model, ... })` from `@/lib/ai/errors/log-error` before returning. The viewer at `/super/ai-errors` depends on these. `logAiError` is self-swallowing — it never throws back into the caller.
+- **Announcements consumption is per-user-dismissible.** Resolve via `getVisibleAnnouncements(supabase, userId)` from the dashboard (already wired). When adding a new surface that should show banners, import the helper and render `<AnnouncementBanner>` above the main content. Dismissals land in `announcement_dismissals (user_id, announcement_id)`.
 
 ## Brand
 
@@ -196,11 +200,12 @@ Tool renderers live in `src/components/chat/tool-renderers/` with a registry-bas
 
 Identity: `organizations`, `profiles`, `memberships`, `cohorts`, `coach_assignments`, `invitations`
 Coaching: `goals`, `goal_sprints`, `action_logs`, `reflections`, `daily_challenges`, `assessments`, `assessment_documents`, `capstone_outlines`
-AI: `ai_conversations`, `ai_messages`, `ai_usage`, `learner_memory`, `coach_nudges`
+AI: `ai_conversations`, `ai_messages`, `ai_usage`, `ai_errors`, `learner_memory`, `coach_nudges`
 Coach tools: `pre_session_notes`, `coach_notes`, `session_recaps`, `action_items`
 Learning: `courses`, `modules`, `lessons`, `cohort_courses`, `lesson_progress`
 Social: `community_posts`, `community_likes`, `community_comments`, `threads`, `thread_participants`, `messages`, `notifications`
 Resources: `resources`
+Announcements: `announcements`, `announcement_dismissals`
 Audit: `activity_logs`
 
 Key cross-references:
@@ -216,6 +221,9 @@ Key cross-references:
 - `profiles` intake fields: `role_title`, `function_area`, `team_size`, `total_org_influence`, `tenure_at_org`, `tenure_in_leadership`, `company_size`, `industry`, `context_notes`, `intake_completed_at`. Populated by the `update_profile_context` tool during intake mode or the `/profile` form directly.
 - `goals.active_focus_until` — **deprecated**; no code reads or writes it. Dropped in a future migration.
 - `profiles.proactivity_enabled` — per-learner master switch for nudges.
+- `profiles.deleted_at` — super-admin soft-delete. When set: memberships are archived, sessions revoked, login blocked with "account deactivated" message. Restore by clearing.
+- `announcements` — super-authored banners; `scope` in (`global`/`org`/`cohort`/`role`) with integrity check. `announcement_dismissals` is per-user. Resolved client-side via `getVisibleAnnouncements`.
+- `ai_errors` — failed AI calls (feature, model, org, user, conversation, message). Writes go through `logAiError`; reads via RLS restricted to super_admin.
 
 ## Routes
 
@@ -256,14 +264,22 @@ Key cross-references:
 - `/admin/activity` — audit log with actor / action / date-range filters, humanized action labels, CSV export
 
 ### Super Admin
-- `/super/orgs`, `/super/orgs/[id]` — org management + settings + cohort panel (assign consultant, set capstone unlock date)
-- `/super/orgs/[id]/members/[userId]` — cross-org learner deep-dive + profile panel + capstone (read-only) + consultant override picker
+- `/super/orgs` — cross-org dashboard (8-metric vitality grid) + searchable/sortable org cards with per-org vitality chips
+- `/super/orgs/[id]` — org detail + settings + cohort panel (assign consultant, capstone unlock, create-cohort) + searchable members
+- `/super/orgs/[id]/cohorts/[cohortId]` — cohort detail with vitality metrics, roster + chips, assigned courses, edit-metadata + archive
+- `/super/orgs/[id]/members/[userId]` — cross-org learner deep-dive: 14d since-strip, profile, goals+sprints, actions, reflections, assessments, conversations, nudges, memory facts, coach notes / recaps / action items, capstone, consultant override, AI triggers
 - `/super/orgs/[id]/assign-courses` — cohort-course assignment matrix
-- `/super/course-builder/...` — Tiptap rich editor for courses
-- `/super/ai-usage` — cross-org AI spend dashboard
-- `/super/conversations`, `/super/conversations/[id]` — AI transcript viewer
-- `/super/moderation` — community post/comment moderation
-- `/super/export` — CSV data export
+- `/super/users`, `/super/users/[userId]` — global user directory + full edit console (profile, email, password reset, email confirm, session revoke, super-admin toggle, role / cohort / org moves, soft-delete / restore)
+- `/super/invitations` — cross-org invitation audit with scope / org filters + revoke
+- `/super/course-builder`, `/super/course-builder/[id]`, `/super/course-builder/[id]/lessons/[id]` — Tiptap rich editor for courses (ConfirmBlock for course / module / lesson delete)
+- `/super/resources` — resource library CRUD (the admin surface for /resources)
+- `/super/announcements` — global / org / cohort / role-targeted banner broadcast
+- `/super/ai-usage` — cross-org AI spend (7d / 30d / 90d / MTD / all) + org filter + daily sparkbar
+- `/super/conversations`, `/super/conversations/[id]` — AI transcript viewer (renders AI-SDK parts, delete action)
+- `/super/moderation` — community post / comment moderation (search / type / org / date filters)
+- `/super/activity` — cross-org audit log (admin + super scopes) with filters + CSV export
+- `/super/ai-errors` — failed AI calls / extraction errors / distillation errors, feature-grouped
+- `/super/export` — CSV data export with live row counts per type
 
 ### Auth
 - `/login`, `/register`, `/forgot-password`, `/reset-password`
@@ -320,6 +336,7 @@ A portal-by-portal UX rebuild. Each phase: thorough audit → triage → three-b
 4. **Coach portal** — `/coach/dashboard` search/filter/sort with "since last recap" chips, sprint vitality on cards, coaching-since-date, "New" assignment chip. Learner detail: prev/next nav + ←/→ keyboard shortcuts, since-last-recap top strip, thought-partner activity panel, ownership labels (Private to you / Visible to learner / From learner). **AI session-recap drafts wired** (`lib/coach/recap-draft-action.ts`) — Sonnet drafts a 150-word recap grounded in learner activity since coach's last recap; coach edits before saving. Action items gain description field + default due date + overdue highlighting.
 5. **Consultant portal** — `consultant/layout.tsx` route-boundary auth guard; dashboard vitality chips per cohort; cohort detail at-a-glance metrics + reflection-themes strip + searchable/filterable roster + coaches panel with inline coach-assignment control; cohort metadata editor; learner detail with prev/next nav + 14d rolling what's-new + sprint vitality + TP activity + session-recap coach attribution + override badge.
 6. **Org admin portal** — `add_user_fks_to_profiles` migration fixed the silent PostgREST-embed failure that was showing "0 active members" when members existed. People page: search/filter/sort across role/cohort/coach/at-risk-flags/status, bulk select + sticky action bar, at-risk chips per row, inline cohort & coach pickers, role-change with in-UI confirm. Three invite modes: single (sticky defaults), bulk paste, manual-add-user (creates confirmed user with temp password — SMTP-bypass escape hatch). Invitations panel with Resend (rotates token + extends expiry) + Revoke. Coach-load bar-chart panel. Cohort management gains /admin/cohorts/[cohortId] detail page with multi-select bulk-move. Activity log gains filters (actor / action / date range) + humanized action labels + CSV export. Shared primitives: `ConfirmBlock`, `ROLE_LABEL` map, `requireAdmin` helper, activity-emitting admin action pattern.
+7. **Super admin portal — UX sweep + capability expansion**. Both an audit pass on existing surfaces AND a net-new-capability batch so LeadShift support never needs to drop into Supabase. Audit pass: `super/layout.tsx` route-boundary guard; `ROLE_LABEL` / `roleBadgeClass` across all super surfaces; four `window.confirm()` → `ConfirmBlock` (moderation, course/module/lesson delete); `requireSuperAdmin` + `logSuperActivity` now wraps every mutating action with `super.*` audit keys; `/super/orgs` gains 8-metric cross-org dashboard + searchable/sortable org cards with per-org vitality chips; `/super/orgs/[id]` members → searchable/filterable/sortable; `/super/conversations` gains server-side title-search + mode/org/date-range filters + 50/page pagination; `/super/moderation` same; `/super/ai-usage` date-range (7/30/90/mtd/all) + org filter + daily sparkbar + 10k-row paginated aggregates; new `/super/activity` cross-org audit with scope (admin vs super) / org / actor / action / date filters + CSV export; new `/super/orgs/[id]/cohorts/[cohortId]` cohort detail with vitality metrics + roster chips + assigned courses + edit/archive panel; conversation viewer renders AI-SDK parts (text + collapsible tool-call details) instead of mid-sentence truncation; `/super/orgs/[id]/members/[userId]` gains 14-day since-strip + sprint vitality + nudge history + memory facts + coach notes / recaps / action items; consultant override errors now surface; `/super/export` shows live row counts per type, scoped to selected org. **Capability expansion**: `profiles.deleted_at` column + soft-delete pipeline (archives memberships + revokes sessions + login gate); `/super/users` global cross-org directory with search/filter/sort; `/super/users/[userId]` full edit console (profile fields, email change with optional skip-reverify, password reset link generator, email confirm, session revoke, super-admin toggle, per-membership role change, cross-org membership move, soft-delete with "soft-deleted" flag shown everywhere); `/super/invitations` cross-org invitation audit + revoke; super cohort CRUD (`superCreateCohort` / `superUpdateCohort` / `superArchiveCohort`) with "reassign N first" guard; `/super/resources` resource library CRUD (the previously learner-only /resources now has a real admin surface); `runMemoryDistillation` + `runNudgeDetection` manual triggers on learner detail for support debugging; super-delete actions for goals / reflections / action logs / memory facts / conversations (exposed for conversations on the viewer; other entry points ready for future UI); new `announcements` table with scope (global / org / cohort / role), tone (info / warning / success), per-user dismissals — broadcast UI at `/super/announcements`, banners render on learner dashboard via `getVisibleAnnouncements`; new `ai_errors` table + `logAiError` helper hooked into distill / title / nudge_opener paths, surfaced at `/super/ai-errors` with feature-grouped filtering. Super-admin actions log as `super.*` in activity log (20+ new action labels). Top-nav gains Users / Invitations / Resources / Activity Log / AI Errors / Announcements links.
 
 Bug fixes shipped alongside Phase 6:
 - Invite confirmation flow: corrected `/auth/consume` path (was `/onboarding/consume`), fixed nested `?token=` encoding.
@@ -340,7 +357,7 @@ NEXT_PUBLIC_SENTRY_DSN=(optional, activates Sentry when set)
 ## What to work on next
 
 Immediately up next:
-- **Phase 7 — super-admin portal UX sweep** (`/super/*`). Should match the Phase 4–6 patterns: route-boundary auth guard (already present but worth auditing), searchable/filterable org + cohort + user tables, shared `ConfirmBlock` for destructive actions, cross-org vitality signals, activity-log with filters. Surfaces to audit: `/super/orgs`, `/super/orgs/[id]`, `/super/orgs/[id]/members/[userId]`, `/super/orgs/[id]/assign-courses`, `/super/course-builder`, `/super/ai-usage`, `/super/conversations` + `[id]`, `/super/moderation`, `/super/export`.
+- **Phase 8 — cross-cutting polish** (mobile, a11y, brand consistency, loading/error states across the full app) now that the 7 portals (learner / coach / consultant / admin / super) have all had their UX sweep.
 
 Near-term candidates:
 - **Run the first `pnpm eval` baseline** — critical before further prompt tuning.

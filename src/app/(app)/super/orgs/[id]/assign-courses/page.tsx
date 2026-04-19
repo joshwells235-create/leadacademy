@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CourseAssigner } from "./course-assigner";
 
@@ -8,8 +8,14 @@ type Props = { params: Promise<{ id: string }> };
 export default async function AssignCoursesPage({ params }: Props) {
   const { id: orgId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("super_admin").eq("user_id", user!.id).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("super_admin")
+    .eq("user_id", user!.id)
+    .maybeSingle();
   if (!profile?.super_admin) redirect("/dashboard");
 
   const [orgRes, cohortsRes, coursesRes, assignmentsRes] = await Promise.all([
@@ -26,20 +32,28 @@ export default async function AssignCoursesPage({ params }: Props) {
   }
   // Convert Sets to arrays for serialization.
   const assignedArrayMap: Record<string, string[]> = {};
-  for (const [k, v] of Object.entries(assignedMap)) { assignedArrayMap[k] = [...v]; }
+  for (const [k, v] of Object.entries(assignedMap)) {
+    assignedArrayMap[k] = [...v];
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
-        <Link href="/super/orgs" className="hover:text-brand-blue">Orgs</Link>
+        <Link href="/super/orgs" className="hover:text-brand-blue">
+          Orgs
+        </Link>
         <span>/</span>
-        <Link href={`/super/orgs/${orgId}`} className="hover:text-brand-blue">{orgRes.data?.name ?? "Org"}</Link>
+        <Link href={`/super/orgs/${orgId}`} className="hover:text-brand-blue">
+          {orgRes.data?.name ?? "Org"}
+        </Link>
         <span>/</span>
         <span className="font-medium text-brand-navy">Assign Courses</span>
       </nav>
 
       <h1 className="text-2xl font-bold text-brand-navy mb-2">Assign Courses to Cohorts</h1>
-      <p className="text-sm text-neutral-600 mb-6">Check a course to make it available to a cohort's learners.</p>
+      <p className="text-sm text-neutral-600 mb-6">
+        Check a course to make it available to a cohort's learners.
+      </p>
 
       <CourseAssigner
         cohorts={cohortsRes.data ?? []}

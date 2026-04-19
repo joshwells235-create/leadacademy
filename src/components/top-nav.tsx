@@ -88,8 +88,11 @@ export function TopNav({
           {superAdmin && (
             <>
               <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>Organizations</MobileLink>
+              <MobileLink href="/super/users" onClick={() => setMobileOpen(false)}>Users</MobileLink>
+              <MobileLink href="/super/invitations" onClick={() => setMobileOpen(false)}>Invitations</MobileLink>
               <MobileLink href="/super/course-builder" onClick={() => setMobileOpen(false)}>Course Builder</MobileLink>
               <MobileLink href="/super/ai-usage" onClick={() => setMobileOpen(false)}>AI Usage</MobileLink>
+              <MobileLink href="/super/activity" onClick={() => setMobileOpen(false)}>Activity Log</MobileLink>
             </>
           )}
           <div className="my-2 border-t border-white/10" />
@@ -185,10 +188,16 @@ function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, isC
                 {superAdmin && (
                   <>
                     <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>Organizations</DropdownLink>
+                    <DropdownLink href="/super/users" onClick={() => setOpen(false)}>Users</DropdownLink>
+                    <DropdownLink href="/super/invitations" onClick={() => setOpen(false)}>Invitations</DropdownLink>
                     <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>Course Builder</DropdownLink>
+                    <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>Resource Library</DropdownLink>
+                    <DropdownLink href="/super/announcements" onClick={() => setOpen(false)}>Announcements</DropdownLink>
                     <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>AI Usage</DropdownLink>
                     <DropdownLink href="/super/conversations" onClick={() => setOpen(false)}>AI Conversations</DropdownLink>
                     <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>Moderation</DropdownLink>
+                    <DropdownLink href="/super/activity" onClick={() => setOpen(false)}>Activity Log</DropdownLink>
+                    <DropdownLink href="/super/ai-errors" onClick={() => setOpen(false)}>AI Errors</DropdownLink>
                     <DropdownLink href="/super/export" onClick={() => setOpen(false)}>Data Export</DropdownLink>
                   </>
                 )}

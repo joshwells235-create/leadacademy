@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useTransition, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { LessonEditor } from "@/components/editor/lesson-editor";
-import { updateLesson, deleteLesson } from "@/lib/learning/actions";
 import type { JSONContent } from "@tiptap/react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { LessonEditor } from "@/components/editor/lesson-editor";
+import { ConfirmBlock } from "@/components/ui/confirm-dialog";
+import { deleteLesson, updateLesson } from "@/lib/learning/actions";
 import type { Json } from "@/lib/types/database";
 
 type Lesson = {
@@ -23,7 +24,12 @@ type Material = { name: string; url: string; path?: string };
 
 type SiblingLesson = { id: string; title: string } | null;
 
-export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }: {
+export function LessonEditorWrapper({
+  lesson,
+  courseId,
+  prevLesson,
+  nextLesson,
+}: {
   lesson: Lesson;
   courseId: string;
   prevLesson?: SiblingLesson;
@@ -35,13 +41,14 @@ export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }
     Array.isArray(lesson.materials) ? (lesson.materials as Material[]) : [],
   );
   const [content, setContent] = useState<JSONContent>(
-    (lesson.content && typeof lesson.content === "object" && "type" in (lesson.content as object))
+    lesson.content && typeof lesson.content === "object" && "type" in (lesson.content as object)
       ? (lesson.content as JSONContent)
       : { type: "doc", content: [{ type: "paragraph" }] },
   );
   const [pending, start] = useTransition();
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "unsaved">("idle");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
@@ -83,11 +90,12 @@ export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }
   }, [markUnsaved, scheduleAutoSave]);
 
   useEffect(() => {
-    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+    return () => {
+      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    };
   }, []);
 
   const handleDelete = () => {
-    if (!confirm("Delete this lesson? This cannot be undone.")) return;
     start(async () => {
       await deleteLesson(lesson.id, courseId);
       router.push(`/super/course-builder/${courseId}`);
@@ -123,65 +131,128 @@ export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }
       <div className="flex items-start justify-between gap-4">
         <input
           value={title}
-          onChange={(e) => { setTitle(e.target.value); handleChange(); }}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            handleChange();
+          }}
           className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-xl font-bold text-brand-navy focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           placeholder="Lesson title"
         />
         <div className="flex items-center gap-2 shrink-0">
-          <span className={`text-xs transition ${
-            saveState === "saving" ? "text-amber-600" :
-            saveState === "saved" ? "text-emerald-600" :
-            saveState === "unsaved" ? "text-amber-500" :
-            "text-neutral-400"
-          }`}>
-            {saveState === "saving" ? "Saving..." :
-             saveState === "saved" ? "✓ Saved" :
-             saveState === "unsaved" ? "● Unsaved" : ""}
+          <span
+            className={`text-xs transition ${
+              saveState === "saving"
+                ? "text-amber-600"
+                : saveState === "saved"
+                  ? "text-emerald-600"
+                  : saveState === "unsaved"
+                    ? "text-amber-500"
+                    : "text-neutral-400"
+            }`}
+          >
+            {saveState === "saving"
+              ? "Saving..."
+              : saveState === "saved"
+                ? "✓ Saved"
+                : saveState === "unsaved"
+                  ? "● Unsaved"
+                  : ""}
           </span>
-          <button onClick={doSave} disabled={pending} className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60">
+          <button
+            onClick={doSave}
+            disabled={pending}
+            className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60"
+          >
             Save now
           </button>
-          <button onClick={handleDelete} className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:text-brand-pink hover:border-brand-pink">
+          <button
+            onClick={() => setConfirmingDelete(true)}
+            className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:text-brand-pink hover:border-brand-pink"
+          >
             Delete
           </button>
         </div>
       </div>
 
+      {confirmingDelete && (
+        <ConfirmBlock
+          title={`Delete "${title || "Untitled lesson"}"?`}
+          tone="destructive"
+          confirmLabel="Delete lesson"
+          pending={pending}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={handleDelete}
+        >
+          Removes this lesson and any learner progress against it. Cannot be undone.
+        </ConfirmBlock>
+      )}
+
       {/* Previous / Next lesson navigation */}
       <div className="flex items-center justify-between text-sm">
         {prevLesson ? (
-          <Link href={`/super/course-builder/${courseId}/lessons/${prevLesson.id}`} className="text-brand-blue hover:underline">
+          <Link
+            href={`/super/course-builder/${courseId}/lessons/${prevLesson.id}`}
+            className="text-brand-blue hover:underline"
+          >
             ← {prevLesson.title}
           </Link>
-        ) : <span />}
-        <Link href={`/learning/${courseId}/${lesson.id}`} target="_blank" className="rounded-md border border-brand-blue/30 px-3 py-1 text-xs text-brand-blue hover:bg-brand-blue-light transition">
+        ) : (
+          <span />
+        )}
+        <Link
+          href={`/learning/${courseId}/${lesson.id}`}
+          target="_blank"
+          className="rounded-md border border-brand-blue/30 px-3 py-1 text-xs text-brand-blue hover:bg-brand-blue-light transition"
+        >
           Preview as learner ↗
         </Link>
         {nextLesson ? (
-          <Link href={`/super/course-builder/${courseId}/lessons/${nextLesson.id}`} className="text-brand-blue hover:underline">
+          <Link
+            href={`/super/course-builder/${courseId}/lessons/${nextLesson.id}`}
+            className="text-brand-blue hover:underline"
+          >
             {nextLesson.title} →
           </Link>
-        ) : <span />}
+        ) : (
+          <span />
+        )}
       </div>
 
       {/* Video URL */}
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <label className="block text-sm font-medium text-brand-navy mb-1">Video (optional)</label>
-        <p className="text-xs text-neutral-500 mb-2">Paste a YouTube, Vimeo, or Loom URL. Appears at the top of the lesson.</p>
+        <p className="text-xs text-neutral-500 mb-2">
+          Paste a YouTube, Vimeo, or Loom URL. Appears at the top of the lesson.
+        </p>
         <div className="flex gap-2">
           <input
             value={videoUrl}
-            onChange={(e) => { setVideoUrl(e.target.value); handleChange(); }}
+            onChange={(e) => {
+              setVideoUrl(e.target.value);
+              handleChange();
+            }}
             placeholder="https://www.youtube.com/watch?v=..."
             className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
           />
           {videoUrl && (
-            <button onClick={() => { setVideoUrl(""); handleChange(); }} className="text-xs text-neutral-400 hover:text-brand-pink">Clear</button>
+            <button
+              onClick={() => {
+                setVideoUrl("");
+                handleChange();
+              }}
+              className="text-xs text-neutral-400 hover:text-brand-pink"
+            >
+              Clear
+            </button>
           )}
         </div>
         {videoUrl && /^https?:\/\/.+/.test(videoUrl) && (
           <div className="mt-3 aspect-video max-w-xl rounded-lg overflow-hidden border border-neutral-200">
-            <iframe src={videoUrl.replace("watch?v=", "embed/")} className="h-full w-full" allowFullScreen />
+            <iframe
+              src={videoUrl.replace("watch?v=", "embed/")}
+              className="h-full w-full"
+              allowFullScreen
+            />
           </div>
         )}
       </div>
@@ -194,7 +265,10 @@ export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }
         </div>
         <LessonEditor
           content={content}
-          onChange={(c) => { setContent(c); handleChange(); }}
+          onChange={(c) => {
+            setContent(c);
+            handleChange();
+          }}
           courseId={courseId}
           lessonId={lesson.id}
         />
@@ -202,27 +276,58 @@ export function LessonEditorWrapper({ lesson, courseId, prevLesson, nextLesson }
 
       {/* File attachments */}
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <label className="block text-sm font-medium text-brand-navy mb-1">Downloadable materials</label>
-        <p className="text-xs text-neutral-500 mb-3">PDFs, worksheets, templates — files learners can download alongside this lesson.</p>
+        <label className="block text-sm font-medium text-brand-navy mb-1">
+          Downloadable materials
+        </label>
+        <p className="text-xs text-neutral-500 mb-3">
+          PDFs, worksheets, templates — files learners can download alongside this lesson.
+        </p>
 
         {materials.length > 0 && (
           <ul className="space-y-2 mb-3">
             {materials.map((m, i) => (
-              <li key={i} className="flex items-center justify-between rounded-md border border-neutral-200 bg-brand-light px-3 py-2">
+              <li
+                key={i}
+                className="flex items-center justify-between rounded-md border border-neutral-200 bg-brand-light px-3 py-2"
+              >
                 <div className="flex items-center gap-2">
                   <span className="text-sm">📄</span>
-                  <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-blue hover:underline">{m.name}</a>
+                  <a
+                    href={m.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-brand-blue hover:underline"
+                  >
+                    {m.name}
+                  </a>
                 </div>
-                <button onClick={() => removeMaterial(i)} className="text-xs text-neutral-400 hover:text-brand-pink">Remove</button>
+                <button
+                  onClick={() => removeMaterial(i)}
+                  className="text-xs text-neutral-400 hover:text-brand-pink"
+                >
+                  Remove
+                </button>
               </li>
             ))}
           </ul>
         )}
 
-        <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" className="hidden"
-          onChange={(e) => { const file = e.target.files?.[0]; if (file) handleFileUpload(file); e.target.value = ""; }} />
-        <button onClick={() => fileRef.current?.click()} disabled={uploadingFile}
-          className="rounded-md border border-dashed border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-brand-blue hover:text-brand-blue transition disabled:opacity-60">
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleFileUpload(file);
+            e.target.value = "";
+          }}
+        />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={uploadingFile}
+          className="rounded-md border border-dashed border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-brand-blue hover:text-brand-blue transition disabled:opacity-60"
+        >
           {uploadingFile ? "Uploading..." : "+ Upload a file"}
         </button>
       </div>
