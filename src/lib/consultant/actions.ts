@@ -123,3 +123,70 @@ export async function setLearnerCoach(learnerId: string, coachUserId: string) {
   revalidatePath("/consultant");
   return { ok: true };
 }
+
+/**
+ * Consultant-facing: clear the active coach assignment for a learner —
+ * used when a consultant wants to unassign without immediately picking
+ * a replacement. Gated to consultants of the learner (or super-admin).
+ */
+export async function clearLearnerCoach(learnerId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const [{ data: isConsultant }, { data: profile }] = await Promise.all([
+    supabase.rpc("is_consultant_of_learner", { p_learner: learnerId }),
+    supabase.from("profiles").select("super_admin").eq("user_id", user.id).maybeSingle(),
+  ]);
+  if (!isConsultant && !profile?.super_admin) return { error: "not authorized" };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { error } = await supabase
+    .from("coach_assignments")
+    .update({ active_to: today })
+    .eq("learner_user_id", learnerId)
+    .is("active_to", null);
+  if (error) return { error: error.message };
+
+  revalidatePath("/consultant");
+  return { ok: true };
+}
+
+/**
+ * Consultant-facing: edit cohort metadata the consultant cares about
+ * without giving them the full super-admin cohort surface. Limited to
+ * description + capstone unlock date — name/dates/org stay org-admin-
+ * managed to avoid confusion across role boundaries.
+ */
+export async function updateCohortMetadata(
+  cohortId: string,
+  input: { description: string | null; capstoneUnlocksAt: string | null },
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not signed in" };
+
+  const [{ data: isConsultant }, { data: profile }] = await Promise.all([
+    supabase.rpc("is_consultant_of_cohort", { p_cohort_id: cohortId }),
+    supabase.from("profiles").select("super_admin").eq("user_id", user.id).maybeSingle(),
+  ]);
+  if (!isConsultant && !profile?.super_admin) return { error: "not authorized" };
+
+  // Normalize empty strings to null so the DB doesn't store whitespace-only
+  // values or empty date strings (which would also fail the date check).
+  const description = input.description?.trim() || null;
+  const capstoneUnlocksAt = input.capstoneUnlocksAt?.trim() || null;
+
+  const { error } = await supabase
+    .from("cohorts")
+    .update({ description, capstone_unlocks_at: capstoneUnlocksAt })
+    .eq("id", cohortId);
+  if (error) return { error: error.message };
+
+  revalidatePath(`/consultant/cohorts/${cohortId}`);
+  return { ok: true };
+}
