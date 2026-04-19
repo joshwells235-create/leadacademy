@@ -5,7 +5,9 @@ export const metadata: Metadata = { title: "Messages — Leadership Academy" };
 
 export default async function MessagesPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Get all threads the user participates in.
   const { data: participations } = await supabase
@@ -15,20 +17,27 @@ export default async function MessagesPage() {
 
   const threadIds = (participations ?? []).map((p) => p.thread_id);
   const lastReadMap: Record<string, string> = {};
-  for (const p of participations ?? []) { lastReadMap[p.thread_id] = p.last_read_at; }
+  for (const p of participations ?? []) {
+    lastReadMap[p.thread_id] = p.last_read_at;
+  }
 
   if (threadIds.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
         <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
-        <p className="mt-1 text-sm text-neutral-600">Direct messages with your coach.</p>
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
-            <span className="text-xl">💬</span>
-          </div>
-          <h2 className="font-semibold text-brand-navy">No conversations yet</h2>
-          <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-            When your coach messages you (or you message them from their profile), conversations will appear here.
+        <p className="mt-1 text-sm text-neutral-600">Direct messages with your executive coach.</p>
+        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <h2 className="font-semibold text-brand-navy">No messages yet</h2>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-600">
+            Your coach usually kicks off the first thread before your opening session. If you
+            expected a message and don't see one, it's worth checking in with your program admin.
+          </p>
+          <p className="mx-auto mt-3 max-w-sm text-xs text-neutral-500">
+            Looking for the AI? That's your{" "}
+            <Link href="/coach-chat" className="text-brand-blue hover:underline">
+              thought partner
+            </Link>{" "}
+            — this page is for your human executive coach.
           </p>
         </div>
       </div>
@@ -36,20 +45,36 @@ export default async function MessagesPage() {
   }
 
   // Get threads + other participants + latest message.
-  const { data: threads } = await supabase.from("threads").select("id, kind, title, updated_at").in("id", threadIds).order("updated_at", { ascending: false });
+  const { data: threads } = await supabase
+    .from("threads")
+    .select("id, kind, title, updated_at")
+    .in("id", threadIds)
+    .order("updated_at", { ascending: false });
 
   // Get all participants for these threads to find the "other person."
-  const { data: allParticipants } = await supabase.from("thread_participants").select("thread_id, user_id").in("thread_id", threadIds);
-  const otherUserIds = [...new Set((allParticipants ?? []).filter((p) => p.user_id !== user!.id).map((p) => p.user_id))];
-  const { data: profiles } = otherUserIds.length > 0
-    ? await supabase.from("profiles").select("user_id, display_name").in("user_id", otherUserIds)
-    : { data: [] };
+  const { data: allParticipants } = await supabase
+    .from("thread_participants")
+    .select("thread_id, user_id")
+    .in("thread_id", threadIds);
+  const otherUserIds = [
+    ...new Set((allParticipants ?? []).filter((p) => p.user_id !== user!.id).map((p) => p.user_id)),
+  ];
+  const { data: profiles } =
+    otherUserIds.length > 0
+      ? await supabase.from("profiles").select("user_id, display_name").in("user_id", otherUserIds)
+      : { data: [] };
   const profileMap = new Map((profiles ?? []).map((p) => [p.user_id, p.display_name]));
 
   // Get the last message per thread.
   const lastMessages: Record<string, { body: string; sender_id: string; created_at: string }> = {};
   for (const tid of threadIds) {
-    const { data: msg } = await supabase.from("messages").select("body, sender_id, created_at").eq("thread_id", tid).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const { data: msg } = await supabase
+      .from("messages")
+      .select("body, sender_id, created_at")
+      .eq("thread_id", tid)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     if (msg) lastMessages[tid] = msg;
   }
 
@@ -57,36 +82,65 @@ export default async function MessagesPage() {
   const unreadCounts: Record<string, number> = {};
   for (const tid of threadIds) {
     const readAt = lastReadMap[tid];
-    const { count } = await supabase.from("messages").select("id", { count: "exact", head: true }).eq("thread_id", tid).gt("created_at", readAt).neq("sender_id", user!.id);
+    const { count } = await supabase
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("thread_id", tid)
+      .gt("created_at", readAt)
+      .neq("sender_id", user!.id);
     unreadCounts[tid] = count ?? 0;
   }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
-      <p className="mt-1 text-sm text-neutral-600 mb-6">Direct messages with your coach.</p>
+      <p className="mt-1 mb-6 text-sm text-neutral-600">
+        Direct messages with your executive coach (not the thought partner — that's at{" "}
+        <Link href="/coach-chat" className="text-brand-blue hover:underline">
+          /coach-chat
+        </Link>
+        ).
+      </p>
 
       <ul className="space-y-2">
         {(threads ?? []).map((t) => {
-          const otherParticipant = (allParticipants ?? []).find((p) => p.thread_id === t.id && p.user_id !== user!.id);
-          const otherName = otherParticipant ? (profileMap.get(otherParticipant.user_id) ?? "Unknown") : (t.title ?? "Thread");
+          const otherParticipant = (allParticipants ?? []).find(
+            (p) => p.thread_id === t.id && p.user_id !== user!.id,
+          );
+          const otherName = otherParticipant
+            ? (profileMap.get(otherParticipant.user_id) ?? "Unknown")
+            : (t.title ?? "Thread");
           const last = lastMessages[t.id];
           const unread = unreadCounts[t.id] ?? 0;
 
           return (
             <li key={t.id}>
-              <Link href={`/messages/${t.id}`} className={`flex items-center gap-4 rounded-lg border bg-white p-4 shadow-sm transition hover:shadow-md ${unread > 0 ? "border-brand-blue/30" : "border-neutral-200"}`}>
+              <Link
+                href={`/messages/${t.id}`}
+                className={`flex items-center gap-4 rounded-lg border bg-white p-4 shadow-sm transition hover:shadow-md ${unread > 0 ? "border-brand-blue/30" : "border-neutral-200"}`}
+              >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-navy text-sm font-bold text-white shrink-0">
                   {otherName.charAt(0).toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className={`text-sm ${unread > 0 ? "font-bold text-brand-navy" : "font-medium text-neutral-800"}`}>{otherName}</span>
-                    {last && <span className="text-xs text-neutral-400 shrink-0">{timeAgo(last.created_at)}</span>}
+                    <span
+                      className={`text-sm ${unread > 0 ? "font-bold text-brand-navy" : "font-medium text-neutral-800"}`}
+                    >
+                      {otherName}
+                    </span>
+                    {last && (
+                      <span className="text-xs text-neutral-400 shrink-0">
+                        {timeAgo(last.created_at)}
+                      </span>
+                    )}
                   </div>
                   {last && (
-                    <p className={`text-sm truncate ${unread > 0 ? "text-brand-navy font-medium" : "text-neutral-500"}`}>
-                      {last.sender_id === user!.id ? "You: " : ""}{last.body}
+                    <p
+                      className={`line-clamp-1 text-sm ${unread > 0 ? "text-brand-navy font-medium" : "text-neutral-500"}`}
+                    >
+                      {last.sender_id === user!.id ? "You: " : ""}
+                      {last.body}
                     </p>
                   )}
                 </div>

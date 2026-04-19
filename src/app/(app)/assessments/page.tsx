@@ -22,7 +22,7 @@ export default async function AssessmentsPage() {
 
   const { data: assessment } = await supabase
     .from("assessments")
-    .select("id")
+    .select("id, ai_summary")
     .eq("user_id", user!.id)
     .maybeSingle();
 
@@ -40,9 +40,19 @@ export default async function AssessmentsPage() {
 
   const readyCount = (docs ?? []).filter((d) => d.status === "ready").length;
 
+  // Combined-themes synthesis appears on assessments.ai_summary._combined_themes
+  // once ≥2 reports are ready. Surface a chip so the learner knows the
+  // integrated view exists before they start the debrief.
+  const hasCombinedThemes = !!(
+    assessment?.ai_summary &&
+    typeof assessment.ai_summary === "object" &&
+    !Array.isArray(assessment.ai_summary) &&
+    (assessment.ai_summary as Record<string, unknown>)._combined_themes
+  );
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6 flex items-start justify-between">
+      <div className="mb-6 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Assessments</h1>
           <p className="mt-1 text-sm text-neutral-600">
@@ -50,17 +60,45 @@ export default async function AssessmentsPage() {
             and use them to ground your conversations.
           </p>
         </div>
-        {readyCount > 0 && (
+      </div>
+
+      {readyCount > 0 && (
+        <div
+          className={`mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 shadow-sm ${
+            hasCombinedThemes
+              ? "border-brand-pink/30 bg-brand-pink/5"
+              : "border-brand-blue/30 bg-brand-blue/5"
+          }`}
+        >
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-bold text-brand-navy">
+                {readyCount === 1
+                  ? "Your report is ready to debrief"
+                  : `${readyCount} reports ready to debrief`}
+              </h2>
+              {hasCombinedThemes && (
+                <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+                  Combined themes
+                </span>
+              )}
+            </div>
+            <p className="mt-0.5 text-xs text-neutral-600">
+              {hasCombinedThemes
+                ? "Your thought partner has read them side by side and pulled out the threads running across all of them."
+                : "Your thought partner will walk you through the key findings and connect them to your goals."}
+            </p>
+          </div>
           <form action={startAssessmentDebrief}>
             <button
               type="submit"
               className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
             >
-              Debrief with thought partner
+              Debrief with thought partner →
             </button>
           </form>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {TYPES.map((t) => {
@@ -77,12 +115,12 @@ export default async function AssessmentsPage() {
                 </div>
                 {doc && (
                   <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${
                       doc.status === "ready"
-                        ? "bg-emerald-100 text-emerald-900"
+                        ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
                         : doc.status === "processing"
-                          ? "bg-amber-100 text-amber-900"
-                          : "bg-red-100 text-red-900"
+                          ? "bg-amber-50 text-amber-800 ring-amber-200"
+                          : "bg-red-50 text-red-800 ring-red-200"
                     }`}
                   >
                     {doc.status}
@@ -92,8 +130,8 @@ export default async function AssessmentsPage() {
 
               {doc?.status === "ready" ? (
                 <p className="mt-3 text-sm text-neutral-600">
-                  Ready. Your thought partner has your findings — start the debrief below to walk
-                  through them together.
+                  Your thought partner has the key findings. Use the debrief button at the top when
+                  you're ready to walk through them.
                 </p>
               ) : doc?.status === "error" ? (
                 <div className="mt-3 text-sm text-red-700">
@@ -108,25 +146,6 @@ export default async function AssessmentsPage() {
           );
         })}
       </div>
-
-      {readyCount > 0 && (
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold">Ready to debrief</h2>
-          <p className="mt-1 text-sm text-neutral-600">
-            {readyCount === 1 ? "1 assessment" : `${readyCount} assessments`} processed. Your
-            thought partner can walk you through the key findings and help you connect them to your
-            goals.
-          </p>
-          <form action={startAssessmentDebrief} className="mt-3">
-            <button
-              type="submit"
-              className="inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-            >
-              Start assessment debrief
-            </button>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

@@ -6,12 +6,23 @@ export const metadata: Metadata = { title: "Resources — Leadership Academy" };
 
 export default async function ResourcesPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("super_admin").eq("user_id", user!.id).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("super_admin")
+    .eq("user_id", user!.id)
+    .maybeSingle();
 
-  const { data: resources } = await supabase.from("resources").select("id, title, description, url, type, category, created_at").order("created_at", { ascending: false });
+  const { data: resources } = await supabase
+    .from("resources")
+    .select("id, title, description, url, type, category, created_at")
+    .order("created_at", { ascending: false });
 
-  const categories = [...new Set((resources ?? []).map((r) => r.category).filter(Boolean) as string[])].sort();
+  const categories = [
+    ...new Set((resources ?? []).map((r) => r.category).filter(Boolean) as string[]),
+  ].sort();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -24,14 +35,13 @@ export default async function ResourcesPage() {
 
       {profile?.super_admin && <AddResourceForm />}
 
-      {(!resources || resources.length === 0) ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
-            <span className="text-xl">📚</span>
-          </div>
-          <h2 className="font-semibold text-brand-navy">No resources yet</h2>
-          <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-            {profile?.super_admin ? "Add the first resource above." : "Resources will appear here as your program team curates them."}
+      {!resources || resources.length === 0 ? (
+        <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <h2 className="font-semibold text-brand-navy">Library's still being curated</h2>
+          <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-600">
+            {profile?.super_admin
+              ? "Add the first resource above."
+              : "The LeadShift team curates articles, videos, and tools here as the program unfolds. Your thought partner will also point you to specific resources in the flow of conversation when something fits."}
           </p>
         </div>
       ) : (

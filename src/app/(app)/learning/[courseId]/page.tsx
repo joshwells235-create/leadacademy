@@ -7,17 +7,37 @@ type Props = { params: Promise<{ courseId: string }> };
 export default async function CourseDetailPage({ params }: Props) {
   const { courseId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const { data: course } = await supabase.from("courses").select("id, title, description").eq("id", courseId).maybeSingle();
+  const { data: course } = await supabase
+    .from("courses")
+    .select("id, title, description")
+    .eq("id", courseId)
+    .maybeSingle();
   if (!course) notFound();
 
-  const { data: modules } = await supabase.from("modules").select("id, title, description, order, duration_minutes").eq("course_id", courseId).eq("status", "published").order("order");
+  const { data: modules } = await supabase
+    .from("modules")
+    .select("id, title, description, order, duration_minutes")
+    .eq("course_id", courseId)
+    .eq("status", "published")
+    .order("order");
   const moduleIds = (modules ?? []).map((m) => m.id);
-  const { data: lessons } = moduleIds.length > 0
-    ? await supabase.from("lessons").select("id, module_id, title, type, order").in("module_id", moduleIds).order("order")
-    : { data: [] };
-  const { data: progress } = await supabase.from("lesson_progress").select("lesson_id, completed").eq("user_id", user!.id).eq("completed", true);
+  const { data: lessons } =
+    moduleIds.length > 0
+      ? await supabase
+          .from("lessons")
+          .select("id, module_id, title, type, order")
+          .in("module_id", moduleIds)
+          .order("order")
+      : { data: [] };
+  const { data: progress } = await supabase
+    .from("lesson_progress")
+    .select("lesson_id, completed")
+    .eq("user_id", user!.id)
+    .eq("completed", true);
   const completedIds = new Set((progress ?? []).map((p) => p.lesson_id));
 
   type LessonRow = { id: string; module_id: string; title: string; type: string; order: number };
@@ -41,7 +61,9 @@ export default async function CourseDetailPage({ params }: Props) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
-        <Link href="/learning" className="hover:text-brand-blue">Learning</Link>
+        <Link href="/learning" className="hover:text-brand-blue">
+          Learning
+        </Link>
         <span>/</span>
         <span className="font-medium text-brand-navy">{course.title}</span>
       </nav>
@@ -88,15 +110,24 @@ export default async function CourseDetailPage({ params }: Props) {
           const done = moduleLessons.filter((l) => completedIds.has(l.id)).length;
           const allDone = done === moduleLessons.length && moduleLessons.length > 0;
           return (
-            <div key={m.id} className={`rounded-lg border bg-white p-5 shadow-sm ${allDone ? "border-emerald-200" : "border-neutral-200"}`}>
+            <div
+              key={m.id}
+              className={`rounded-lg border bg-white p-5 shadow-sm ${allDone ? "border-emerald-200" : "border-neutral-200"}`}
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-medium text-neutral-400">MODULE {mIdx + 1}</span>
-                    {allDone && <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">✓ Complete</span>}
+                    {allDone && (
+                      <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">
+                        ✓ Complete
+                      </span>
+                    )}
                   </div>
                   <h2 className="font-semibold text-brand-navy">{m.title}</h2>
-                  {m.description && <p className="mt-0.5 text-sm text-neutral-600">{m.description}</p>}
+                  {m.description && (
+                    <p className="mt-0.5 text-sm text-neutral-600">{m.description}</p>
+                  )}
                 </div>
                 <span className="text-xs text-neutral-500">
                   {done}/{moduleLessons.length}
@@ -111,12 +142,29 @@ export default async function CourseDetailPage({ params }: Props) {
                     const overallIdx = allLessons.findIndex((al) => al.id === l.id) + 1;
                     return (
                       <li key={l.id}>
-                        <Link href={`/learning/${courseId}/${l.id}`} className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-brand-light transition group">
-                          <span className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-xs shrink-0 ${isComplete ? "border-emerald-500 bg-emerald-500 text-white" : "border-neutral-300 text-neutral-400 group-hover:border-brand-blue"}`}>
+                        <Link
+                          href={`/learning/${courseId}/${l.id}`}
+                          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-brand-light transition group"
+                        >
+                          <span
+                            className={`h-5 w-5 rounded-full border-2 flex items-center justify-center text-xs shrink-0 ${isComplete ? "border-emerald-500 bg-emerald-500 text-white" : "border-neutral-300 text-neutral-400 group-hover:border-brand-blue"}`}
+                          >
                             {isComplete ? "✓" : overallIdx}
                           </span>
-                          <span className={isComplete ? "text-neutral-500" : "text-brand-navy group-hover:text-brand-blue"}>{l.title}</span>
-                          <span className={`ml-auto rounded px-1.5 py-0.5 text-xs ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}>{l.type === "quiz" ? "Quiz" : "Lesson"}</span>
+                          <span
+                            className={
+                              isComplete
+                                ? "text-neutral-500"
+                                : "text-brand-navy group-hover:text-brand-blue"
+                            }
+                          >
+                            {l.title}
+                          </span>
+                          <span
+                            className={`ml-auto rounded px-1.5 py-0.5 text-xs ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}
+                          >
+                            {l.type === "quiz" ? "Quiz" : "Lesson"}
+                          </span>
                         </Link>
                       </li>
                     );

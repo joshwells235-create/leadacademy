@@ -28,17 +28,33 @@ export default async function CapstonePage() {
   if (gate.state === "not_scheduled") {
     return (
       <LockedState
-        title="Capstone builder — coming later in your program"
-        message={`Your cohort ${gate.cohortName} doesn't have a capstone date scheduled yet. We'll open this up later in the program, after you've built up enough of your journey to synthesize. Keep logging, reflecting, and running sprints.`}
+        title="Capstone builder — coming later"
+        message={`Your cohort ${gate.cohortName} doesn't have a capstone date scheduled yet. The builder opens up later in the program, after you've built enough of a journey to synthesize.`}
+        prepHint
       />
     );
   }
 
   if (gate.state === "locked") {
+    const daysRemaining = Math.max(
+      0,
+      Math.ceil(
+        (new Date(`${gate.unlocksAt}T00:00:00Z`).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+      ),
+    );
     return (
       <LockedState
-        title="Capstone builder — unlocks later"
-        message={`Your capstone builder unlocks on ${formatFullDate(gate.unlocksAt)}. Keep showing up between now and then — every goal, sprint, action, and reflection you log is raw material for the story you'll tell.`}
+        title="Capstone builder — unlocks soon"
+        message={`Opens on ${formatFullDate(gate.unlocksAt)} (${
+          daysRemaining === 0
+            ? "today!"
+            : daysRemaining === 1
+              ? "tomorrow"
+              : `${daysRemaining} days from now`
+        }). Between now and then, every goal, sprint, action, and reflection you log becomes raw material for the story you'll tell.`}
+        unlockDate={gate.unlocksAt}
+        daysRemaining={daysRemaining}
+        prepHint
       />
     );
   }
@@ -79,9 +95,9 @@ export default async function CapstonePage() {
       </header>
 
       <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard label="Goals tracked" value={goalsCountRes.count ?? 0} emoji="🎯" />
-        <StatCard label="Actions logged" value={actionsCountRes.count ?? 0} emoji="📝" />
-        <StatCard label="Reflections" value={reflectionsCountRes.count ?? 0} emoji="✨" />
+        <StatCard label="Goals tracked" value={goalsCountRes.count ?? 0} href="/goals?status=all" />
+        <StatCard label="Actions logged" value={actionsCountRes.count ?? 0} href="/action-log" />
+        <StatCard label="Reflections" value={reflectionsCountRes.count ?? 0} href="/reflections" />
       </section>
 
       <CapstoneWorkspace outline={outline ?? null} cohortName={gate.cohortName} />
@@ -89,39 +105,102 @@ export default async function CapstonePage() {
   );
 }
 
-function LockedState({ title, message }: { title: string; message: string }) {
+function LockedState({
+  title,
+  message,
+  prepHint,
+  unlockDate,
+  daysRemaining,
+}: {
+  title: string;
+  message: string;
+  prepHint?: boolean;
+  unlockDate?: string;
+  daysRemaining?: number;
+}) {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-      <div className="rounded-xl border border-neutral-200 bg-white p-10 shadow-sm">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-light text-2xl">
-          🔒
+    <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="rounded-xl border border-neutral-200 bg-white p-8 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-light">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="text-brand-navy"
+              aria-hidden
+            >
+              <title>Locked</title>
+              <rect x="3" y="11" width="18" height="11" rx="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-brand-navy">{title}</h1>
+            {unlockDate && daysRemaining != null && daysRemaining > 0 && (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-brand-pink">
+                {daysRemaining} {daysRemaining === 1 ? "day" : "days"} to go
+              </p>
+            )}
+            <p className="mt-2 text-sm text-neutral-600">{message}</p>
+          </div>
         </div>
-        <h1 className="text-2xl font-bold text-brand-navy">{title}</h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm text-neutral-600">{message}</p>
-        <Link
-          href="/dashboard"
-          className="mt-6 inline-block rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-        >
-          Back to dashboard
-        </Link>
+
+        {prepHint && (
+          <div className="mt-6 border-t border-neutral-100 pt-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Keep building the raw material
+            </p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-3">
+              <PrepLink
+                href="/goals"
+                title="Goals & sprints"
+                hint="Each active sprint is a chapter"
+              />
+              <PrepLink href="/action-log" title="Action log" hint="Small moves become Evidence" />
+              <PrepLink
+                href="/reflections"
+                title="Reflections"
+                hint="Patterns become Shift beats"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6">
+          <Link href="/dashboard" className="text-xs text-neutral-500 hover:text-brand-blue">
+            ← Back to dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value, emoji }: { label: string; value: number; emoji: string }) {
+function PrepLink({ href, title, hint }: { href: string; title: string; hint: string }) {
   return (
-    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-light text-lg">
-          {emoji}
-        </div>
-        <div>
-          <div className="text-2xl font-bold text-brand-navy">{value}</div>
-          <div className="text-xs uppercase tracking-wide text-neutral-500">{label}</div>
-        </div>
-      </div>
-    </div>
+    <Link
+      href={href}
+      className="block rounded-md border border-neutral-200 bg-white p-3 transition hover:border-brand-blue/40 hover:shadow-sm"
+    >
+      <p className="text-sm font-semibold text-brand-navy">{title} →</p>
+      <p className="mt-0.5 text-[11px] text-neutral-500">{hint}</p>
+    </Link>
+  );
+}
+
+function StatCard({ label, value, href }: { label: string; value: number; href: string }) {
+  return (
+    <Link
+      href={href}
+      className="block rounded-lg border border-neutral-200 bg-white p-4 shadow-sm transition hover:border-brand-blue/40 hover:shadow-md"
+    >
+      <div className="text-2xl font-bold text-brand-navy">{value}</div>
+      <div className="mt-1 text-xs uppercase tracking-wide text-neutral-500">{label}</div>
+    </Link>
   );
 }
 

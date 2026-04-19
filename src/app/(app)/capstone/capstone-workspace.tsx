@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import {
   finalizeCapstone,
   reopenCapstone,
@@ -66,6 +66,7 @@ export function CapstoneWorkspace({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [confirming, setConfirming] = useState<"share" | "finalize" | null>(null);
 
   const outlineJson = (outline?.outline ?? {}) as OutlineJson;
   const sectionsByKind = new Map<SectionKind, Section>();
@@ -88,6 +89,7 @@ export function CapstoneWorkspace({
   };
 
   const handleShare = () => {
+    setConfirming(null);
     start(async () => {
       await shareCapstoneWithCoach();
       router.refresh();
@@ -95,6 +97,7 @@ export function CapstoneWorkspace({
   };
 
   const handleFinalize = () => {
+    setConfirming(null);
     start(async () => {
       await finalizeCapstone();
       router.refresh();
@@ -144,7 +147,8 @@ export function CapstoneWorkspace({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <StatusPill status={status} />
-            <p className="mt-2 text-xs text-neutral-500">
+            <p className="mt-1.5 text-xs text-neutral-600">{statusSubline(status)}</p>
+            <p className="mt-1 text-xs text-neutral-500">
               Last refined {new Date(outline.updated_at).toLocaleDateString()}
             </p>
           </div>
@@ -160,17 +164,17 @@ export function CapstoneWorkspace({
             {status === "draft" && hasAnySection && (
               <button
                 type="button"
-                onClick={handleShare}
+                onClick={() => setConfirming("share")}
                 disabled={pending}
                 className="rounded-md border border-neutral-300 bg-white px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-brand-light disabled:opacity-60"
               >
-                Share with coach
+                Share with your coach
               </button>
             )}
             {(status === "draft" || status === "shared") && allSectionsFilled && (
               <button
                 type="button"
-                onClick={handleFinalize}
+                onClick={() => setConfirming("finalize")}
                 disabled={pending}
                 className="rounded-md border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 disabled:opacity-60"
               >
@@ -189,6 +193,72 @@ export function CapstoneWorkspace({
             )}
           </div>
         </div>
+
+        {confirming === "share" && (
+          <div
+            role="alertdialog"
+            aria-label="Share with coach"
+            className="mt-4 rounded-md border border-brand-blue/30 bg-brand-blue/5 p-3 text-sm"
+          >
+            <p className="font-semibold text-brand-navy">Share this draft with your coach?</p>
+            <ul className="mt-1.5 list-disc space-y-0.5 pl-5 text-xs text-neutral-700">
+              <li>Your coach gets a read-only view of these five sections as they stand now.</li>
+              <li>They can't edit — this stays yours to keep refining.</li>
+              <li>You can keep working on it; they'll see updates as you go.</li>
+            </ul>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleShare}
+                disabled={pending}
+                className="rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark disabled:opacity-50"
+              >
+                {pending ? "Sharing…" : "Share with coach"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                disabled={pending}
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-700 hover:bg-brand-light disabled:opacity-50"
+              >
+                Not yet
+              </button>
+            </div>
+          </div>
+        )}
+
+        {confirming === "finalize" && (
+          <div
+            role="alertdialog"
+            aria-label="Finalize capstone"
+            className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm"
+          >
+            <p className="font-semibold text-emerald-900">Mark this capstone as finalized?</p>
+            <p className="mt-1 text-xs text-emerald-800">
+              This signals to your coach and program team that you're done refining — the five
+              sections above are the story you're carrying out of the program. You can still reopen
+              it for edits if something shifts, so this isn't permanent.
+            </p>
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleFinalize}
+                disabled={pending}
+                className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {pending ? "Finalizing…" : "Yes, mark as finalized"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirming(null)}
+                disabled={pending}
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-neutral-700 hover:bg-brand-light disabled:opacity-50"
+              >
+                Keep editing
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -204,6 +274,16 @@ export function CapstoneWorkspace({
       </p>
     </div>
   );
+}
+
+function statusSubline(status: OutlineStatus): string {
+  if (status === "draft") {
+    return "Only you can see this. Share when you want your coach to read along.";
+  }
+  if (status === "shared") {
+    return "Your coach has read-only access. Keep refining — they'll see updates live.";
+  }
+  return "Marked as done — ready to carry into your final coaching session or presentation. Reopen any time.";
 }
 
 function StatusPill({ status }: { status: OutlineStatus }) {

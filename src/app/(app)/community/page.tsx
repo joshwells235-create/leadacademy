@@ -5,7 +5,9 @@ export const metadata: Metadata = { title: "Community — Leadership Academy" };
 
 export default async function CommunityPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: membership } = await supabase
     .from("memberships")
@@ -24,7 +26,9 @@ export default async function CommunityPage() {
   if (cohortId) {
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, likes_count, created_at, user_id, cohort_id, profiles:user_id(display_name)")
+      .select(
+        "id, content, likes_count, created_at, user_id, cohort_id, profiles:user_id(display_name)",
+      )
       .eq("cohort_id", cohortId)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -36,7 +40,9 @@ export default async function CommunityPage() {
   if (orgId) {
     const { data } = await supabase
       .from("community_posts")
-      .select("id, content, likes_count, created_at, user_id, cohort_id, profiles:user_id(display_name)")
+      .select(
+        "id, content, likes_count, created_at, user_id, cohort_id, profiles:user_id(display_name)",
+      )
       .eq("org_id", orgId)
       .is("cohort_id", null)
       .order("created_at", { ascending: false })
@@ -46,12 +52,22 @@ export default async function CommunityPage() {
 
   // Load comments + user's likes for all visible posts.
   const allPostIds = [...cohortPosts, ...alumniPosts].map((p) => p.id);
-  const { data: allComments } = allPostIds.length > 0
-    ? await supabase.from("community_comments").select("id, post_id, content, created_at, user_id, profiles:user_id(display_name)").in("post_id", allPostIds).order("created_at")
-    : { data: [] };
-  const { data: userLikes } = allPostIds.length > 0
-    ? await supabase.from("community_likes").select("post_id").eq("user_id", user!.id).in("post_id", allPostIds)
-    : { data: [] };
+  const { data: allComments } =
+    allPostIds.length > 0
+      ? await supabase
+          .from("community_comments")
+          .select("id, post_id, content, created_at, user_id, profiles:user_id(display_name)")
+          .in("post_id", allPostIds)
+          .order("created_at")
+      : { data: [] };
+  const { data: userLikes } =
+    allPostIds.length > 0
+      ? await supabase
+          .from("community_likes")
+          .select("post_id")
+          .eq("user_id", user!.id)
+          .in("post_id", allPostIds)
+      : { data: [] };
 
   const commentsByPost: Record<string, CommentWithAuthor[]> = {};
   for (const c of (allComments ?? []) as unknown as CommentWithAuthor[]) {

@@ -26,19 +26,27 @@ export function ProactivityToggle({ initialEnabled }: Props) {
   return (
     <section className="rounded-lg border border-neutral-200 bg-white p-5">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0 flex-1">
           <h2 className="text-sm font-semibold text-brand-navy">Proactive check-ins</h2>
           <p className="mt-1 text-sm text-neutral-600">
-            Let your thought partner reach out when they notice something worth talking about — a
-            quiet stretch on a goal, a challenge that didn't get marked, momentum worth naming. Max
-            2 messages per week, never spammy.
+            Let your thought partner reach out when it notices something worth talking about — a
+            quiet stretch on a goal, a challenge that didn't get marked, momentum worth naming.
           </p>
+          <ul className="mt-2 list-disc space-y-0.5 pl-5 text-xs text-neutral-500">
+            <li>At most 2 nudges per 7-day window (total, not per-topic).</li>
+            <li>Each topic has a 14-day cooldown so you won't get the same prompt twice.</li>
+            <li>Dismissing a nudge counts toward the weekly cap — we won't spam you back.</li>
+            <li>
+              Turn this off any time; nothing else about how your thought partner works changes.
+            </li>
+          </ul>
         </div>
         <button
           type="button"
           onClick={toggle}
           disabled={pending}
           aria-pressed={initialEnabled}
+          aria-label={`Proactive check-ins ${initialEnabled ? "on — tap to turn off" : "off — tap to turn on"}`}
           className={`relative h-6 w-11 flex-shrink-0 rounded-full transition ${
             initialEnabled ? "bg-brand-blue" : "bg-neutral-300"
           } disabled:opacity-50`}
