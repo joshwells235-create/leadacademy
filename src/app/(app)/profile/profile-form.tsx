@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { startIntakeSession } from "@/lib/intake/actions";
 import { reopenIntake, type UpdateProfileInput, updateProfile } from "@/lib/profile/actions";
 
@@ -46,6 +46,19 @@ export function ProfileForm({
   const [pending, start] = useTransition();
   const [saveState, setSaveState] = useState<"idle" | "saved" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the "Saved" toast after a few seconds so it doesn't linger, but
+  // reset the timer on every new save so repeated saves keep the feedback
+  // visible for the same duration each time.
+  useEffect(() => {
+    if (saveState !== "saved") return;
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => setSaveState("idle"), 4000);
+    return () => {
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    };
+  }, [saveState]);
 
   const [roleTitle, setRoleTitle] = useState(initial.role_title);
   const [functionArea, setFunctionArea] = useState(initial.function_area);
@@ -227,9 +240,13 @@ export function ProfileForm({
         />
       </Row>
 
-      {saveState === "saved" && <p className="text-xs text-emerald-700">Saved.</p>}
       {saveState === "error" && errorMessage && (
-        <p className="text-xs text-red-700">Couldn't save: {errorMessage}</p>
+        <div
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800"
+        >
+          Couldn't save — {errorMessage}
+        </div>
       )}
 
       <div className="flex flex-wrap items-center gap-3 border-t border-neutral-100 pt-5">
@@ -238,8 +255,23 @@ export function ProfileForm({
           disabled={pending}
           className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60"
         >
-          Save changes
+          {pending ? "Saving…" : "Save changes"}
         </button>
+        {saveState === "saved" && (
+          <span
+            role="status"
+            aria-live="polite"
+            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800"
+          >
+            <span
+              aria-hidden
+              className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] text-white"
+            >
+              ✓
+            </span>
+            Saved to your profile
+          </span>
+        )}
         {intakeCompleted ? (
           <button
             type="button"

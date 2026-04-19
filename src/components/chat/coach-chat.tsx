@@ -105,9 +105,14 @@ export function CoachChat({
               </li>
             ))}
             {isStreaming && messages[messages.length - 1]?.role === "user" && (
-              <li className="flex justify-start">
-                <div className="max-w-[80%] rounded-2xl bg-neutral-100 px-4 py-2 text-sm italic text-neutral-500">
-                  thinking…
+              <li className="flex justify-start" aria-live="polite">
+                <div className="flex max-w-[80%] items-center gap-2 rounded-2xl bg-brand-light px-4 py-3 text-sm text-brand-navy">
+                  <span className="flex gap-1" aria-hidden>
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue" />
+                  </span>
+                  <span className="text-neutral-600">Thinking…</span>
                 </div>
               </li>
             )}
@@ -117,8 +122,15 @@ export function CoachChat({
       </div>
 
       {error && (
-        <div className="border-t border-red-200 bg-red-50 px-4 py-2 text-xs text-red-700">
-          {error.message}
+        <div
+          role="alert"
+          className="border-t border-red-200 bg-red-50 px-4 py-2.5 text-xs text-red-800"
+        >
+          <p className="font-medium">Something went wrong sending that message.</p>
+          <p className="mt-0.5 text-red-700">
+            This is usually a network hiccup — try sending again. If it keeps happening, reload the
+            page.
+          </p>
         </div>
       )}
 

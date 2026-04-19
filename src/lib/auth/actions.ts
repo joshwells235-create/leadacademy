@@ -1,12 +1,12 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
+  forgotPasswordSchema,
   loginSchema,
   registerSchema,
-  forgotPasswordSchema,
   resetPasswordSchema,
 } from "@/lib/validation/auth";
 
@@ -15,10 +15,7 @@ export type ActionState =
   | { status: "error"; message: string; fieldErrors?: Record<string, string[]> }
   | { status: "success"; message: string };
 
-export async function loginAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function loginAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -41,10 +38,7 @@ export async function loginAction(
   redirect("/dashboard");
 }
 
-export async function registerAction(
-  _prev: ActionState,
-  formData: FormData,
-): Promise<ActionState> {
+export async function registerAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
   const parsed = registerSchema.safeParse({
     token: formData.get("token"),
     password: formData.get("password"),
@@ -61,10 +55,9 @@ export async function registerAction(
   const supabase = await createClient();
 
   // Verify the invitation (anon-callable RPC).
-  const { data: invites, error: verifyError } = await supabase.rpc(
-    "verify_invitation",
-    { p_token: parsed.data.token },
-  );
+  const { data: invites, error: verifyError } = await supabase.rpc("verify_invitation", {
+    p_token: parsed.data.token,
+  });
   if (verifyError || !invites || invites.length === 0) {
     return {
       status: "error",
@@ -133,7 +126,8 @@ export async function forgotPasswordAction(
   }
   return {
     status: "success",
-    message: "If an account exists for that email, a reset link is on its way.",
+    message:
+      "If an account exists for that email, a reset link is on its way. Check your inbox (and spam folder) in a minute or two. Nothing arriving? Double-check the email address and try again.",
   };
 }
 

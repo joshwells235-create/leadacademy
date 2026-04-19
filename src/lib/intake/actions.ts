@@ -110,8 +110,13 @@ function buildIntakeOpener(firstName: string | null): string {
   return [
     greeting,
     "",
-    "Before we get into anything about your leadership work, I'd love to learn a bit about you — your role, your team, your world — so every conversation after this one already feels grounded in who you actually are. It should only take about five minutes.",
+    "Before we get into anything about your leadership work, I want to learn a bit about you — your role, your team, the world you lead in. That way every future conversation is already grounded in who you actually are, instead of me asking the same background questions every time.",
     "",
-    "Let's start simple: what's your role? The title on your business card, or whatever you'd tell someone at a conference who asked what you do.",
+    "A few things to know:",
+    "• It's about nine short questions — roughly five minutes.",
+    "• Your coach doesn't see this conversation — it's here so I can show up grounded in your context on every future exchange.",
+    "• Skip anything that doesn't fit, or come back later and edit it on your profile page.",
+    "",
+    "Let's start simple: what's your role? The title on your business card, or however you'd describe what you do to someone at a conference.",
   ].join("\n");
 }

@@ -142,7 +142,7 @@ export default async function DashboardPage() {
         </h1>
         <p className="mt-1 text-sm text-neutral-600">
           {isFirstTime ? (
-            "You're in the right place. Let's get started on your leadership growth."
+            "You're in the right place. Let's get your leadership academy set up."
           ) : membership ? (
             <>
               {membership.organizations?.name}
@@ -156,6 +156,22 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* ── FIRST TIME: One-sentence "what is this" explainer so jargon like
+           "thought partner" doesn't land cold. Suppressed once the learner
+           has any real artifacts — they've lived it, they don't need the pitch. ── */}
+      {isFirstTime && (
+        <div className="mb-6 rounded-xl border border-brand-navy/10 bg-white p-5 shadow-sm">
+          <p className="text-sm leading-relaxed text-neutral-700">
+            <span className="font-semibold text-brand-navy">How this works.</span> Leadership
+            Academy pairs structured learning — goals, sprints, reflections, courses — with your own{" "}
+            <span className="font-semibold text-brand-pink">Thought Partner</span>: an always-on AI
+            guide that knows your context and helps you think out loud between coaching sessions.
+            It's different from your human executive coach — think of it as the friend you'd text at
+            9pm when something at work is nagging at you.
+          </p>
+        </div>
+      )}
+
       {/* ── FIRST TIME: Getting started steps. Suppressed while intake is pending — the
            intake is the very first thing a new learner should do, and the steps card
            overlaps with it (both pitch "start a conversation"). ── */}
@@ -163,32 +179,37 @@ export default async function DashboardPage() {
         <div className="mb-10 rounded-2xl border border-brand-blue/20 bg-gradient-to-br from-white to-brand-blue-light/30 p-8 shadow-sm">
           <h2 className="text-lg font-bold text-brand-navy mb-1">Your first steps</h2>
           <p className="text-sm text-neutral-600 mb-6">
-            Complete these in any order — each takes about 5 minutes.
+            Do these in any order — most take about 5 minutes. Uploading assessments takes longer
+            because you'll need to find the PDF reports first, so save that for when you have them
+            handy.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
             <StepCard
               number="1"
-              title="Talk to your thought partner"
-              description="Your AI thought partner is ready. Tell it what you're working on as a leader."
+              title="Talk with your thought partner"
+              description="Tell it what you're working on as a leader. It already has your profile — no setup."
               href="/coach-chat"
               cta="Start a conversation"
               done={!!convRes.data}
+              estimate="~5 min"
             />
             <StepCard
               number="2"
               title="Set a growth goal"
-              description="Draft a SMART goal that changes you, your team, and your organization."
+              description="Your thought partner drafts it with you — a goal that changes you, your team, and your org."
               href="/coach-chat?mode=goal"
               cta="Draft a goal"
               done={totalGoals > 0}
+              estimate="~10 min"
             />
             <StepCard
               number="3"
               title="Upload your assessments"
-              description="PI, EQ-i, and 360 reports ground your thought partner in your real data."
+              description="Add your PI, EQ-i, or 360 reports (any you have) so coaching is grounded in real data."
               href="/assessments"
-              cta="Upload assessments"
+              cta="Upload reports"
               done={assessmentsReady > 0}
+              estimate="when you have the PDFs"
             />
           </div>
         </div>
@@ -230,7 +251,10 @@ export default async function DashboardPage() {
 
             {hasActionItems ? (
               <div className="rounded-xl border-2 border-brand-blue/20 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-brand-navy">From your coach</h3>
+                <h3 className="text-sm font-bold text-brand-navy">From your executive coach</h3>
+                <p className="mt-0.5 text-[11px] text-neutral-500">
+                  Action items from your human coach — not the thought partner.
+                </p>
                 <ul className="mt-3 space-y-2">
                   {(actionItemsRes.data ?? []).map((item) => (
                     <ActionItemToggle key={item.id} item={item} />
@@ -429,6 +453,7 @@ function StepCard({
   href,
   cta,
   done,
+  estimate,
 }: {
   number: string;
   title: string;
@@ -436,6 +461,7 @@ function StepCard({
   href: string;
   cta: string;
   done: boolean;
+  estimate?: string;
 }) {
   return (
     <div
@@ -453,12 +479,15 @@ function StepCard({
       </div>
       <p className="text-xs text-neutral-600 mb-3">{description}</p>
       {!done ? (
-        <Link
-          href={href}
-          className="inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark transition"
-        >
-          {cta} →
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={href}
+            className="inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark transition"
+          >
+            {cta} →
+          </Link>
+          {estimate && <span className="text-[10px] text-neutral-500">{estimate}</span>}
+        </div>
       ) : (
         <span className="text-xs text-emerald-600 font-medium">Done</span>
       )}

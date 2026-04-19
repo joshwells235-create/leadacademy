@@ -6,6 +6,7 @@ import { ConversationsSidebar } from "@/components/chat/conversations-sidebar";
 import { listConversations } from "@/lib/ai/conversation/list-conversations";
 import { loadConversation } from "@/lib/ai/conversation/load-conversation";
 import { createClient } from "@/lib/supabase/server";
+import { createSeededThoughtPartnerConversation } from "@/lib/thought-partner/start-session";
 
 export const metadata: Metadata = { title: "Thought Partner — Leadership Academy" };
 
@@ -54,6 +55,43 @@ export default async function CoachChatPage({ searchParams }: Props) {
     const anchor = mostRecent.lastMessageAt ?? mostRecent.createdAt;
     if (Date.now() - new Date(anchor).getTime() < AUTO_RESUME_MAX_AGE_MS) {
       target = await loadConversation(supabase, mostRecent.id);
+    }
+  }
+
+  // No target = the learner is about to land on a blank canvas. Seed a new
+  // conversation with an opening assistant message so they never stare at an
+  // empty chat with nothing to react to. Mirrors the pattern used by intake,
+  // capstone, assessment-debrief, and from-nudge. Skipped only when the
+  // learner isn't attached to an org (super-admin staff, unassigned
+  // newcomers) — we can't insert an ai_conversations row without org_id.
+  // Modes that have their own dedicated entry server actions (intake /
+  // capstone / assessment) still bypass this via their own flows; if a
+  // learner somehow arrives here with mode=intake/assessment/capstone in
+  // the URL, we fall back to a plain blank render rather than silently
+  // double-seeding.
+  if (!target) {
+    const seedableMode =
+      requestedMode === "general" || requestedMode === "goal" || requestedMode === "reflection";
+    if (seedableMode) {
+      const { data: membership } = await supabase
+        .from("memberships")
+        .select("org_id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (membership?.org_id) {
+        const conversationId = await createSeededThoughtPartnerConversation({
+          supabase,
+          userId: user.id,
+          orgId: membership.org_id,
+          mode: requestedMode,
+          lens: requestedLens,
+        });
+        if (conversationId) {
+          redirect(`/coach-chat?c=${conversationId}`);
+        }
+      }
     }
   }
 
@@ -115,17 +153,17 @@ export default async function CoachChatPage({ searchParams }: Props) {
             emptyHint={
               activeMode === "goal" ? (
                 <p>
-                  Start by telling your thought partner what you want to grow in
+                  Tell your thought partner what you're trying to grow into as a leader
                   {lensLabel ? ` — starting from ${lensLabel.toLowerCase()} is fine` : ""}. They'll
-                  help you see how it lights up the other two lenses too.
+                  help you shape it into a goal that actually moves things.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  <p>A few ways to start:</p>
+                  <p>Not sure where to start? Try one of these:</p>
                   <ul className="mx-auto inline-block text-left text-neutral-600">
-                    <li>• "I want to set a goal for leading my team better."</li>
                     <li>• "Something happened at work today I want to think through."</li>
-                    <li>• "How should I use my 1:1s more effectively?"</li>
+                    <li>• "I want to work on being a better leader for my team."</li>
+                    <li>• "What's a good way to prepare for a hard conversation?"</li>
                   </ul>
                 </div>
               )

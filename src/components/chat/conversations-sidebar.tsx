@@ -40,7 +40,7 @@ export function ConversationsSidebar({ conversations, activeId }: Props) {
 
           {conversations.length === 0 ? (
             <div className="p-4 text-center text-xs text-neutral-500">
-              No conversations yet. Start one above.
+              No saved conversations yet — your first one will show up here.
             </div>
           ) : (
             <ConversationGroups conversations={conversations} activeId={activeId} />

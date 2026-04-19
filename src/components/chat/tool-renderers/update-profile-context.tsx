@@ -41,47 +41,59 @@ export function UpdateProfileContextRenderer({ part }: ToolRendererProps) {
   if (part.state === "output-available" && output) {
     if (output.error) {
       return (
-        <p className="mt-1 rounded border border-red-200 bg-red-50 px-2 py-1 text-sm text-red-800">
-          Couldn't update profile: {output.error}
+        <p className="mt-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+          Couldn't save that to your profile: {output.error}
         </p>
       );
     }
 
     const fields = (output.updated_fields ?? []).filter((f) => f !== "mark_complete");
+    const fieldSummary = fields.length > 0 ? summarizeFields(fields, input) : null;
 
-    if (output.marked_complete && fields.length === 0) {
+    if (output.marked_complete) {
       return (
-        <div className="mt-1 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          ✓ Intake complete — your thought partner has what it needs to get started.
+        <div className="mt-2 rounded-lg border-2 border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+          <div className="flex items-center gap-2 font-semibold">
+            <span
+              aria-hidden
+              className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-xs text-white"
+            >
+              ✓
+            </span>
+            <span>Intake complete</span>
+          </div>
+          {fieldSummary && <p className="mt-1.5 text-xs text-emerald-800">Saved: {fieldSummary}</p>}
+          <p className="mt-1.5 text-xs text-emerald-800">
+            From here on, your thought partner picks up the rest — ask about anything you're working
+            on.
+          </p>
         </div>
       );
     }
 
     return (
-      <div className="mt-1 rounded border border-brand-blue/20 bg-brand-blue/5 px-3 py-2 text-xs text-brand-navy">
-        <span className="font-medium">✓ Saved to your profile:</span>{" "}
-        {fields.length === 0 ? (
-          <span className="text-neutral-600">intake noted</span>
-        ) : (
-          fields
-            .map((f) => {
-              const label = FIELD_LABEL[f] ?? f;
-              const value = (input as Record<string, unknown>)[f];
-              if (value === undefined || value === null || value === "") return label;
-              const display =
-                typeof value === "string" && value.length > 60 ? `${value.slice(0, 60)}…` : value;
-              return `${label}: ${display}`;
-            })
-            .join(" · ")
-        )}
-        {output.marked_complete && (
-          <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-800">
-            intake complete
-          </span>
-        )}
+      <div
+        className="mt-2 rounded-md border border-brand-blue/20 bg-brand-blue/5 px-3 py-2 text-xs text-brand-navy"
+        aria-live="polite"
+      >
+        <span className="font-semibold">✓ Saved to your profile:</span>{" "}
+        {fieldSummary ?? <span className="text-neutral-600">intake noted</span>}
       </div>
     );
   }
 
-  return <p className="mt-1 text-xs italic text-neutral-500">saving profile…</p>;
+  return <p className="mt-1 text-xs italic text-neutral-500">saving to your profile…</p>;
+}
+
+function summarizeFields(fields: string[], input: UpdateInput): string {
+  return fields
+    .map((f) => {
+      const label = FIELD_LABEL[f] ?? f;
+      const value = (input as Record<string, unknown>)[f];
+      if (value === undefined || value === null || value === "") return label;
+      const display =
+        typeof value === "string" && value.length > 60 ? `${value.slice(0, 60)}…` : value;
+      return `${label}: ${display}`;
+    })
+    .join(" · ");
 }
