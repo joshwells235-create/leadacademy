@@ -548,7 +548,15 @@ export async function POST(request: NextRequest) {
     return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: false };
   });
 
-  const modelMessages = await convertToModelMessages(messages as UIMessage[]);
+  // Strip any dangling tool-call parts — tool-* parts in assistant messages
+  // that never received an output. These can happen when a learner types a
+  // new message instead of clicking the approval pill's Apply/Dismiss buttons
+  // on a needsApproval tool. Without this sanitizer, Anthropic rejects the
+  // next call with "tool_use_id X is not followed by tool_result blocks"
+  // and the conversation gets stuck. The AI re-proposes naturally on the
+  // next turn if the user still wants the action.
+  const sanitizedMessages = sanitizeDanglingToolParts(messages as UIMessage[]);
+  const modelMessages = await convertToModelMessages(sanitizedMessages);
   const result = streamText({
     model: claude(model),
     system: systemPrompt,
@@ -669,6 +677,23 @@ export async function POST(request: NextRequest) {
 
   return result.toUIMessageStreamResponse({
     headers: { "x-conversation-id": conversationId },
+  });
+}
+
+function sanitizeDanglingToolParts(messages: UIMessage[]): UIMessage[] {
+  return messages.map((m) => {
+    if (m.role !== "assistant") return m;
+    const parts = (m as { parts?: unknown[] }).parts;
+    if (!Array.isArray(parts)) return m;
+    const cleaned = parts.filter((p) => {
+      if (!p || typeof p !== "object") return true;
+      const type = (p as { type?: unknown }).type;
+      if (typeof type !== "string" || !type.startsWith("tool-")) return true;
+      const state = (p as { state?: unknown }).state;
+      return state === "output-available" || state === "output-error";
+    });
+    if (cleaned.length === parts.length) return m;
+    return { ...m, parts: cleaned } as UIMessage;
   });
 }
 
