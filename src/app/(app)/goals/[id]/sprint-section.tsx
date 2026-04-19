@@ -141,20 +141,32 @@ function ActiveSprintCard({ sprint }: { sprint: Sprint }) {
         </button>
       </div>
 
-      <div className="mt-3 flex items-center gap-3 text-xs text-neutral-600">
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-neutral-600">
         <span>
           Day {dayNumber} of {totalDays}
         </span>
-        <span>·</span>
-        <span>{daysRemaining} days remaining</span>
-        <span>·</span>
+        <span aria-hidden>·</span>
+        <span>
+          {daysRemaining} day{daysRemaining === 1 ? "" : "s"} remaining
+        </span>
+        <span aria-hidden>·</span>
         <span className="font-medium text-brand-blue">
           {sprint.action_count} action{sprint.action_count === 1 ? "" : "s"} logged
         </span>
       </div>
 
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/60">
-        <div className="h-full bg-brand-blue transition-all" style={{ width: `${progress}%` }} />
+      <div className="mt-2 flex items-center gap-2">
+        <div
+          className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/60"
+          role="progressbar"
+          aria-valuenow={progress}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Sprint ${sprint.sprint_number} progress`}
+        >
+          <div className="h-full bg-brand-blue transition-all" style={{ width: `${progress}%` }} />
+        </div>
+        <span className="text-[10px] font-medium tabular-nums text-brand-blue">{progress}%</span>
       </div>
     </div>
   );

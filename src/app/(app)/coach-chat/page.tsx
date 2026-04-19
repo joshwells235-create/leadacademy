@@ -69,6 +69,7 @@ export default async function CoachChatPage({ searchParams }: Props) {
   // learner somehow arrives here with mode=intake/assessment/capstone in
   // the URL, we fall back to a plain blank render rather than silently
   // double-seeding.
+  let seedMisfire = false;
   if (!target) {
     const seedableMode =
       requestedMode === "general" || requestedMode === "goal" || requestedMode === "reflection";
@@ -91,6 +92,11 @@ export default async function CoachChatPage({ searchParams }: Props) {
         if (conversationId) {
           redirect(`/coach-chat?c=${conversationId}`);
         }
+        // Seeding failed (DB error, LLM timeout, etc). Render a visible
+        // notice so the learner isn't left staring at a blank chat
+        // wondering what happened. They can still send a message — the
+        // chat route creates the conversation on demand as a fallback.
+        seedMisfire = true;
       }
     }
   }
@@ -110,6 +116,17 @@ export default async function CoachChatPage({ searchParams }: Props) {
 
   const lensLabel = lensLabelFor(activeLens);
   const heading = headingFor(activeMode, lensLabel, target?.title ?? null);
+
+  // How long has it been since the last message? Used to vary the resumption
+  // subheading so a 30-day-old conversation doesn't say "continuing" like a
+  // 5-minute-old one — a stale resume should feel intentional.
+  const resumeAgeDays =
+    target && (target.lastMessageAt ?? target.createdAt)
+      ? Math.floor(
+          (Date.now() - new Date(target.lastMessageAt ?? target.createdAt).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
 
   const initialMessages: UIMessage[] | undefined = target
     ? (target.messages as unknown as UIMessage[])
@@ -131,9 +148,7 @@ export default async function CoachChatPage({ searchParams }: Props) {
                   <em>organization</em>. Your thought partner will help you get there.
                 </>
               ) : target ? (
-                <>
-                  Continuing your conversation — your thought partner remembers where you left off.
-                </>
+                <>{resumeSubheading(resumeAgeDays)}</>
               ) : (
                 <>
                   Talk through anything — a situation at work, something you're noticing, a
@@ -143,6 +158,18 @@ export default async function CoachChatPage({ searchParams }: Props) {
               )}
             </p>
           </div>
+
+          {seedMisfire && (
+            <div
+              role="status"
+              className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+            >
+              <p className="font-medium">Couldn't draft an opener just now.</p>
+              <p className="mt-0.5">
+                Go ahead and send your first message — your thought partner will pick up from there.
+              </p>
+            </div>
+          )}
 
           <CoachChat
             key={target?.id ?? "new"}
@@ -187,6 +214,22 @@ function lensLabelFor(lens: Lens | undefined): string | null {
     : lens === "others"
       ? "Leading Others"
       : "Leading the Organization";
+}
+
+function resumeSubheading(ageDays: number | null): string {
+  if (ageDays == null || ageDays < 1) {
+    return "Picking up where you left off — your thought partner remembers everything above.";
+  }
+  if (ageDays === 1) {
+    return "Picking up from yesterday — your thought partner remembers everything above.";
+  }
+  if (ageDays < 7) {
+    return `Picking up from ${ageDays} days ago — scroll up if you want a refresher on what you were working through.`;
+  }
+  if (ageDays < 21) {
+    return "It's been a couple of weeks — scroll up to see what you were working through, or jump in fresh and your thought partner will catch up.";
+  }
+  return "It's been a while since this conversation. Scroll up for context, or start a new conversation if today's thought is its own thing.";
 }
 
 function headingFor(mode: Mode, lensLabel: string | null, title: string | null): string {

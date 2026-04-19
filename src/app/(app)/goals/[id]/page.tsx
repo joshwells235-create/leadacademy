@@ -34,7 +34,9 @@ export default async function GoalDetailPage({ params }: Props) {
   const [{ data: actions }, { data: sprintsData }] = await Promise.all([
     supabase
       .from("action_logs")
-      .select("id, description, reflection, occurred_on, impact_area")
+      .select(
+        "id, description, reflection, occurred_on, impact_area, sprint_id, goal_sprints(sprint_number, status)",
+      )
       .eq("goal_id", id)
       .eq("user_id", user.id)
       .order("occurred_on", { ascending: false })
@@ -85,19 +87,27 @@ export default async function GoalDetailPage({ params }: Props) {
             <dl className="mt-3 space-y-3 text-sm">
               {(
                 [
-                  ["specific", "Specific"],
-                  ["measurable", "Measurable"],
-                  ["achievable", "Achievable"],
-                  ["relevant", "Relevant"],
-                  ["time_bound", "Time-bound"],
+                  ["specific", "Specific", "S"],
+                  ["measurable", "Measurable", "M"],
+                  ["achievable", "Achievable", "A"],
+                  ["relevant", "Relevant", "R"],
+                  ["time_bound", "Time-bound", "T"],
                 ] as const
-              ).map(([key, label]) =>
+              ).map(([key, label, letter]) =>
                 smart[key] ? (
-                  <div key={key}>
-                    <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                      {label}
-                    </dt>
-                    <dd className="mt-0.5 text-neutral-800">{smart[key]}</dd>
+                  <div key={key} className="flex gap-3">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-blue/10 text-xs font-bold text-brand-blue"
+                    >
+                      {letter}
+                    </span>
+                    <div className="min-w-0">
+                      <dt className="text-xs font-medium uppercase tracking-wide text-neutral-500">
+                        {label}
+                      </dt>
+                      <dd className="mt-0.5 text-neutral-800">{smart[key]}</dd>
+                    </div>
                   </div>
                 ) : null,
               )}
@@ -146,7 +156,20 @@ export default async function GoalDetailPage({ params }: Props) {
               <ul className="mt-3 space-y-2 text-sm">
                 {actions.map((a) => (
                   <li key={a.id} className="border-l-2 border-neutral-200 pl-3">
-                    <div className="text-xs text-neutral-500">{a.occurred_on}</div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                      <span>{a.occurred_on}</span>
+                      {a.goal_sprints && (
+                        <span
+                          className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                            a.goal_sprints.status === "active"
+                              ? "bg-brand-blue/10 text-brand-blue"
+                              : "bg-neutral-100 text-neutral-600"
+                          }`}
+                        >
+                          Sprint {a.goal_sprints.sprint_number}
+                        </span>
+                      )}
+                    </div>
                     <div className="text-neutral-800">{a.description}</div>
                     {a.reflection && (
                       <div className="mt-1 text-xs italic text-neutral-600">{a.reflection}</div>
@@ -165,8 +188,8 @@ export default async function GoalDetailPage({ params }: Props) {
 
         <div>
           <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold">Refine with thought partner</h2>
-            <span className="text-xs text-neutral-500">goal mode · scoped to this goal</span>
+            <h2 className="text-sm font-semibold">Work on this goal</h2>
+            <span className="text-xs text-neutral-500">with your thought partner</span>
           </div>
           <CoachChat
             mode="goal"

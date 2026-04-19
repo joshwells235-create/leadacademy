@@ -1,14 +1,14 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { createActionLog, type CreateActionLogState } from "@/lib/goals/actions";
 import {
-  FormField,
-  TextInput,
-  SubmitButton,
   FormError,
+  FormField,
   FormSuccess,
+  SubmitButton,
+  TextInput,
 } from "@/components/ui/form-field";
+import { type CreateActionLogState, createActionLog } from "@/lib/goals/actions";
 
 const initialState: CreateActionLogState = { status: "idle" };
 
@@ -30,11 +30,23 @@ export function ActionLogForm({
   }, [state]);
 
   const today = new Date().toISOString().slice(0, 10);
+  const preselectedGoal = preselectedGoalId ? goals.find((g) => g.id === preselectedGoalId) : null;
 
   return (
     <form ref={formRef} action={formAction} className="mt-3 space-y-3">
       {state.status === "error" && <FormError message={state.message} />}
       {state.status === "success" && <FormSuccess message={state.message} />}
+
+      {preselectedGoal && (
+        <div className="rounded-md border border-brand-blue/30 bg-brand-blue/5 px-3 py-2 text-xs">
+          <p className="text-brand-blue">
+            <span className="font-semibold">Logging against:</span> {preselectedGoal.title}
+          </p>
+          <p className="mt-0.5 text-neutral-600">
+            Change this below if it belongs to a different goal.
+          </p>
+        </div>
+      )}
 
       <FormField
         label="What did you do?"
@@ -53,7 +65,9 @@ export function ActionLogForm({
         <select
           name="goalId"
           defaultValue={preselectedGoalId ?? ""}
-          className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          className={`w-full rounded-md border bg-white px-3 py-2 text-sm shadow-sm focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900 ${
+            preselectedGoal ? "border-brand-blue/40" : "border-neutral-300"
+          }`}
         >
           <option value="">— none / general —</option>
           {goals.map((g) => (
@@ -98,4 +112,3 @@ export function ActionLogForm({
     </form>
   );
 }
-

@@ -46,20 +46,36 @@ export function DailyChallengeWidget() {
   if (loading) {
     return (
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-        <div className="text-sm text-neutral-500">Loading today's challenge…</div>
+        <h2 className="text-sm font-semibold text-brand-navy">Today's challenge</h2>
+        <div className="mt-3 h-4 w-3/4 animate-pulse rounded bg-neutral-100" />
+        <div className="mt-2 h-4 w-1/2 animate-pulse rounded bg-neutral-100" />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-        Couldn't load challenge: {error}
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-brand-navy">Today's challenge</h2>
+        <p className="mt-2 text-sm text-neutral-600">
+          Couldn't load today's challenge right now. Reload the page in a minute — your thought
+          partner is drafting it.
+        </p>
       </div>
     );
   }
 
-  if (!challenge) return null;
+  if (!challenge) {
+    return (
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+        <h2 className="text-sm font-semibold text-brand-navy">Today's challenge</h2>
+        <p className="mt-2 text-sm text-neutral-600">
+          No challenge yet — check back in a moment. Your thought partner is drafting one grounded
+          in your goals and recent reflections.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">

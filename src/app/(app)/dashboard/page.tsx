@@ -264,14 +264,11 @@ export default async function DashboardPage() {
             ) : (
               <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-brand-navy">
-                    Talk to your thought partner
-                  </h3>
+                  <h3 className="text-sm font-bold text-brand-navy">Thinking out loud?</h3>
                   <p className="mt-1 text-sm text-neutral-600">
                     {convRes.data
-                      ? `Last session ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}.`
-                      : "Your thought partner knows your goals, reflections, and assessments."}{" "}
-                    Ask anything.
+                      ? `Last conversation ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}. Pick up where you left off, or start fresh.`
+                      : "Your thought partner knows your goals, reflections, and assessments — open it any time."}
                   </p>
                 </div>
                 <Link
@@ -312,9 +309,14 @@ export default async function DashboardPage() {
             </Link>
           </div>
           <div className="grid gap-3 grid-cols-3">
-            <StatCard label="In progress" value={inProgress} color="blue" />
-            <StatCard label="Completed" value={completed} color="green" />
-            <StatCard label="Total" value={totalGoals} color="neutral" />
+            <StatCard label="In progress" value={inProgress} color="blue" href="/goals" />
+            <StatCard
+              label="Completed"
+              value={completed}
+              color="green"
+              href="/goals?status=completed"
+            />
+            <StatCard label="Total" value={totalGoals} color="neutral" href="/goals?status=all" />
           </div>
         </div>
       )}
@@ -426,10 +428,12 @@ function StatCard({
   label,
   value,
   color,
+  href,
 }: {
   label: string;
   value: number;
   color: "blue" | "green" | "neutral";
+  href: string;
 }) {
   const colors = {
     blue: "border-brand-blue/20 text-brand-blue",
@@ -437,12 +441,13 @@ function StatCard({
     neutral: "border-neutral-200 text-brand-navy",
   };
   return (
-    <div
-      className={`rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md ${colors[color]}`}
+    <Link
+      href={href}
+      className={`block rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 ${colors[color]}`}
     >
       <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
       <div className={`mt-1 text-2xl font-bold ${colors[color].split(" ").pop()}`}>{value}</div>
-    </div>
+    </Link>
   );
 }
 

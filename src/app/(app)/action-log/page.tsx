@@ -22,7 +22,9 @@ export default async function ActionLogPage({ searchParams }: Props) {
       .order("created_at", { ascending: false }),
     supabase
       .from("action_logs")
-      .select("id, description, reflection, impact_area, occurred_on, goal_id, goals(title, primary_lens)")
+      .select(
+        "id, description, reflection, impact_area, occurred_on, goal_id, sprint_id, goals(title, primary_lens), goal_sprints(sprint_number, title, status)",
+      )
       .eq("user_id", user!.id)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
@@ -55,12 +57,10 @@ export default async function ActionLogPage({ searchParams }: Props) {
         <div>
           {dates.length === 0 ? (
             <div className="rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
-                <span className="text-xl">✍️</span>
-              </div>
               <h2 className="font-semibold text-brand-navy">No actions logged yet</h2>
               <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-                Use the form on the right to log your first action toward a goal.
+                The small moves count. Log what you actually did — the hard conversation you had,
+                the thing you didn't redo, the draft you let ship. Use the form on the right.
               </p>
             </div>
           ) : (
@@ -84,13 +84,29 @@ export default async function ActionLogPage({ searchParams }: Props) {
                             </span>
                           )}
                         </div>
-                        {a.goals && (
-                          <Link
-                            href={`/goals/${a.goal_id}`}
-                            className="mt-2 inline-block text-xs text-neutral-500 hover:text-brand-blue"
-                          >
-                            → {a.goals.title}
-                          </Link>
+                        {(a.goals || a.goal_sprints) && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                            {a.goals && (
+                              <Link
+                                href={`/goals/${a.goal_id}`}
+                                className="text-neutral-500 hover:text-brand-blue"
+                              >
+                                → {a.goals.title}
+                              </Link>
+                            )}
+                            {a.goal_sprints && (
+                              <span
+                                className={`rounded-full px-2 py-0.5 font-medium ${
+                                  a.goal_sprints.status === "active"
+                                    ? "bg-brand-blue/10 text-brand-blue"
+                                    : "bg-neutral-100 text-neutral-600"
+                                }`}
+                                title={`Sprint ${a.goal_sprints.sprint_number}: ${a.goal_sprints.title}`}
+                              >
+                                Sprint {a.goal_sprints.sprint_number}
+                              </span>
+                            )}
+                          </div>
                         )}
                         {a.reflection && (
                           <p className="mt-2 text-xs italic text-neutral-600">{a.reflection}</p>

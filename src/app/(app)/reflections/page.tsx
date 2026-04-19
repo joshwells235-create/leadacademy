@@ -53,16 +53,14 @@ export default async function ReflectionsPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div>
-          <ReflectionForm />
+          <ReflectionForm expandedByDefault={dates.length === 0} />
 
           {dates.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-blue-light">
-                <span className="text-xl">📝</span>
-              </div>
-              <h2 className="font-semibold text-brand-navy">No reflections yet</h2>
+            <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+              <h2 className="font-semibold text-brand-navy">Your journal is empty — for now.</h2>
               <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-                Write your first one above — even one sentence about what you noticed today counts.
+                Start above. One sentence about what you noticed today counts. You can also ask your
+                thought partner to help you reflect out loud and save it for you.
               </p>
             </div>
           ) : (
@@ -96,16 +94,6 @@ export default async function ReflectionsPage() {
                             ))}
                           </div>
                         )}
-                        {r.ai_insights &&
-                          typeof r.ai_insights === "object" &&
-                          "summary" in (r.ai_insights as object) && (
-                            <div className="mt-3 rounded border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-700">
-                              <div className="mb-1 font-medium text-neutral-500">
-                                Thought partner's take
-                              </div>
-                              {(r.ai_insights as { summary?: string }).summary}
-                            </div>
-                          )}
                       </li>
                     ))}
                   </ul>

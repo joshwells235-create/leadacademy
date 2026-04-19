@@ -9,20 +9,68 @@ const LENS_LABEL: Record<string, string> = {
   org: "Leading the Organization",
 };
 
-export default async function GoalsPage() {
+type Props = {
+  searchParams: Promise<{ status?: string }>;
+};
+
+export default async function GoalsPage({ searchParams }: Props) {
+  const sp = await searchParams;
+  const statusFilter: "active" | "completed" | "all" =
+    sp.status === "completed" || sp.status === "all" ? sp.status : "active";
+
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: goals } = await supabase
+  const goalsQuery = supabase
     .from("goals")
     .select(
       "id, primary_lens, title, status, target_date, smart_criteria, impact_self, impact_others, impact_org, created_at",
     )
     .eq("user_id", user!.id)
-    .neq("status", "archived")
     .order("created_at", { ascending: false });
+
+  if (statusFilter === "active") goalsQuery.in("status", ["not_started", "in_progress"]);
+  else if (statusFilter === "completed") goalsQuery.eq("status", "completed");
+  else goalsQuery.neq("status", "archived");
+
+  const [goalsRes, actionCountsRes, activeSprintsRes] = await Promise.all([
+    goalsQuery,
+    supabase
+      .from("action_logs")
+      .select("goal_id, occurred_on")
+      .eq("user_id", user!.id)
+      .not("goal_id", "is", null),
+    supabase
+      .from("goal_sprints")
+      .select("goal_id, title, planned_end_date, action_count, created_at")
+      .eq("user_id", user!.id)
+      .eq("status", "active"),
+  ]);
+  const goals = goalsRes.data;
+
+  // Per-goal action aggregates so each card can show momentum at a glance.
+  const actionByGoal = new Map<string, { count: number; lastOccurredOn: string }>();
+  for (const row of actionCountsRes.data ?? []) {
+    if (!row.goal_id) continue;
+    const existing = actionByGoal.get(row.goal_id);
+    if (!existing) {
+      actionByGoal.set(row.goal_id, { count: 1, lastOccurredOn: row.occurred_on });
+    } else {
+      existing.count += 1;
+      if (row.occurred_on > existing.lastOccurredOn) existing.lastOccurredOn = row.occurred_on;
+    }
+  }
+  const sprintByGoal = new Map<
+    string,
+    { title: string; planned_end_date: string; action_count: number; created_at: string }
+  >();
+  for (const s of activeSprintsRes.data ?? []) {
+    if (s.goal_id) sprintByGoal.set(s.goal_id, s);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -43,37 +91,59 @@ export default async function GoalsPage() {
         </Link>
       </div>
 
-      <div className="mb-6 flex gap-2 text-sm">
-        <span className="text-neutral-500">Start from a lens:</span>
+      {/* Status filter — a button group so active state is visible at a glance. */}
+      <div className="mb-4 inline-flex rounded-md border border-neutral-200 bg-white p-0.5 text-sm shadow-sm">
+        <FilterPill href="/goals" active={statusFilter === "active"} label="Active" />
+        <FilterPill
+          href="/goals?status=completed"
+          active={statusFilter === "completed"}
+          label="Completed"
+        />
+        <FilterPill href="/goals?status=all" active={statusFilter === "all"} label="All" />
+      </div>
+
+      <div className="mb-6 flex flex-wrap items-center gap-2 text-xs">
+        <span className="text-neutral-500">Start fresh from a lens:</span>
         <Link
           href="/coach-chat?mode=goal&lens=self"
-          className="text-brand-blue underline hover:text-brand-blue"
+          className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 font-medium text-brand-blue hover:border-brand-blue/40 hover:bg-brand-blue/5"
         >
-          Self
+          Leading Self
         </Link>
-        <span className="text-neutral-300">·</span>
         <Link
           href="/coach-chat?mode=goal&lens=others"
-          className="text-brand-blue underline hover:text-brand-blue"
+          className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 font-medium text-brand-blue hover:border-brand-blue/40 hover:bg-brand-blue/5"
         >
-          Others
+          Leading Others
         </Link>
-        <span className="text-neutral-300">·</span>
         <Link
           href="/coach-chat?mode=goal&lens=org"
-          className="text-brand-blue underline hover:text-brand-blue"
+          className="rounded-full border border-neutral-200 bg-white px-2.5 py-1 font-medium text-brand-blue hover:border-brand-blue/40 hover:bg-brand-blue/5"
         >
-          Organization
+          Leading the Organization
         </Link>
       </div>
 
       {(!goals || goals.length === 0) && (
-        <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-500">
-          No goals yet.{" "}
-          <Link href="/coach-chat?mode=goal" className="text-brand-blue underline">
-            Draft your first one with your thought partner
-          </Link>
-          .
+        <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-600">
+          {statusFilter === "active" ? (
+            <>
+              <p className="font-medium text-brand-navy">No active goals right now.</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Goals are how you commit to changing something real about how you lead.
+              </p>
+              <Link
+                href="/coach-chat?mode=goal"
+                className="mt-3 inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark"
+              >
+                Draft one with your thought partner →
+              </Link>
+            </>
+          ) : statusFilter === "completed" ? (
+            <p>Nothing completed yet — your finished goals will show up here.</p>
+          ) : (
+            <p>No goals to show.</p>
+          )}
         </div>
       )}
 
@@ -84,16 +154,27 @@ export default async function GoalsPage() {
               g.smart_criteria && typeof g.smart_criteria === "object"
                 ? (g.smart_criteria as Record<string, string>)
                 : {};
+            const actionStats = actionByGoal.get(g.id);
+            const sprint = sprintByGoal.get(g.id);
+            const sprintDay = sprint
+              ? Math.min(
+                  daysBetween(sprint.created_at.slice(0, 10), today) + 1,
+                  Math.max(1, daysBetween(sprint.created_at.slice(0, 10), sprint.planned_end_date)),
+                )
+              : null;
+            const sprintTotalDays = sprint
+              ? Math.max(1, daysBetween(sprint.created_at.slice(0, 10), sprint.planned_end_date))
+              : null;
             return (
               <li key={g.id}>
                 <Link
                   href={`/goals/${g.id}`}
-                  className="block rounded-lg border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-neutral-300"
+                  className="block rounded-lg border border-neutral-200 bg-white p-5 shadow-sm transition hover:border-brand-blue/40 hover:shadow-md"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1">
                       <h2 className="font-semibold text-neutral-900">{g.title}</h2>
-                      <div className="mt-1 flex items-center gap-2 text-xs text-neutral-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
                         {g.primary_lens && (
                           <span className="rounded-full bg-neutral-100 px-2 py-0.5">
                             started from {LENS_LABEL[g.primary_lens]}
@@ -102,16 +183,33 @@ export default async function GoalsPage() {
                         {g.target_date && <span>target {g.target_date}</span>}
                       </div>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        g.status === "completed"
-                          ? "bg-emerald-100 text-emerald-900"
-                          : g.status === "in_progress"
-                            ? "bg-blue-100 text-blue-900"
-                            : "bg-neutral-100 text-neutral-700"
-                      }`}
-                    >
-                      {g.status.replace("_", " ")}
+                    <StatusBadge status={g.status} />
+                  </div>
+
+                  {/* Momentum strip — visible at-a-glance progress a learner can feel. */}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+                    {sprint && sprintDay != null && sprintTotalDays != null ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-blue/10 px-2 py-0.5 font-medium text-brand-blue">
+                        <span className="h-1.5 w-1.5 rounded-full bg-brand-blue" />
+                        Sprint: {sprint.title} · day {sprintDay}/{sprintTotalDays}
+                      </span>
+                    ) : g.status === "in_progress" || g.status === "not_started" ? (
+                      <span className="text-neutral-500">No active sprint</span>
+                    ) : null}
+                    <span className="text-neutral-600">
+                      {actionStats ? (
+                        <>
+                          {actionStats.count} action{actionStats.count === 1 ? "" : "s"} logged
+                          {actionStats.count > 0 && (
+                            <span className="text-neutral-400">
+                              {" "}
+                              · last {formatShortDate(actionStats.lastOccurredOn, today)}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-neutral-400">No actions logged yet</span>
+                      )}
                     </span>
                   </div>
 
@@ -147,4 +245,50 @@ export default async function GoalsPage() {
       )}
     </div>
   );
+}
+
+function FilterPill({ href, active, label }: { href: string; active: boolean; label: string }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded px-3 py-1 text-xs font-medium transition ${
+        active
+          ? "bg-brand-blue text-white shadow-sm"
+          : "text-neutral-600 hover:bg-brand-light hover:text-brand-navy"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const label = status.replace("_", " ");
+  const className =
+    status === "completed"
+      ? "bg-emerald-100 text-emerald-900 ring-1 ring-emerald-200"
+      : status === "in_progress"
+        ? "bg-brand-blue/10 text-brand-blue ring-1 ring-brand-blue/20"
+        : status === "not_started"
+          ? "bg-amber-50 text-amber-800 ring-1 ring-amber-200"
+          : "bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200";
+  return (
+    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${className}`}>
+      {label}
+    </span>
+  );
+}
+
+function daysBetween(fromIso: string, toIso: string): number {
+  const from = new Date(`${fromIso}T00:00:00Z`).getTime();
+  const to = new Date(`${toIso}T00:00:00Z`).getTime();
+  return Math.max(0, Math.round((to - from) / (1000 * 60 * 60 * 24)));
+}
+
+function formatShortDate(iso: string, today: string): string {
+  if (iso === today) return "today";
+  const diff = daysBetween(iso, today);
+  if (diff === 1) return "yesterday";
+  if (diff < 7) return `${diff}d ago`;
+  return iso.slice(5);
 }

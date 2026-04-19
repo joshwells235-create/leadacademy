@@ -49,9 +49,21 @@ export function ConversationsSidebar({ conversations, activeId }: Props) {
           <div className="border-t border-neutral-100 p-3">
             <Link
               href="/memory"
-              className="block text-center text-xs text-neutral-500 hover:text-brand-blue"
+              className="flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs text-neutral-600 hover:bg-brand-light hover:text-brand-navy"
             >
-              What your thought partner remembers about you →
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden
+              >
+                <title>Memory</title>
+                <path d="M8 1.5a4 4 0 0 0-4 4v1a3 3 0 0 0-2 2.83V12a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 14 12V9.33a3 3 0 0 0-2-2.83v-1a4 4 0 0 0-4-4Z" />
+              </svg>
+              What your thought partner remembers
             </Link>
           </div>
         </div>
@@ -86,11 +98,16 @@ function ConversationGroups({
   );
 }
 
+const TITLE_MAX = 80;
+
 function ConversationRow({ item, isActive }: { item: ConversationListItem; isActive: boolean }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [titleDraft, setTitleDraft] = useState(item.title ?? "");
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const displayLabel =
@@ -99,11 +116,10 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
       : item.previewText.slice(0, 40) || "(new conversation)";
 
   const handleDelete = () => {
-    if (!confirm("Delete this conversation? This can't be undone.")) return;
     start(async () => {
       const res = await deleteConversation(item.id);
       if ("error" in res && res.error) {
-        alert(res.error);
+        setActionError(res.error);
         return;
       }
       if (isActive) router.push("/coach-chat/new");
@@ -113,15 +129,20 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
 
   const handleRenameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setRenameError(null);
     const next = titleDraft.trim();
-    if (!next || next === item.title) {
+    if (!next) {
+      setRenameError("Title can't be empty.");
+      return;
+    }
+    if (next === item.title) {
       setRenaming(false);
       return;
     }
     start(async () => {
       const res = await renameConversation(item.id, next);
       if ("error" in res && res.error) {
-        alert(res.error);
+        setRenameError(res.error);
         return;
       }
       setRenaming(false);
@@ -130,32 +151,47 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
   };
 
   if (renaming) {
+    const remaining = TITLE_MAX - titleDraft.length;
     return (
       <li>
-        <form onSubmit={handleRenameSubmit} className="flex items-center gap-1 px-2 py-1">
-          <input
-            // biome-ignore lint/a11y/noAutofocus: inline rename intent
-            autoFocus
-            type="text"
-            value={titleDraft}
-            onChange={(e) => setTitleDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setRenaming(false);
-                setTitleDraft(item.title ?? "");
-              }
-            }}
-            disabled={pending}
-            maxLength={80}
-            className="flex-1 rounded border border-brand-blue bg-white px-2 py-1 text-sm focus:outline-none"
-          />
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded bg-brand-blue px-2 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-50"
-          >
-            Save
-          </button>
+        <form onSubmit={handleRenameSubmit} className="px-2 py-1">
+          <div className="flex items-center gap-1">
+            <input
+              // biome-ignore lint/a11y/noAutofocus: inline rename intent
+              autoFocus
+              type="text"
+              value={titleDraft}
+              onChange={(e) => {
+                setTitleDraft(e.target.value);
+                if (renameError) setRenameError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setRenaming(false);
+                  setTitleDraft(item.title ?? "");
+                  setRenameError(null);
+                }
+              }}
+              disabled={pending}
+              maxLength={TITLE_MAX}
+              className="flex-1 rounded border border-brand-blue bg-white px-2 py-1 text-sm focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              className="rounded bg-brand-blue px-2 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-50"
+            >
+              Save
+            </button>
+          </div>
+          <div className="mt-1 flex items-center justify-between text-[10px]">
+            <span className={renameError ? "text-red-600" : "text-transparent"}>
+              {renameError ?? "placeholder"}
+            </span>
+            <span className={remaining < 10 ? "text-amber-600" : "text-neutral-400"}>
+              {remaining}
+            </span>
+          </div>
         </form>
       </li>
     );
@@ -171,9 +207,7 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
       >
         <span className="line-clamp-1 font-medium">{displayLabel}</span>
         <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-neutral-500">
-          <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 uppercase tracking-wide">
-            {item.mode}
-          </span>
+          <ModeBadge mode={item.mode} />
           <span>{formatRelativeTime(item.lastMessageAt ?? item.createdAt)}</span>
         </span>
       </Link>
@@ -224,7 +258,7 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
               type="button"
               onClick={() => {
                 setMenuOpen(false);
-                handleDelete();
+                setConfirmingDelete(true);
               }}
               className="block w-full px-3 py-2 text-left text-brand-pink hover:bg-brand-light"
             >
@@ -233,7 +267,54 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
           </div>
         </>
       )}
+      {confirmingDelete && (
+        <div
+          role="alertdialog"
+          aria-label="Delete conversation"
+          className="mt-1 rounded-md border border-brand-pink/30 bg-brand-pink/5 p-2 text-xs"
+        >
+          <p className="text-brand-navy">Delete this conversation? This can't be undone.</p>
+          {actionError && <p className="mt-1 text-red-700">{actionError}</p>}
+          <div className="mt-2 flex gap-1.5">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={pending}
+              className="rounded bg-brand-pink px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              {pending ? "Deleting…" : "Delete"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setConfirmingDelete(false);
+                setActionError(null);
+              }}
+              disabled={pending}
+              className="rounded border border-neutral-300 bg-white px-2 py-1 text-[11px] text-neutral-700 hover:bg-brand-light disabled:opacity-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </li>
+  );
+}
+
+const MODE_BADGE_STYLES: Record<string, string> = {
+  general: "bg-neutral-100 text-neutral-700",
+  goal: "bg-brand-blue/10 text-brand-blue",
+  reflection: "bg-amber-50 text-amber-800",
+  assessment: "bg-purple-50 text-purple-800",
+  capstone: "bg-emerald-50 text-emerald-800",
+  intake: "bg-brand-pink/10 text-brand-pink",
+};
+
+function ModeBadge({ mode }: { mode: string }) {
+  const cls = MODE_BADGE_STYLES[mode] ?? MODE_BADGE_STYLES.general;
+  return (
+    <span className={`rounded-full px-1.5 py-0.5 uppercase tracking-wide ${cls}`}>{mode}</span>
   );
 }
 
