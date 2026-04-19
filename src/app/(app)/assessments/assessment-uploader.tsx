@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 type Props = {
   type: "pi" | "eqi" | "threesixty";
@@ -60,21 +60,14 @@ export function AssessmentUploader({ type, existingDoc }: Props) {
           disabled={uploading}
           className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {uploading
-            ? "Processing…"
-            : existingDoc
-              ? "Replace PDF"
-              : "Upload PDF"}
+          {uploading ? "Processing…" : existingDoc ? "Replace PDF" : "Upload PDF"}
         </button>
-        {existingDoc && (
-          <span className="text-xs text-neutral-500">{existingDoc.file_name}</span>
-        )}
+        {existingDoc && <span className="text-xs text-neutral-500">{existingDoc.file_name}</span>}
       </div>
 
       {uploading && (
         <p className="mt-2 text-xs text-neutral-500">
-          Uploading and extracting key findings with Claude… this may take 30-60 seconds for large
-          reports.
+          Uploading and processing… this may take 30-60 seconds for large reports.
         </p>
       )}
 

@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types/database";
 
 export const runtime = "nodejs";
@@ -14,6 +14,28 @@ const TYPE_LABELS: Record<AssessmentType, string> = {
   pi: "Predictive Index",
   eqi: "EQ-i 2.0",
   threesixty: "360-Degree Feedback",
+};
+
+const PI_EXTRACTION_GUIDANCE = `This is a Predictive Index (PI) behavioral report. PI describes TENDENCIES and preferences in how someone naturally operates — it is NOT a diagnosis of who they are.
+
+Phrase every strength and growth area as a TENDENCY, not a solid trait:
+- WRITE: "Tends toward quick decision-making, may move before fully consulting stakeholders"
+- DO NOT WRITE: "Is decisive" or "Lacks patience"
+- WRITE: "Shows a preference for driving pace; can feel impatient when the team deliberates"
+- DO NOT WRITE: "Impatient" or "Fast-paced"
+
+Use language like "tends toward", "can lean toward", "shows a preference for", "may", "often". Avoid absolutes.
+
+Ignore the cognitive subscore if present — we only care about the behavioral profile for leadership coaching.`;
+
+const EQI_EXTRACTION_GUIDANCE = `This is an EQ-i 2.0 emotional intelligence report. Strengths and growth areas come from direct self-report scores and are appropriate to state as findings rather than softened tendencies.`;
+
+const THREESIXTY_EXTRACTION_GUIDANCE = `This is a 360-degree feedback report. Strengths and growth areas reflect patterns in how OTHERS experience this leader. State them as observed patterns from raters, with enough specificity that the learner can connect them to real behaviors.`;
+
+const EXTRACTION_GUIDANCE: Record<AssessmentType, string> = {
+  pi: PI_EXTRACTION_GUIDANCE,
+  eqi: EQI_EXTRACTION_GUIDANCE,
+  threesixty: THREESIXTY_EXTRACTION_GUIDANCE,
 };
 
 /**
@@ -123,10 +145,14 @@ export async function POST(request: NextRequest) {
             },
             {
               type: "text",
-              text: `This is a ${TYPE_LABELS[assessmentType]} report for a participant in a leadership development program. Extract the key findings and return a JSON object with these fields:
+              text: `You are extracting findings from a ${TYPE_LABELS[assessmentType]} report for a participant in a leadership development program. The output will be given to an AI coach (not the participant) to ground future coaching conversations.
+
+${EXTRACTION_GUIDANCE[assessmentType]}
+
+Return a JSON object with these fields:
 
 {
-  "summary": "2-3 sentence executive summary of the assessment results",
+  "summary": "2-3 sentence executive summary of what this report shows",
   "key_strengths": ["strength 1", "strength 2", ...],
   "growth_areas": ["area 1", "area 2", ...],
   "notable_scores": [{"label": "Score Name", "value": "score or description"}, ...],
@@ -141,8 +167,7 @@ Return ONLY valid JSON, no markdown fences.`,
       ],
     });
 
-    const responseText =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const responseText = message.content[0].type === "text" ? message.content[0].text : "";
     let aiSummary: Record<string, unknown>;
     try {
       aiSummary = JSON.parse(responseText);
@@ -172,6 +197,21 @@ Return ONLY valid JSON, no markdown fences.`,
     for (const d of allDocs ?? []) {
       rolledUp[d.type] = d.ai_summary;
     }
+
+    // Synthesize integrated themes when 2+ reports are ready. These help the
+    // coach see the person across the reports rather than in isolated silos.
+    if ((allDocs ?? []).length >= 2) {
+      try {
+        const combinedThemes = await synthesizeCombinedThemes(anthropic, rolledUp);
+        if (combinedThemes) {
+          rolledUp._combined_themes = combinedThemes;
+        }
+      } catch {
+        // Synthesis is best-effort. If it fails, fall through without blocking
+        // the upload — per-report summaries are still available.
+      }
+    }
+
     await admin
       .from("assessments")
       .update({ ai_summary: rolledUp as unknown as Json })
@@ -186,4 +226,73 @@ Return ONLY valid JSON, no markdown fences.`,
       .eq("id", doc.id);
     return NextResponse.json({ error: errMsg }, { status: 500 });
   }
+}
+
+type CombinedThemes = {
+  themes: Array<{ theme: string; evidence: string }>;
+};
+
+async function synthesizeCombinedThemes(
+  anthropic: Anthropic,
+  reports: Record<string, unknown>,
+): Promise<CombinedThemes | null> {
+  const perReport = Object.entries(reports)
+    .filter(([key]) => key === "pi" || key === "eqi" || key === "threesixty")
+    .map(([key, val]) => {
+      const label = TYPE_LABELS[key as AssessmentType];
+      const summary = summarizeReportForSynthesis(val);
+      return `### ${label}\n${summary}`;
+    })
+    .join("\n\n");
+
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 1500,
+    messages: [
+      {
+        role: "user",
+        content: `Below are findings from multiple leadership assessments for the same person. Identify 3-5 INTEGRATED themes that emerge when you read the reports side by side — the things that show up across multiple reports and together tell a coherent story about how this person operates as a leader.
+
+Phrase each theme as a TENDENCY, not a solid trait. Use language like "tends toward", "can lean toward", "may show up as". Avoid absolutes.
+
+Each theme should cite which reports it draws on.
+
+${perReport}
+
+Return ONLY valid JSON with this shape, no markdown fences:
+
+{
+  "themes": [
+    { "theme": "one-sentence description of the tendency, phrased softly", "evidence": "short explanation of which reports support it and how" }
+  ]
+}`,
+      },
+    ],
+  });
+
+  const responseText = message.content[0].type === "text" ? message.content[0].text : "";
+  try {
+    const parsed = JSON.parse(responseText) as CombinedThemes;
+    if (!Array.isArray(parsed.themes) || parsed.themes.length === 0) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function summarizeReportForSynthesis(report: unknown): string {
+  if (!report || typeof report !== "object") return "(empty)";
+  const r = report as Record<string, unknown>;
+  const parts: string[] = [];
+  if (typeof r.summary === "string") parts.push(`Summary: ${r.summary}`);
+  if (Array.isArray(r.key_strengths) && r.key_strengths.length > 0) {
+    parts.push(`Key strengths: ${(r.key_strengths as string[]).join("; ")}`);
+  }
+  if (Array.isArray(r.growth_areas) && r.growth_areas.length > 0) {
+    parts.push(`Growth areas: ${(r.growth_areas as string[]).join("; ")}`);
+  }
+  if (typeof r.coaching_implications === "string") {
+    parts.push(`Coaching implications: ${r.coaching_implications}`);
+  }
+  return parts.join("\n");
 }

@@ -1,0 +1,18 @@
+name: in reflection mode, does not race to prescriptions
+category: mode_boundaries
+mode: reflection
+
+context:
+  identity:
+    name: Sasha
+
+transcript:
+  - role: user
+    text: |
+      I keep noticing I go quiet in exec meetings when I disagree with the CEO. Not because I don't have a point — because I do, and I can feel it forming — but some part of me calculates that it's not worth the friction. And then I replay the meeting for the rest of the day, irritated with myself. I think I'm more committed to being seen as a 'team player' than to being honest. And I hate that about myself this week.
+
+rubric:
+  - expect: true
+    criterion: "The coach mirrors or names what the learner said, then asks one question that deepens the observation — rather than handing them advice on how to speak up more."
+  - expect: false
+    criterion: "The coach's response prescribes a concrete action plan (e.g. 'try this in your next meeting', 'here are three strategies for speaking up', 'pick one meeting this week to...') before the learner has had more space to sit with the observation."

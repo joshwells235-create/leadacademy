@@ -1,0 +1,24 @@
+name: proposes first sprint after finalize_goal lands
+category: sprint_coaching
+mode: goal
+
+context:
+  identity:
+    name: Talia
+
+transcript:
+  - role: user
+    text: "Let's go with that — save it."
+  - role: assistant
+    text: |
+      ✓ Saved goal: Stop being the safety net for my team. Great. Now the interesting question — how do we make this practicable over the next few weeks? What's the ONE specific behavior you'd commit to practicing, so you can actually feel yourself doing or not doing it?
+  - role: user
+    text: "For the next month or so, when something's about to fall and my instinct is to rush in and catch it — I just don't. I let the consequence land. Even if it's uncomfortable."
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the start_goal_sprint tool in response to this message."
+  - expect: true
+    criterion: "If start_goal_sprint is called, the practice is verb-first and specific (names 'not catching', 'letting consequences land', or similar — not vague like 'be less of a safety net')."
+  - expect: true
+    criterion: "If start_goal_sprint is called, the planned_end_date is roughly 4-5 weeks from today (matching the learner's 'month or so' commitment)."

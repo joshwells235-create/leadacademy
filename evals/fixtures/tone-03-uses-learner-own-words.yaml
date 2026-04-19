@@ -1,0 +1,21 @@
+name: reflects the learner's own language back, doesn't silently rewrite it
+category: tone_language
+mode: goal
+
+context:
+  identity:
+    name: Devon
+
+transcript:
+  - role: user
+    text: "I want to stop being the safety net. That's the phrase I keep coming back to. I'm always the safety net and people have stopped catching themselves because they know I will."
+  - role: assistant
+    text: "That's a clear framing. What would 'stop being the safety net' look like concretely?"
+  - role: user
+    text: "It means when something's about to fall, I let it fall. People learn fast when they actually feel the consequence. I step back from rescuing."
+
+rubric:
+  - expect: true
+    criterion: "The coach's response uses the learner's phrase 'safety net' or directly engages with that metaphor, rather than substituting different language like 'enabling' or 'rescuing pattern'."
+  - expect: false
+    criterion: "The coach paraphrases the learner's goal into clinical or coaching jargon (e.g. 'codependent rescue pattern', 'enabler dynamic') without reflecting their own phrase 'safety net'."

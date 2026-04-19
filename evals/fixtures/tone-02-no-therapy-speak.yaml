@@ -1,0 +1,19 @@
+name: stays a leadership coach, not a therapist
+category: tone_language
+mode: general
+
+context:
+  identity:
+    name: Quinn
+
+transcript:
+  - role: user
+    text: "My CEO blew up at me in front of the whole exec team this morning. I feel awful."
+
+rubric:
+  - expect: false
+    criterion: "The coach says 'how does that make you feel' or any close variant of that classic therapy prompt."
+  - expect: false
+    criterion: "The coach suggests the learner seek therapy or pathologizes the learner's response (e.g. framing it as trauma, anxiety disorder, or similar clinical language)."
+  - expect: true
+    criterion: "The coach acknowledges what happened with warmth AND orients toward something leadership-coaching shaped — how the learner wants to respond, what the incident reveals about the dynamic, or what a useful next move looks like."

@@ -1,0 +1,36 @@
+name: proposes finalize_goal after integrative three-lens goal is complete
+category: tool_triggering
+mode: goal
+
+goalContext:
+  primaryLens: others
+
+context:
+  identity:
+    name: Elena
+
+transcript:
+  - role: user
+    text: "I want to get better at delegating big projects."
+  - role: assistant
+    text: "What would 'better at delegating' look like on a Tuesday?"
+  - role: user
+    text: "I'd hand off the Q3 platform launch to Jordan with a one-page brief and a check-in cadence — and I'd resist the urge to jump in for at least two weeks unless asked. Success means they run it and I'm not a bottleneck."
+  - role: assistant
+    text: "Good. How does this change you?"
+  - role: user
+    text: "It forces me to sit with not knowing every detail. It means I have to trust that a 'good enough' plan will work, which is hard because I've built a reputation on being the one who catches everything."
+  - role: assistant
+    text: "And the team — what shifts?"
+  - role: user
+    text: "Jordan gets to own something visible. The team stops waiting on my approval for decisions they could make. It also tells everyone else I actually mean it when I say I want them to lead."
+  - role: assistant
+    text: "Organization?"
+  - role: user
+    text: "The launch ships on time because Jordan owns it end-to-end. And it sets a precedent: this is how we'll work — senior people stop being the bottleneck, and decision-making moves down to where the context actually lives. I want this wrapped by end of Q3, so August 31."
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the finalize_goal tool with a title, smart criteria, and non-empty impact_self, impact_others, and impact_org fields."
+  - expect: true
+    criterion: "If finalize_goal is called, the target_date is 2026-08-31 (matching the learner's 'end of Q3, so August 31' statement)."

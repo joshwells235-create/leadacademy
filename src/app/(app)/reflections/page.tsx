@@ -3,7 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ReflectionForm } from "./reflection-form";
 import { DeleteReflectionButton } from "./delete-reflection-button";
-export const metadata: Metadata = { title: "Reflections — LeadAcademy" };
+export const metadata: Metadata = { title: "Reflections — Leadership Academy" };
 
 export default async function ReflectionsPage() {
   const supabase = await createClient();

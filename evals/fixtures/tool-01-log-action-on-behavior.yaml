@@ -1,0 +1,26 @@
+name: calls log_action when learner describes a specific behavior they took
+category: tool_triggering
+mode: general
+
+context:
+  identity:
+    name: Nico
+  goals:
+    - id: 33333333-3333-3333-3333-333333333333
+      title: Stop rewriting direct reports' work before it ships
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 2
+      daysSinceLastAction: 3
+
+transcript:
+  - role: user
+    text: "Small win today — Sana sent the client doc out without me touching it first. I sat on my hands and just let it go. Felt weird."
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the log_action tool with a description that captures what the learner did (letting the document go out without rewriting)."
+  - expect: true
+    criterion: "If the coach calls log_action, the goal_id passed is 33333333-3333-3333-3333-333333333333 (the matching goal from context)."

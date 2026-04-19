@@ -40,6 +40,7 @@ export function MemberActions({ membershipId, currentRole, status }: { membershi
             {currentRole !== "learner" && <button onClick={() => handleRole("learner")} className="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-light">Set as Learner</button>}
             {currentRole !== "coach" && <button onClick={() => handleRole("coach")} className="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-light">Set as Coach</button>}
             {currentRole !== "org_admin" && <button onClick={() => handleRole("org_admin")} className="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-light">Set as Admin</button>}
+            {currentRole !== "consultant" && <button onClick={() => handleRole("consultant")} className="w-full text-left px-3 py-1.5 text-xs hover:bg-brand-light">Set as Consultant</button>}
             <div className="my-1 border-t border-neutral-100" />
             <button onClick={handleArchive} className="w-full text-left px-3 py-1.5 text-xs text-brand-pink hover:bg-brand-pink-light">Archive</button>
           </div>

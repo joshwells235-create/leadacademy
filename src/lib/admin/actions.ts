@@ -8,7 +8,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // --- Invite a member ---
 const inviteSchema = z.object({
   email: z.string().email(),
-  role: z.enum(["learner", "coach", "org_admin"]),
+  role: z.enum(["learner", "coach", "org_admin", "consultant"]),
   cohortId: z.string().uuid().optional(),
 });
 
@@ -62,7 +62,7 @@ export async function inviteMember(data: { email: string; role: string; cohortId
 
 // --- Change role ---
 export async function changeRole(membershipId: string, newRole: string) {
-  if (!["learner", "coach", "org_admin"].includes(newRole)) return { error: "invalid role" };
+  if (!["learner", "coach", "org_admin", "consultant"].includes(newRole)) return { error: "invalid role" };
   const supabase = await createClient();
   const { error } = await supabase.from("memberships").update({ role: newRole }).eq("id", membershipId);
   if (error) return { error: error.message };

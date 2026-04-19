@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "LeadAcademy", template: "%s — LeadAcademy" },
+  title: { default: "Leadership Academy", template: "%s — Leadership Academy" },
   description: "Leadership development platform by LeadShift",
   icons: { icon: "/icon.svg" },
 };

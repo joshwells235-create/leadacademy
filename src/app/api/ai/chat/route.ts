@@ -1,16 +1,29 @@
-import { streamText, convertToModelMessages, stepCountIs, type UIMessage } from "ai";
-import { NextResponse, type NextRequest } from "next/server";
+import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
+import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
+import { contentToUIParts } from "@/lib/ai/conversation/content-to-ui-parts";
+import { generateConversationTitle } from "@/lib/ai/conversation/generate-title";
+import { distillPendingConversations } from "@/lib/ai/memory/distill-pending";
+import { estimateCostCents } from "@/lib/ai/pricing";
 import { PERSONA } from "@/lib/ai/prompts/base/persona";
+import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
+import { CAPSTONE_MODE } from "@/lib/ai/prompts/modes/capstone";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
 import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
-import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
+import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
+import { buildLogActionTool } from "@/lib/ai/tools/log-action";
+import { buildRefineCapstoneSectionTool } from "@/lib/ai/tools/refine-capstone-section";
+import { searchLessonsForLearner } from "@/lib/ai/tools/search-lessons";
+import { buildSetDailyChallengeTool } from "@/lib/ai/tools/set-daily-challenge";
+import { buildStartGoalSprintTool } from "@/lib/ai/tools/start-goal-sprint";
+import { buildSuggestLessonTool } from "@/lib/ai/tools/suggest-lesson";
+import { buildSuggestResourceTool } from "@/lib/ai/tools/suggest-resource";
 import { buildTagThemesTool } from "@/lib/ai/tools/tag-themes";
-import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
-import { estimateCostCents } from "@/lib/ai/pricing";
+import { buildUpdateGoalStatusTool } from "@/lib/ai/tools/update-goal-status";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types/database";
 
@@ -22,11 +35,14 @@ const MODE_PROMPTS: Record<string, string> = {
   goal: GOAL_MODE,
   reflection: REFLECTION_MODE,
   assessment: ASSESSMENT_MODE,
+  capstone: CAPSTONE_MODE,
 };
 
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
-  mode: z.enum(["general", "goal", "reflection", "assessment"]).default("general"),
+  mode: z
+    .enum(["general", "goal", "reflection", "assessment", "capstone"])
+    .default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
     .object({
@@ -58,13 +74,52 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const parsed = requestSchema.safeParse(body);
   if (!parsed.success) {
-    return NextResponse.json({ error: "bad request", details: parsed.error.format() }, { status: 400 });
+    return NextResponse.json(
+      { error: "bad request", details: parsed.error.format() },
+      { status: 400 },
+    );
   }
-  const { messages, mode, goalContext } = parsed.data;
+  const { messages } = parsed.data;
   let conversationId = parsed.data.conversationId;
+  let mode = parsed.data.mode;
+  let goalContext = parsed.data.goalContext;
 
-  // Create the conversation on first message.
-  if (!conversationId) {
+  // Resume: trust the conversation's stored mode/context over what the client
+  // sent, so a conversation started in goal mode stays there. Also verifies
+  // ownership — RLS would reject otherwise, but we prefer a clean 404.
+  if (conversationId) {
+    const { data: existing } = await supabase
+      .from("ai_conversations")
+      .select("id, mode, context_ref")
+      .eq("id", conversationId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!existing) {
+      return NextResponse.json({ error: "conversation not found" }, { status: 404 });
+    }
+    if (
+      existing.mode === "general" ||
+      existing.mode === "goal" ||
+      existing.mode === "reflection" ||
+      existing.mode === "assessment" ||
+      existing.mode === "capstone"
+    ) {
+      mode = existing.mode;
+    }
+    if (
+      existing.context_ref &&
+      typeof existing.context_ref === "object" &&
+      !Array.isArray(existing.context_ref)
+    ) {
+      const ref = existing.context_ref as { primaryLens?: unknown; goalId?: unknown };
+      const lens = ref.primaryLens;
+      const goalId = ref.goalId;
+      goalContext = {
+        primaryLens: lens === "self" || lens === "others" || lens === "org" ? lens : undefined,
+        goalId: typeof goalId === "string" ? goalId : undefined,
+      };
+    }
+  } else {
     const { data: convo, error } = await supabase
       .from("ai_conversations")
       .insert({
@@ -82,6 +137,16 @@ export async function POST(request: NextRequest) {
       );
     }
     conversationId = convo.id;
+
+    // Fire-and-forget: distill any idle, undistilled prior conversations now
+    // that the learner has opened a new one. Naturally throttles by visit.
+    void distillPendingConversations({
+      userScoped: supabase,
+      userId: user.id,
+      orgId: membership.org_id,
+    }).catch(() => {
+      // Silent — distillation quality is a nice-to-have, not a blocker.
+    });
   }
 
   // Persist the latest user message (it's the last in `messages`).
@@ -98,8 +163,8 @@ export async function POST(request: NextRequest) {
   const learnerContext = await buildLearnerContext(supabase, user.id);
   const systemPrompt = [
     PERSONA,
-    "\n## Current mode\n" + (MODE_PROMPTS[mode] ?? MODE_PROMPTS.general),
-    "\n## Learner context (read-only, updated each turn)\n" + learnerContext,
+    `\n## Current mode\n${MODE_PROMPTS[mode] ?? MODE_PROMPTS.general}`,
+    `\n## Learner context (read-only, updated each turn)\n${learnerContext}`,
     goalContext?.primaryLens
       ? `\n## Starting lens\nThe learner started this conversation from the **${lensLabel(goalContext.primaryLens)}** lens. That's the on-ramp — the goal must still land with real impact across all three lenses. If calling finalize_goal, you can set primary_lens="${goalContext.primaryLens}" unless the learner clearly pivoted during the conversation.`
       : "",
@@ -131,6 +196,61 @@ export async function POST(request: NextRequest) {
     return { id: data.id, title: data.title };
   });
 
+  // start_goal_sprint — close any active sprint on this goal and start a
+  // new one. Approval-gated; this is a commitment moment.
+  const startGoalSprintTool = buildStartGoalSprintTool(async (input) => {
+    const { data: goal } = await supabase
+      .from("goals")
+      .select("id")
+      .eq("id", input.goal_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!goal) return { error: "goal not found" };
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    // Close out any existing active sprint.
+    await supabase
+      .from("goal_sprints")
+      .update({ status: "completed", actual_end_date: today })
+      .eq("goal_id", input.goal_id)
+      .eq("user_id", user.id)
+      .eq("status", "active");
+
+    // Compute next sprint_number.
+    const { data: latest } = await supabase
+      .from("goal_sprints")
+      .select("sprint_number")
+      .eq("goal_id", input.goal_id)
+      .order("sprint_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const nextNumber = (latest?.sprint_number ?? 0) + 1;
+
+    const { data, error } = await supabase
+      .from("goal_sprints")
+      .insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        goal_id: input.goal_id,
+        title: input.title,
+        practice: input.practice,
+        planned_end_date: input.planned_end_date,
+        sprint_number: nextNumber,
+        status: "active",
+      })
+      .select("id, title, practice, planned_end_date, sprint_number")
+      .single();
+    if (error || !data) return { error: error?.message ?? "insert failed" };
+    return {
+      id: data.id,
+      title: data.title,
+      practice: data.practice,
+      planned_end_date: data.planned_end_date,
+      sprint_number: data.sprint_number,
+    };
+  });
+
   const startedAt = Date.now();
   const model = MODELS.sonnet;
 
@@ -145,25 +265,254 @@ export async function POST(request: NextRequest) {
     return { ok: true };
   });
 
+  // log_action — append a new action to /action-log. Auto-applied.
+  // When the action is tied to a goal, stamp the goal's current active
+  // sprint so the count can render against the sprint's progress signal.
+  const logActionTool = buildLogActionTool(async (input) => {
+    let sprintId: string | null = null;
+    if (input.goal_id) {
+      const { data: sprint } = await supabase
+        .from("goal_sprints")
+        .select("id")
+        .eq("goal_id", input.goal_id)
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      sprintId = sprint?.id ?? null;
+    }
+
+    const { data, error } = await supabase
+      .from("action_logs")
+      .insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        description: input.description,
+        goal_id: input.goal_id ?? null,
+        sprint_id: sprintId,
+        impact_area: input.impact_area ?? null,
+        reflection: input.reflection ?? null,
+        occurred_on: input.occurred_on ?? new Date().toISOString().slice(0, 10),
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { error: error?.message ?? "insert failed" };
+    return { id: data.id };
+  });
+
+  // create_reflection — save a new journal entry with themes. Auto-applied.
+  const createReflectionTool = buildCreateReflectionTool(async (input) => {
+    const { data, error } = await supabase
+      .from("reflections")
+      .insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        content: input.content,
+        themes: input.themes,
+        reflected_on: input.reflected_on ?? new Date().toISOString().slice(0, 10),
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { error: error?.message ?? "insert failed" };
+    return { id: data.id };
+  });
+
+  // suggest_lesson — read-only search, scoped to learner's assigned courses.
+  const suggestLessonTool = buildSuggestLessonTool(async (input) => {
+    const lessons = await searchLessonsForLearner(supabase, user.id, input.query, 3);
+    return { lessons };
+  });
+
+  // suggest_resource — read-only search against the global resource library.
+  const suggestResourceTool = buildSuggestResourceTool(async (input) => {
+    const term = input.query.trim().replace(/[%_]/g, (c) => `\\${c}`);
+    const { data, error } = await supabase
+      .from("resources")
+      .select("id, title, description, category, type, url")
+      .or(`title.ilike.%${term}%,description.ilike.%${term}%,category.ilike.%${term}%`)
+      .limit(3);
+    if (error) return { error: error.message };
+    return { resources: data ?? [] };
+  });
+
+  // update_goal_status — flip status on one of the learner's goals. Approval.
+  const updateGoalStatusTool = buildUpdateGoalStatusTool(async (input) => {
+    const { data, error } = await supabase
+      .from("goals")
+      .update({ status: input.status })
+      .eq("id", input.goal_id)
+      .eq("user_id", user.id)
+      .select("id, title, status")
+      .single();
+    if (error || !data) return { error: error?.message ?? "update failed" };
+    return { id: data.id, title: data.title, status: data.status };
+  });
+
+  // refine_capstone_section — merge a single capstone-outline section into
+  // the learner's capstone_outlines row (creating the row on first save).
+  // Approval-gated; the learner sees the proposed section before it lands.
+  const refineCapstoneSectionTool = buildRefineCapstoneSectionTool(async (input) => {
+    // Find the learner's cohort (nullable) to stamp on the row.
+    const { data: cohortMembership } = await supabase
+      .from("memberships")
+      .select("cohort_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+
+    const { data: existing } = await supabase
+      .from("capstone_outlines")
+      .select("id, outline")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const now = new Date().toISOString();
+    type Section = {
+      id: string;
+      kind: string;
+      heading: string;
+      body: string;
+      moments?: { title: string; description: string }[];
+      pull_quotes?: { text: string; source: string }[];
+      updated_at: string;
+    };
+
+    const newSection: Section = {
+      id: crypto.randomUUID(),
+      kind: input.kind,
+      heading: input.heading,
+      body: input.body,
+      moments: input.moments,
+      pull_quotes: input.pull_quotes,
+      updated_at: now,
+    };
+
+    const outlineJson = (existing?.outline ?? {}) as {
+      sections?: Section[];
+      updated_by_ai_at?: string;
+    };
+    const prior = Array.isArray(outlineJson.sections) ? outlineJson.sections : [];
+    const next = prior.filter((s) => s.kind !== input.kind);
+    // Keep sections ordered by the canonical five-beat arc.
+    const ORDER = ["before", "catalyst", "shift", "evidence", "what_next"];
+    next.push(newSection);
+    next.sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
+
+    const nextOutline = {
+      ...outlineJson,
+      sections: next,
+      updated_by_ai_at: now,
+    };
+
+    if (existing) {
+      const { error } = await supabase
+        .from("capstone_outlines")
+        .update({
+          outline: nextOutline as unknown as Json,
+          conversation_id: conversationId ?? null,
+        })
+        .eq("id", existing.id);
+      if (error) return { error: error.message };
+    } else {
+      const { error } = await supabase.from("capstone_outlines").insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        cohort_id: cohortMembership?.cohort_id ?? null,
+        conversation_id: conversationId ?? null,
+        outline: nextOutline as unknown as Json,
+        status: "draft",
+      });
+      if (error) return { error: error.message };
+    }
+
+    return { ok: true as const, kind: input.kind, heading: input.heading };
+  });
+
+  // set_daily_challenge — upsert today's or tomorrow's challenge. Approval.
+  const setDailyChallengeTool = buildSetDailyChallengeTool(async (input) => {
+    const now = new Date();
+    if (input.for_date === "tomorrow") now.setDate(now.getDate() + 1);
+    const forDate = now.toISOString().slice(0, 10);
+
+    const { data: existing } = await supabase
+      .from("daily_challenges")
+      .select("id, challenge")
+      .eq("user_id", user.id)
+      .eq("for_date", forDate)
+      .maybeSingle();
+
+    if (existing && !input.replace_existing) {
+      return {
+        collision: true as const,
+        existing_challenge: existing.challenge,
+        for_date: forDate,
+      };
+    }
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from("daily_challenges")
+        .update({
+          challenge: input.challenge,
+          completed: false,
+          completed_at: null,
+          reflection: null,
+        })
+        .eq("id", existing.id)
+        .select("id, challenge, for_date")
+        .single();
+      if (error || !data) return { error: error?.message ?? "update failed" };
+      return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: true };
+    }
+
+    const { data, error } = await supabase
+      .from("daily_challenges")
+      .insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        challenge: input.challenge,
+        for_date: forDate,
+      })
+      .select("id, challenge, for_date")
+      .single();
+    if (error || !data) return { error: error?.message ?? "insert failed" };
+    return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: false };
+  });
+
   const modelMessages = await convertToModelMessages(messages as UIMessage[]);
   const result = streamText({
     model: claude(model),
     system: systemPrompt,
     messages: modelMessages,
-    tools: { finalize_goal: finalizeGoalTool, tag_themes: tagThemesTool },
-    stopWhen: stepCountIs(4), // Allow one tool call + follow-up text.
-    onFinish: async ({ usage, finishReason }) => {
+    tools: {
+      finalize_goal: finalizeGoalTool,
+      tag_themes: tagThemesTool,
+      log_action: logActionTool,
+      create_reflection: createReflectionTool,
+      suggest_lesson: suggestLessonTool,
+      suggest_resource: suggestResourceTool,
+      update_goal_status: updateGoalStatusTool,
+      set_daily_challenge: setDailyChallengeTool,
+      start_goal_sprint: startGoalSprintTool,
+      refine_capstone_section: refineCapstoneSectionTool,
+    },
+    stopWhen: stepCountIs(8), // Room for 2-3 tool calls + follow-up text per turn.
+    onFinish: async (event) => {
       const latency = Date.now() - startedAt;
-      const tokensIn = usage?.inputTokens ?? 0;
-      const tokensOut = usage?.outputTokens ?? 0;
+      const tokensIn = event.usage?.inputTokens ?? 0;
+      const tokensOut = event.usage?.outputTokens ?? 0;
 
-      // Persist assistant message + usage. We're in an async callback, so
-      // we re-create the Supabase client with the user's cookies via a
-      // service role client for a single atomic write.
+      const parts = contentToUIParts(event.content);
+      const assistantContent = {
+        id: crypto.randomUUID(),
+        role: "assistant" as const,
+        parts,
+      };
+
       await supabase.from("ai_messages").insert({
         conversation_id: conversationId!,
         role: "assistant",
-        content: { finishReason } as unknown as Json,
+        content: assistantContent as unknown as Json,
         model,
         tokens_in: tokensIn,
         tokens_out: tokensOut,
@@ -174,6 +523,38 @@ export async function POST(request: NextRequest) {
         .from("ai_conversations")
         .update({ last_message_at: new Date().toISOString() })
         .eq("id", conversationId!);
+
+      // Fire-and-forget title generation after the first exchange. We check
+      // the DB for title/message-count rather than trusting the client's
+      // view — avoids races with concurrent tabs.
+      void (async () => {
+        const { data: convo } = await supabase
+          .from("ai_conversations")
+          .select("title")
+          .eq("id", conversationId!)
+          .maybeSingle();
+        if (!convo || convo.title) return;
+        const { count } = await supabase
+          .from("ai_messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", conversationId!);
+        if ((count ?? 0) !== 2) return;
+
+        const userText = extractFirstUserText(latestUser);
+        const assistantText = event.text?.trim() ?? "";
+        if (!userText || !assistantText) return;
+
+        const title = await generateConversationTitle({
+          userMessage: userText,
+          assistantMessage: assistantText,
+        });
+        if (!title) return;
+        await supabase
+          .from("ai_conversations")
+          .update({ title })
+          .eq("id", conversationId!)
+          .is("title", null);
+      })();
 
       // Usage rollup — upsert per (user, day, model).
       const usdCents = estimateCostCents(model, tokensIn, tokensOut);
@@ -222,5 +603,26 @@ export async function POST(request: NextRequest) {
 }
 
 function lensLabel(lens: "self" | "others" | "org"): string {
-  return lens === "self" ? "Leading Self" : lens === "others" ? "Leading Others" : "Leading the Organization";
+  return lens === "self"
+    ? "Leading Self"
+    : lens === "others"
+      ? "Leading Others"
+      : "Leading the Organization";
+}
+
+function extractFirstUserText(message: UIMessage | undefined): string {
+  if (!message) return "";
+  const parts = (message as { parts?: unknown[] }).parts;
+  if (!Array.isArray(parts)) return "";
+  for (const p of parts) {
+    if (
+      p &&
+      typeof p === "object" &&
+      (p as { type?: string }).type === "text" &&
+      typeof (p as { text?: unknown }).text === "string"
+    ) {
+      return (p as { text: string }).text;
+    }
+  }
+  return "";
 }

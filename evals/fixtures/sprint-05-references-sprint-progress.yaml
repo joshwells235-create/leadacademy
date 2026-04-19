@@ -1,0 +1,37 @@
+name: references current sprint progress specifically when it's in context
+category: sprint_coaching
+mode: general
+
+context:
+  identity:
+    name: Priya
+  goals:
+    - id: eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee
+      title: Let my team own their own work
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 7
+      daysSinceLastAction: 1
+      currentSprint:
+        id: ffffffff-ffff-ffff-ffff-ffffffffffff
+        sprintNumber: 2
+        title: "Resisting the rewrite"
+        practice: "Don't touch a direct report's draft before they send it — give verbal feedback only"
+        plannedEndDate: "2026-05-10"
+        dayNumber: 15
+        plannedTotalDays: 42
+        plannedDaysRemaining: 27
+        actionCountThisSprint: 7
+      sprintHistory: []
+
+transcript:
+  - role: user
+    text: "Check in on me — how am I doing?"
+
+rubric:
+  - expect: true
+    criterion: "The coach's response references the current sprint's practice (the 'no rewriting' behavior) specifically, OR the sprint's action count of 7 — grounding the check-in in what's actually going on in the active sprint."
+  - expect: false
+    criterion: "The coach answers in generic terms without referencing the active sprint, action count, or specific practice — the context is right there in front of it."

@@ -1,0 +1,33 @@
+name: does not pressure a new sprint when learner needs a breather
+category: sprint_coaching
+mode: general
+
+context:
+  identity:
+    name: Owen
+  goals:
+    - id: dddddddd-dddd-dddd-dddd-dddddddddddd
+      title: Make decisions faster without second-guessing
+      primaryLens: self
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 14
+      daysSinceLastAction: 3
+      currentSprint: null
+      sprintHistory:
+        - sprintNumber: 1
+          title: "Calling the shot without checking"
+          practice: "Make each decision within 24 hours of the information being in, then commit publicly"
+          durationDays: 35
+          actionCount: 14
+
+transcript:
+  - role: user
+    text: "I just wrapped a pretty intense sprint on this and honestly I'm wiped. I don't want to jump straight into another one. Can we just leave it for a bit?"
+
+rubric:
+  - expect: false
+    criterion: "The coach calls the start_goal_sprint tool on this turn. The learner explicitly said they want a breather — the coach should honor that."
+  - expect: true
+    criterion: "The coach acknowledges and honors the need for a pause without pushing for the next sprint right now."

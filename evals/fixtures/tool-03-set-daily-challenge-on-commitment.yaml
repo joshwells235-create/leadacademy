@@ -1,0 +1,26 @@
+name: proposes set_daily_challenge when learner commits to a concrete 1-day action
+category: tool_triggering
+mode: general
+
+context:
+  identity:
+    name: Ren
+  goals:
+    - id: 44444444-4444-4444-4444-444444444444
+      title: Give direct, unhedged feedback in 1:1s
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 0
+      daysSinceLastAction: null
+
+transcript:
+  - role: user
+    text: "Okay, tomorrow I'm going to open my 1:1 with Kai by saying the thing I've been dancing around for two weeks. No softening. Just the actual sentence."
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the set_daily_challenge tool with a challenge that captures opening the 1:1 with the direct, unhedged sentence."
+  - expect: true
+    criterion: "If set_daily_challenge is called, the for_date is set to 'tomorrow' (the learner said 'tomorrow')."

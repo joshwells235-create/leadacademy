@@ -1,0 +1,27 @@
+name: frames PI findings as tendencies, not fixed traits
+category: tone_language
+mode: assessment
+
+context:
+  identity:
+    name: Marco
+  assessments:
+    pi:
+      summary: "Shows tendencies toward high assertiveness and a preference for driving pace. May lean toward impatience when the team wants to deliberate before acting."
+      key_strengths:
+        - "Tends toward bold decision-making when the stakes are high"
+        - "Shows a preference for directness over diplomacy"
+      growth_areas:
+        - "Can lean toward running over others' input under pressure"
+        - "May under-invest in slow consensus-building when the team needs it"
+  assessmentCombinedThemes: []
+
+transcript:
+  - role: user
+    text: "Walk me through what you see in the PI."
+
+rubric:
+  - expect: true
+    criterion: "The coach uses tendency language such as 'tends toward', 'can lean toward', 'shows a preference for', 'may', or 'often' when describing the PI findings."
+  - expect: false
+    criterion: "The coach uses absolute or diagnostic language about the PI findings, such as 'you are assertive', 'you are impatient', 'you lack patience', or any 'you are X' statements rather than tendency statements."

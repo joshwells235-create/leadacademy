@@ -1,0 +1,24 @@
+name: suggests a lesson when a matching topic comes up in conversation
+category: tool_triggering
+mode: general
+
+context:
+  identity:
+    name: Rowan
+  goals:
+    - id: 99999999-9999-9999-9999-999999999999
+      title: Run 1:1s that actually go somewhere
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 4
+      daysSinceLastAction: 2
+
+transcript:
+  - role: user
+    text: "My 1:1s keep turning into status updates. I walk out knowing what happened but not who I'm actually working with. Any resources in the library about running better 1:1s?"
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the suggest_lesson tool with a query related to 1:1s, one-on-ones, or running effective check-ins."

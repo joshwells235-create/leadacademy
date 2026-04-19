@@ -16,6 +16,8 @@ export const MODELS = {
   sonnet: "claude-sonnet-4-6",
   // Reserved for heavy synthesis (assessment parsing, capstone outlining, session recaps).
   opus: "claude-opus-4-6",
+  // Cheap/fast utility: conversation titling, classification, short labels.
+  haiku: "claude-haiku-4-5",
 } as const;
 
 export type ModelId = (typeof MODELS)[keyof typeof MODELS];

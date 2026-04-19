@@ -13,7 +13,13 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: memberships }, { count: unreadNotifications }] = await Promise.all([
+  const [
+    { data: profile },
+    { data: memberships },
+    { count: unreadNotifications },
+    { data: capstoneCohort },
+    { count: consultantCohortCount },
+  ] = await Promise.all([
     supabase.from("profiles").select("display_name, super_admin").eq("user_id", user.id).maybeSingle(),
     supabase
       .from("memberships")
@@ -25,7 +31,34 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       .select("id", { count: "exact", head: true })
       .eq("user_id", user.id)
       .is("read_at", null),
+    supabase
+      .from("memberships")
+      .select("cohorts(capstone_unlocks_at)")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .not("cohort_id", "is", null)
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("cohorts")
+      .select("id", { count: "exact", head: true })
+      .eq("consultant_user_id", user.id),
   ]);
+
+  // Overrides: any active membership names me as consultant.
+  const { count: consultantOverrideCount } = await supabase
+    .from("memberships")
+    .select("id", { count: "exact", head: true })
+    .eq("consultant_user_id", user.id)
+    .eq("status", "active");
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const capstoneAvailable = !!(
+    capstoneCohort?.cohorts?.capstone_unlocks_at &&
+    capstoneCohort.cohorts.capstone_unlocks_at <= todayIso
+  );
+  const isConsultant =
+    (consultantCohortCount ?? 0) > 0 || (consultantOverrideCount ?? 0) > 0;
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -35,6 +68,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
         displayName={profile?.display_name ?? null}
         superAdmin={profile?.super_admin ?? false}
         unreadNotifications={unreadNotifications ?? 0}
+        capstoneAvailable={capstoneAvailable}
+        isConsultant={isConsultant}
         memberships={
           memberships?.map((m) => ({
             id: m.id,

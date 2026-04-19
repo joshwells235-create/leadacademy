@@ -9,14 +9,15 @@ type OrgInfo = { id: string; name: string; logo_url: string | null; slug: string
 type Membership = { id: string; role: string; org: OrgInfo };
 
 export function TopNav({
-  userId, userEmail, displayName, superAdmin, unreadNotifications, memberships,
+  userId, userEmail, displayName, superAdmin, unreadNotifications, capstoneAvailable = false, isConsultant = false, memberships,
 }: {
   userId: string; userEmail: string; displayName: string | null; superAdmin: boolean;
-  unreadNotifications: number; memberships: Membership[];
+  unreadNotifications: number; capstoneAvailable?: boolean; isConsultant?: boolean; memberships: Membership[];
 }) {
   const primary = memberships[0]?.org;
   const isCoach = superAdmin || memberships.some((m) => m.role === "coach" || m.role === "org_admin");
   const isOrgAdmin = superAdmin || memberships.some((m) => m.role === "org_admin");
+  const showConsultantPortal = superAdmin || isConsultant;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -34,7 +35,7 @@ export function TopNav({
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 text-sm">
           <NavLink href="/dashboard">Dashboard</NavLink>
-          <GrowthDropdown />
+          <GrowthDropdown capstoneAvailable={capstoneAvailable} />
           <NavLink href="/learning">Learning</NavLink>
           <NavLink href="/community">Community</NavLink>
           <NavLink href="/messages">Messages</NavLink>
@@ -45,7 +46,7 @@ export function TopNav({
         <div className="flex items-center gap-2">
           <NotificationBell userId={userId} initialCount={unreadNotifications} />
           <div className="hidden lg:block">
-            <UserMenu displayName={displayName} userEmail={userEmail} superAdmin={superAdmin} isCoach={isCoach} isOrgAdmin={isOrgAdmin} role={memberships[0]?.role} />
+            <UserMenu displayName={displayName} userEmail={userEmail} superAdmin={superAdmin} isCoach={isCoach} isOrgAdmin={isOrgAdmin} isConsultant={showConsultantPortal} role={memberships[0]?.role} />
           </div>
           {/* Mobile hamburger */}
           <button
@@ -71,6 +72,9 @@ export function TopNav({
           <MobileLink href="/reflections" onClick={() => setMobileOpen(false)}>Reflections</MobileLink>
           <MobileLink href="/assessments" onClick={() => setMobileOpen(false)}>Assessments</MobileLink>
           <MobileLink href="/resources" onClick={() => setMobileOpen(false)}>Resources</MobileLink>
+          {capstoneAvailable && (
+            <MobileLink href="/capstone" onClick={() => setMobileOpen(false)}>Capstone</MobileLink>
+          )}
           <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>Learning</MobileLink>
           <MobileLink href="/community" onClick={() => setMobileOpen(false)}>Community</MobileLink>
           <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>Messages</MobileLink>
@@ -79,6 +83,7 @@ export function TopNav({
           <div className="my-2 border-t border-white/10" />
           {(isOrgAdmin || superAdmin) && <MobileLink href="/admin/dashboard" onClick={() => setMobileOpen(false)}>Admin Portal</MobileLink>}
           {isCoach && <MobileLink href="/coach/dashboard" onClick={() => setMobileOpen(false)}>Coach Portal</MobileLink>}
+          {showConsultantPortal && <MobileLink href="/consultant/dashboard" onClick={() => setMobileOpen(false)}>Consultant Portal</MobileLink>}
           {superAdmin && (
             <>
               <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>Organizations</MobileLink>
@@ -102,7 +107,7 @@ export function TopNav({
   );
 }
 
-function GrowthDropdown() {
+function GrowthDropdown({ capstoneAvailable }: { capstoneAvailable: boolean }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="relative">
@@ -119,6 +124,14 @@ function GrowthDropdown() {
             <DropdownLink href="/reflections" onClick={() => setOpen(false)}>Reflections</DropdownLink>
             <DropdownLink href="/assessments" onClick={() => setOpen(false)}>Assessments</DropdownLink>
             <DropdownLink href="/resources" onClick={() => setOpen(false)}>Resources</DropdownLink>
+            {capstoneAvailable && (
+              <>
+                <div className="my-1 border-t border-neutral-100" />
+                <DropdownLink href="/capstone" onClick={() => setOpen(false)}>
+                  Capstone ✨
+                </DropdownLink>
+              </>
+            )}
           </div>
         </>
       )}
@@ -126,8 +139,8 @@ function GrowthDropdown() {
   );
 }
 
-function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, role }: {
-  displayName: string | null; userEmail: string; superAdmin: boolean; isCoach: boolean; isOrgAdmin: boolean; role?: string;
+function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, isConsultant, role }: {
+  displayName: string | null; userEmail: string; superAdmin: boolean; isCoach: boolean; isOrgAdmin: boolean; isConsultant: boolean; role?: string;
 }) {
   const [open, setOpen] = useState(false);
   const name = displayName ?? userEmail;
@@ -153,12 +166,13 @@ function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, rol
               {superAdmin && <span className="mt-1 inline-block rounded-full bg-brand-pink px-2 py-0.5 text-[10px] font-medium text-white">super admin</span>}
             </div>
             <DropdownLink href="/pre-session" onClick={() => setOpen(false)}>Pre-session Prep</DropdownLink>
-            {(isCoach || isOrgAdmin || superAdmin) && (
+            {(isCoach || isOrgAdmin || superAdmin || isConsultant) && (
               <>
                 <div className="my-1 border-t border-neutral-100" />
                 <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-neutral-400">Admin</div>
                 {(isOrgAdmin || superAdmin) && <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>Admin Portal</DropdownLink>}
                 {isCoach && <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>Coach Portal</DropdownLink>}
+                {isConsultant && <DropdownLink href="/consultant/dashboard" onClick={() => setOpen(false)}>Consultant Portal</DropdownLink>}
                 {superAdmin && (
                   <>
                     <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>Organizations</DropdownLink>

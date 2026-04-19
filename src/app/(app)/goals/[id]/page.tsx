@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { CoachChat } from "@/components/chat/coach-chat";
-import { GoalStatusForm } from "./goal-status-form";
+import { createClient } from "@/lib/supabase/server";
 import { DeleteGoalButton } from "./delete-goal-button";
+import { GoalStatusForm } from "./goal-status-form";
+import { SprintSection } from "./sprint-section";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -21,11 +22,7 @@ export default async function GoalDetailPage({ params }: Props) {
   } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  const { data: goal } = await supabase
-    .from("goals")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle();
+  const { data: goal } = await supabase.from("goals").select("*").eq("id", id).maybeSingle();
 
   if (!goal) notFound();
 
@@ -34,13 +31,24 @@ export default async function GoalDetailPage({ params }: Props) {
       ? (goal.smart_criteria as Record<string, string>)
       : {};
 
-  const { data: actions } = await supabase
-    .from("action_logs")
-    .select("id, description, reflection, occurred_on, impact_area")
-    .eq("goal_id", id)
-    .eq("user_id", user.id)
-    .order("occurred_on", { ascending: false })
-    .limit(10);
+  const [{ data: actions }, { data: sprintsData }] = await Promise.all([
+    supabase
+      .from("action_logs")
+      .select("id, description, reflection, occurred_on, impact_area")
+      .eq("goal_id", id)
+      .eq("user_id", user.id)
+      .order("occurred_on", { ascending: false })
+      .limit(10),
+    supabase
+      .from("goal_sprints")
+      .select(
+        "id, sprint_number, title, practice, planned_end_date, actual_end_date, status, action_count, created_at",
+      )
+      .eq("goal_id", id)
+      .eq("user_id", user.id)
+      .order("sprint_number", { ascending: true }),
+  ]);
+  const sprints = sprintsData ?? [];
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -70,6 +78,8 @@ export default async function GoalDetailPage({ params }: Props) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
+          <SprintSection goalId={goal.id} sprints={sprints} />
+
           <section className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-semibold">SMART criteria</h2>
             <dl className="mt-3 space-y-3 text-sm">
@@ -146,7 +156,8 @@ export default async function GoalDetailPage({ params }: Props) {
               </ul>
             ) : (
               <p className="mt-2 text-sm text-neutral-500">
-                Nothing logged yet against this goal. Take a small action, then come back and log it.
+                Nothing logged yet against this goal. Take a small action, then come back and log
+                it.
               </p>
             )}
           </section>

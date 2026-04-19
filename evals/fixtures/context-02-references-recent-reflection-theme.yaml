@@ -1,0 +1,24 @@
+name: connects current struggle to a recent reflection theme
+category: context_grounding
+mode: general
+
+context:
+  identity:
+    name: Jordan
+  reflections:
+    - reflectedOn: "2026-04-15"
+      content: "Another 1:1 where I softened what I meant. I keep hedging so nobody gets uncomfortable, and then I walk away frustrated that nothing changed. I don't know why I can't just say the thing."
+      themes: ["conflict avoidance", "directness"]
+    - reflectedOn: "2026-04-10"
+      content: "Caught myself rewriting an email three times before sending. Too worried about how it would land. I miss being the person who just said what needed to be said."
+      themes: ["conflict avoidance", "overthinking"]
+
+transcript:
+  - role: user
+    text: "I have to have a hard talk with my VP tomorrow about the budget and I'm already dreading it."
+
+rubric:
+  - expect: true
+    criterion: "The coach connects this upcoming conversation to the learner's recent pattern of hedging or conflict avoidance visible in their reflections."
+  - expect: false
+    criterion: "The coach treats this as a first-time mention of difficult conversations, with no reference to the existing pattern in context."

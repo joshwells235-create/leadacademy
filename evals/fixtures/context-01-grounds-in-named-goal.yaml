@@ -1,0 +1,27 @@
+name: grounds in specific named goal when learner references it vaguely
+category: context_grounding
+mode: general
+
+context:
+  identity:
+    name: Alex
+    organization: Acme Industries
+  goals:
+    - id: 11111111-1111-1111-1111-111111111111
+      title: Delegate the Q2 launch retro to Maria
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 3
+      daysSinceLastAction: 5
+
+transcript:
+  - role: user
+    text: "I'm hitting a wall with the Maria thing again."
+
+rubric:
+  - expect: true
+    criterion: "The coach's response references the delegation goal by name OR references Maria specifically."
+  - expect: false
+    criterion: "The coach asks a clarifying question about who Maria is or what the 'Maria thing' refers to."

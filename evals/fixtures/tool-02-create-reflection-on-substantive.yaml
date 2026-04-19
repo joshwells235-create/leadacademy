@@ -1,0 +1,18 @@
+name: calls create_reflection when the learner writes a substantive reflection in chat
+category: tool_triggering
+mode: general
+
+context:
+  identity:
+    name: Morgan
+
+transcript:
+  - role: user
+    text: |
+      I've been noticing something over the last few weeks and I want to name it. I keep saying yes to things because the alternative feels like letting someone down. But then I walk into my week already resentful before anything has even happened. The pattern is: someone asks, I say yes fast, I feel virtuous for a second, and then I'm mad about the pressure I'm under — as if the thing came from somewhere else instead of from me. I think the work isn't learning to say no. I think the work is sitting with the discomfort of someone being briefly disappointed in me.
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the create_reflection tool with content that captures the learner's own observation about over-committing."
+  - expect: true
+    criterion: "If the coach calls create_reflection, the themes array includes at least one relevant theme like 'over-committing', 'people-pleasing', 'boundaries', or 'saying no'."

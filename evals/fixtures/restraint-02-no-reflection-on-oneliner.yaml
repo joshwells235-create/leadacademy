@@ -1,0 +1,15 @@
+name: does not call create_reflection on a throwaway one-liner
+category: tool_restraint
+mode: general
+
+context:
+  identity:
+    name: Avery
+
+transcript:
+  - role: user
+    text: "Weird meeting today, man."
+
+rubric:
+  - expect: false
+    criterion: "The coach calls the create_reflection tool. The input is too thin to capture — just a throwaway comment with no substance to save."

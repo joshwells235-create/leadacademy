@@ -1,10 +1,17 @@
 @AGENTS.md
 
-# LeadAcademy — CLAUDE.md
+# Leadership Academy — CLAUDE.md
 
 ## What this is
 
-LeadAcademy is a leadership development platform built by LeadShift. It combines AI coaching (Claude), structured learning (courses/modules/lessons), assessment ingestion (PI, EQ-i, 360), goal-setting, reflections, daily challenges, community, messaging, and coach/admin portals — all in one multi-tenant app.
+**Leadership Academy** (product name, user-facing) — a leadership development platform built by LeadShift.
+Internally called `leadacademy` (repo name, package name, folder) — treat this as a dev shorthand only.
+Never surface "LeadAcademy" in user-visible strings.
+
+Combines a deeply-context-aware AI coach (Claude) with structured learning (courses/modules/lessons),
+assessment ingestion (PI, EQ-i, 360), integrative goal-setting with sprints, reflections, daily
+challenges, community, messaging, long-term memory, proactive coaching, and coach/admin portals —
+all in one multi-tenant app.
 
 **Live:** https://leadacademy.vercel.app
 **Repo:** https://github.com/joshwells235-create/leadacademy
@@ -15,11 +22,12 @@ LeadAcademy is a leadership development platform built by LeadShift. It combines
 - **Framework:** Next.js 16 App Router (Turbopack), React 19, TypeScript
 - **Styling:** Tailwind v4 with custom brand tokens in `globals.css`
 - **Database / Auth / Storage / Realtime:** Supabase (Postgres 17)
-- **AI:** Claude via `@anthropic-ai/sdk` + Vercel AI SDK `@ai-sdk/anthropic`. Server-side only — **never expose AI keys in the browser**
+- **AI:** Claude via `@anthropic-ai/sdk` + Vercel AI SDK `ai` / `@ai-sdk/anthropic` / `@ai-sdk/react`. Server-side only — **never expose AI keys in the browser**
 - **Rich text:** Tiptap (editor for course lessons, server-side HTML rendering for learners)
 - **Package manager:** pnpm 10
 - **Lint:** Biome (not ESLint)
 - **Error tracking:** Sentry (`@sentry/nextjs`, activated via `NEXT_PUBLIC_SENTRY_DSN` env var)
+- **Evals:** YAML fixtures in `evals/fixtures/`, runner + Opus judge in `evals/`, `pnpm eval`
 
 ## Key conventions
 
@@ -29,6 +37,7 @@ LeadAcademy is a leadership development platform built by LeadShift. It combines
 - **Server actions** follow a consistent pattern: Zod validation -> `createClient()` -> auth check -> membership/org_id lookup -> insert/update -> `revalidatePath` -> return `{ok}` or `{error}`
 - **RLS:** Every table uses Row Level Security. Helper functions in Postgres: `is_super_admin()`, `is_org_member(org_id)`, `is_org_admin(org_id)`, `is_coach_in_org(org_id)`, `is_coach_of(learner_id)`
 - **AI calls:** Always server-side via `/api/ai/*` routes. Key never in browser. Every conversation persisted to `ai_conversations` + `ai_messages`. Usage tracked in `ai_usage`.
+- **No cron infrastructure.** Async work (memory distillation, nudge detection, title generation, assessment rollup synthesis) runs fire-and-forget inside the request that naturally triggers it.
 
 ## Brand
 
@@ -56,32 +65,122 @@ Logo: `public/leadshift-logo.svg` (full wordmark), `public/icon.svg` (icon mark 
 
 - **Multi-tenant** from day one. `organizations` -> `cohorts` -> users via `memberships`. Every user-scoped table has `org_id`.
 - **Three lenses, not three silos.** Goals are integrative — `impact_self`, `impact_others`, `impact_org` are all NOT NULL. `primary_lens` is optional metadata about where the learner started, not a silo.
+- **Goals are program-long; sprints make them practicable.** A goal like "stop being the safety net" is the long aspiration. Sprints (`goal_sprints`) are 4-8 week practice windows with a specific behavior and a visible action count — that's what makes progress feelable. A goal has many sprints, at most one active.
 - **LeadShift creates all content.** Courses/modules/lessons/resources have no `org_id` — they're global catalog. Assigned to cohorts via `cohort_courses`.
-- **Unified AI coach** with swappable modes (`general`, `goal`, `reflection`, `assessment`, `capstone`). Prompts in `lib/ai/prompts/`.
+- **Unified AI coach** with swappable modes (`general`, `goal`, `reflection`, `assessment`). Prompts in `src/lib/ai/prompts/`.
 - **Invite-only signup.** No public registration. Org admins send invite tokens.
-- **Default model:** Claude Sonnet 4.6 for chat, Opus 4.6 for heavy synthesis.
+- **Models:** Sonnet 4.6 for chat + synthesis; Opus 4.6 for heavy judgment (eval judge); Haiku 4.5 for cheap labeling (conversation titles).
+- **Assessments are tendencies, not diagnoses.** PI findings are rendered with "tends toward" language, not "is X". EQ-i and 360 use direct language. Participants no longer see raw extraction on `/assessments` — they see a "Ready" state and debrief with the coach.
+- **Proactive coaching is opt-in-by-default but learner-controllable.** The coach can reach out with up to 2 messages/week (global cap) + 14-day per-pattern cooldown. Opt-out toggle at `/memory`.
 
-## Database tables (30+)
+## The coach product (the core)
+
+Everything below is the AI coaching loop. Most production value lives here.
+
+### Context assembled on every chat turn (`src/lib/ai/context/`)
+
+One canonical learner context is built on every turn from the real DB — shared across modes, callers, and the proactive-nudge opener generator. Sections:
+- Identity + membership
+- All uploaded assessment summaries, PLUS combined-themes synthesis when ≥2 reports are present
+- Active goals with per-goal action count, days since last action, **current sprint** block (title, practice, day X of Y, action_count_this_sprint), **sprint history** summary
+- Recent action logs (last 15, with linked goal title)
+- Recent reflections (last 30, with themes)
+- Most recent coach session recap
+- Open coach-assigned action items + most recent completed
+- Current course progress (lesson title, % complete)
+- Today's daily challenge + 7-day completion count
+- Top 15 long-term memory facts (grouped by type)
+
+### Conversations have continuity (`src/lib/ai/conversation/`)
+
+- `ai_conversations` + `ai_messages` store the full persistent transcript (user AND assistant messages, content parts preserved)
+- Auto-generated titles via Haiku after the first exchange
+- `/coach-chat` auto-resumes the most recent conversation ≤30 days old; sidebar lists all priors grouped Today / This week / Earlier
+- Rename, delete, and per-conversation mode stickiness
+- Tool-part replay works for resumed transcripts (approval pills on old turns render as "no longer actionable")
+
+### Tools the coach can call (`src/lib/ai/tools/`)
+
+Coach doesn't just talk — it acts. Registered in the chat route.
+
+| Tool | Needs approval | What it does |
+|---|---|---|
+| `log_action` | No (auto) | Logs a behavioral action to the learner's action log |
+| `create_reflection` | No (auto) | Saves a substantive reflection paragraph with themes |
+| `tag_themes` | No (silent) | Updates theme tags on an existing reflection |
+| `suggest_lesson` | No (read) | Cohort-scoped lesson search, rendered as cards |
+| `suggest_resource` | No (read) | Library search, rendered as cards |
+| `finalize_goal` | Yes | Saves an integrative three-lens SMART goal |
+| `update_goal_status` | Yes | Completes / archives / reopens a goal |
+| `set_daily_challenge` | Yes | Sets today's or tomorrow's daily challenge (upserts, flags collision) |
+| `start_goal_sprint` | Yes | Starts a sprint on a goal (title + specific practice + end date); closes any active sprint first |
+
+Tool renderers live in `src/components/chat/tool-renderers/` with a registry-based dispatch. Approval pills use the shared `ApprovalPill` component.
+
+### Long-term memory (`src/lib/ai/memory/`)
+
+- `learner_memory` table stores durable facts about the learner distilled from conversations
+- Types: `preference | pattern | commitment | relational_context | stylistic | other`
+- Distillation runs fire-and-forget when a NEW conversation starts — scans for prior conversations idle ≥2h with ≥4 messages, up to 5 per trigger. Sonnet returns structured ops (new / update / confirm). User-edited facts are never overwritten.
+- `/memory` page lets the learner view / edit / delete facts and add their own. Also hosts the proactivity toggle.
+
+### Proactive coaching (`src/lib/ai/nudges/`)
+
+- `coach_nudges` table records one row per fired nudge; linked to `notifications` row for delivery
+- Detector runs inline on dashboard visits (skips first-time users). One nudge per check, first match wins. Respects `profiles.proactivity_enabled`.
+- Rate limits: **2 nudges / rolling 7 days** (global cap, dismissal still counts), per-pattern cooldown (default 14 days).
+- 9 patterns, in priority order: `sprint_ending_soon`, `sprint_needs_review`, `challenge_followup`, `undebriefed_assessment`, `sprint_quiet`, `reflection_streak_broken`, `new_course_waiting`, `momentum_surge`, `goal_check_in`
+- Clicking a nudge card routes to `/coach-chat/from-nudge/[id]` which generates a rich Sonnet opener grounded in pattern data + full learner context, seeds a new conversation, marks nudge as acted, redirects into `/coach-chat?c=<id>`
+- Dismiss action sets `dismissed_at` (counts toward cap — can't dismiss to refill)
+
+### Assessment debrief
+
+- `/assessments` no longer shows rendered per-report summaries — just a "Ready" state once processed
+- "Debrief with coach" button calls `startAssessmentDebrief` server action which creates a conversation with a proactive Sonnet-generated opener grounded in the learner's full context (including combined themes)
+- Extraction prompt is per-type: PI forbids absolute language (requires "tends toward...", "can lean toward..."); EQ-i and 360 keep direct language
+- Combined-themes synthesis runs on rollup when ≥2 reports are ready, stored as `assessments.ai_summary._combined_themes`
+
+### Evals (`evals/`)
+
+- 26 YAML fixtures in `evals/fixtures/` across 7 categories: context_grounding, tool_triggering, tool_restraint, tone_language, mode_boundaries, anti_patterns, sprint_coaching
+- Runner reconstructs the real system prompt (same PERSONA + mode + context formatter) with mock tool handlers that record calls
+- Opus judge via `generateObject`, one pass/fail verdict per criterion with reasoning
+- Baseline stored at `evals/baseline.json`; `pnpm eval` diffs against it and exits nonzero on regression
+- Flags: `--update` (save new baseline), `--filter <name>`, `--verbose`
+
+## Database tables
 
 Identity: `organizations`, `profiles`, `memberships`, `cohorts`, `coach_assignments`, `invitations`
-Coaching: `goals`, `action_logs`, `reflections`, `daily_challenges`, `assessments`, `assessment_documents`
-AI: `ai_conversations`, `ai_messages`, `ai_usage`
+Coaching: `goals`, `goal_sprints`, `action_logs`, `reflections`, `daily_challenges`, `assessments`, `assessment_documents`
+AI: `ai_conversations`, `ai_messages`, `ai_usage`, `learner_memory`, `coach_nudges`
 Coach tools: `pre_session_notes`, `coach_notes`, `session_recaps`, `action_items`
 Learning: `courses`, `modules`, `lessons`, `cohort_courses`, `lesson_progress`
 Social: `community_posts`, `community_likes`, `community_comments`, `threads`, `thread_participants`, `messages`, `notifications`
 Resources: `resources`
 Audit: `activity_logs`
 
-## Routes (38 pages)
+Key cross-references:
+- `action_logs.sprint_id` — FK to `goal_sprints`. DB trigger `bump_sprint_action_count` keeps `goal_sprints.action_count` honest. New action inserts stamp the goal's active sprint; historical rows stay null.
+- `goal_sprints` partial unique index on `(goal_id) WHERE status = 'active'` — at most one active per goal.
+- `ai_conversations.distilled_at` — set when memory extraction has processed the conversation.
+- `ai_conversations.title` — auto-filled by Haiku after first exchange.
+- `goals.active_focus_until` — **deprecated**; no code reads or writes it. Dropped in a future migration.
+- `profiles.proactivity_enabled` — per-learner master switch for nudges.
+
+## Routes
 
 ### Learner
-- `/dashboard` — daily challenge, coach items, goals overview, quick access, onboarding for first-time
-- `/goals`, `/goals/[id]` — list + detail with inline coach chat
-- `/action-log` — logged actions grouped by day + form
+- `/dashboard` — proactive nudge card (above Today), daily challenge, coach items, goals overview, quick access, onboarding for first-time
+- `/goals`, `/goals/[id]` — goal detail with **sprint section** (active + history + start), SMART criteria, three-lens impacts, action log
+- `/action-log` — logged actions grouped by day + form (stamps sprint_id)
 - `/reflections` — journal with AI theme tagging + delete
-- `/assessments` — upload PI/EQ-i/360 PDFs -> Claude extraction
+- `/assessments` — upload PI/EQ-i/360 PDFs; "Debrief with coach" seeds proactive conversation
 - `/learning`, `/learning/[courseId]`, `/learning/[courseId]/[lessonId]` — course progress + lesson viewer
-- `/coach-chat` — streaming Claude with mode/lens URL params
+- `/coach-chat` — streaming Claude, auto-resumes ≤30d, sidebar
+- `/coach-chat/new` — explicit new conversation
+- `/coach-chat?c=<id>` — resume specific
+- `/coach-chat/from-nudge/[id]` — click handler for proactive nudges; generates opener + redirects
+- `/memory` — what the coach remembers + proactivity toggle
 - `/community` — two-tab feed (cohort + alumni)
 - `/resources` — filterable card grid
 - `/messages`, `/messages/[threadId]` — real-time DM with Supabase Realtime
@@ -110,7 +209,9 @@ Audit: `activity_logs`
 ### Auth
 - `/login`, `/register`, `/forgot-password`, `/reset-password`
 
-## Phases completed (all 10)
+## Phases completed
+
+### Foundational build (phases 0-10)
 
 0. Foundations (auth, schema, RLS, deploy)
 1. Core coaching loop (Claude streaming, goals, action log)
@@ -124,7 +225,20 @@ Audit: `activity_logs`
 9. Super admin (orgs, AI usage, conversations, moderation, export)
 10. Polish (login, metadata, errors, loading, a11y, Sentry, mobile nav)
 
-Plus: brand alignment, dashboard cleanup, 4 UX audit passes, mobile responsive nav, first-time onboarding, LeadShift logo integration.
+### Coaching excellence rebuild
+
+Each phase ended with sign-off + implementation, not just a writeup. See the phase descriptions above for details.
+
+1. **Unified learner context** — one canonical context assembler shared across modes/callers.
+2. **Conversation continuity** — persistence of full assistant content, Haiku titling, sidebar + resume, per-conversation mode lock.
+3. **Tool use / agency** — 7 new tools + shared approval pill; retrofit `finalize_goal` with approval; generic renderer registry.
+4. **Long-term memory** — `learner_memory` table, fire-and-forget distillation, `/memory` privacy UI.
+4.5. **Assessment refinements** — PI tendency language, combined-themes synthesis, proactive debrief opener, removed per-report render from participant UI.
+5. **Proactivity** — `coach_nudges` + 8 detectors + opener generation, dashboard card, opt-out toggle.
+6. **Evals** — YAML fixtures, runner, Opus judge, baseline diff (`pnpm eval`).
+7. **Goal rework with sprints** — `goal_sprints` table, `start_goal_sprint` tool, sprint section UI, per-sprint action stamping; retired `active_focus_until`; updated nudge patterns to sprint semantics.
+
+Plus: Leadership Academy branding sweep (all user-facing strings).
 
 ## Env vars
 
@@ -139,14 +253,20 @@ NEXT_PUBLIC_SENTRY_DSN=(optional, activates Sentry when set)
 
 ## What to work on next
 
-The implementation plan at `../Leadership Academy Code/docs/IMPLEMENTATION_PLAN.md` in the alpha repo has the full roadmap. All 10 phases are complete. Potential next work:
+Near-term candidates:
+- **Run the first `pnpm eval` baseline** — critical before further prompt tuning
+- **Drop `goals.active_focus_until`** — DB column is now dead weight, remove in a small follow-up migration
 - E2E tests (Playwright)
 - Supabase Auth URL configuration for production email flows (password reset, invite confirmation)
+- AI-generated session recap drafts (schema + route prepped, button not wired)
+- CI integration for `pnpm eval` (GitHub Action check on PRs)
+- Production-conversation replay for evals (Phase 6.1 — mine real `ai_messages` into fixture templates)
 - Course quiz builder (schema supports it, no editor UI)
 - Drag-and-drop reordering for modules/lessons
-- AI-generated session recap drafts (schema + route prepped, button not wired)
-- Conversation history resumption in coach chat
 - Course cover images
 - Content vs quiz lesson type toggle
-- Responsive polish on specific pages (two-column layouts on tablet)
-- More granular loading skeletons per page
+
+Later / bigger:
+- Semantic search over memory facts (pgvector) — if the top-N approach starts missing relevance
+- Voice + multi-modal in coach chat (PWA polish, browser speech API, image upload)
+- Coach/admin rollup views for sprint progress + goal arcs across a cohort

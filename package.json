@@ -13,7 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "gen:types": "supabase gen types typescript --project-id vcpuxpbncltyihnfnaim --schema public > src/lib/types/database.ts",
-    "seed:super-admin": "tsx scripts/seed-super-admin.ts"
+    "seed:super-admin": "tsx scripts/seed-super-admin.ts",
+    "eval": "tsx evals/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.70",
@@ -50,6 +51,7 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.4",
+    "yaml": "^2.8.3"
   }
 }

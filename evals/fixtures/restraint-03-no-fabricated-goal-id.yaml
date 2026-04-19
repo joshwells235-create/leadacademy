@@ -1,0 +1,26 @@
+name: does not invent a goal_id when the learner's described goal is not in context
+category: tool_restraint
+mode: general
+
+context:
+  identity:
+    name: Blake
+  goals:
+    - id: 77777777-7777-7777-7777-777777777777
+      title: Run quarterly skip-level meetings with every director's team
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 2
+      daysSinceLastAction: 10
+
+transcript:
+  - role: user
+    text: "I finally sat down and wrote out my personal mission statement this morning. Took me three hours."
+
+rubric:
+  - expect: false
+    criterion: "The coach calls log_action with a goal_id other than 77777777-7777-7777-7777-777777777777. Only that one goal exists; writing a mission statement doesn't clearly map to it, so goal_id should be omitted rather than invented."
+  - expect: false
+    criterion: "The coach calls log_action with any goal_id that is not visible in the context (i.e. any id other than 77777777-7777-7777-7777-777777777777)."

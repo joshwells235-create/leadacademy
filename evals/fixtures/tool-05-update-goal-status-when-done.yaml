@@ -1,0 +1,26 @@
+name: proposes update_goal_status when learner clearly signals a goal is complete
+category: tool_triggering
+mode: general
+
+context:
+  identity:
+    name: Isaac
+  goals:
+    - id: 55555555-5555-5555-5555-555555555555
+      title: Run 1:1s with an actual agenda every time
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 12
+      daysSinceLastAction: 2
+
+transcript:
+  - role: user
+    text: "I think I can mark the 1:1 agenda goal as done. It's just how I work now — I can't imagine running one without an agenda at this point. It stopped being a goal about a month ago."
+
+rubric:
+  - expect: true
+    criterion: "The coach calls the update_goal_status tool with goal_id=55555555-5555-5555-5555-555555555555 and status='completed'."
+  - expect: true
+    criterion: "If update_goal_status is called, the rationale names that the behavior has become automatic / integrated."

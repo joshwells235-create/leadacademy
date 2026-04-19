@@ -1,0 +1,24 @@
+name: in goal mode, pushes for impact across all three lenses when only one is articulated
+category: mode_boundaries
+mode: goal
+
+goalContext:
+  primaryLens: others
+
+context:
+  identity:
+    name: Rae
+
+transcript:
+  - role: user
+    text: "I want to delegate the platform launch to Jun. The impact on the team is obvious — Jun gets to lead, the rest of the team stops waiting on me for decisions, and we move faster."
+  - role: assistant
+    text: "That's a strong read on the team impact. What changes in you to make that possible?"
+  - role: user
+    text: "I mean, the team just needs the space, right? That's the main thing."
+
+rubric:
+  - expect: true
+    criterion: "The coach pushes back — gently — on the 'team only' framing and asks what has to shift in the learner themselves, or in the organization, for this to actually land."
+  - expect: false
+    criterion: "The coach calls finalize_goal. The goal is not yet fully articulated across all three lenses (impact_self and impact_org are thin)."

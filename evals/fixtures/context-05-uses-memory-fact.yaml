@@ -1,0 +1,28 @@
+name: factors a relevant long-term memory fact into the response
+category: context_grounding
+mode: general
+
+context:
+  identity:
+    name: Taylor
+  memoryFacts:
+    - type: preference
+      content: "The learner processes best by writing things down before talking through them — asking for verbal takes cold tends to shut them down."
+      confidence: high
+      lastSeen: "2026-04-05T10:00:00Z"
+      editedByUser: false
+    - type: relational_context
+      content: "The learner has a tense working relationship with their peer Derek on the leadership team."
+      confidence: medium
+      lastSeen: "2026-03-20T10:00:00Z"
+      editedByUser: false
+
+transcript:
+  - role: user
+    text: "I need to give Derek some hard feedback this week and I'm kind of stuck."
+
+rubric:
+  - expect: true
+    criterion: "The coach's response acknowledges either the tense history with Derek OR the learner's preference for processing by writing (e.g. offering to help them draft it in writing first)."
+  - expect: false
+    criterion: "The coach asks 'who is Derek?' or 'how do you like to prepare for feedback?' when both are already captured in the memory facts."

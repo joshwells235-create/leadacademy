@@ -62,8 +62,9 @@ export function buildFinalizeGoalTool(
 ) {
   return tool({
     description:
-      "Save a finalized integrative goal for the learner. Call this only after the coach and learner have agreed on the title, all five SMART criteria, AND impact across ALL THREE lenses (self, others, org). Every goal must touch all three — do not call this tool unless all three impacts have real content, not placeholders.",
+      "Save a finalized integrative goal for the learner. Call this only after the coach and learner have agreed on the title, all five SMART criteria, AND impact across ALL THREE lenses (self, others, org). Every goal must touch all three — do not call this tool unless all three impacts have real content, not placeholders. The learner will be asked to confirm before the goal is saved.",
     inputSchema: finalizeGoalInputSchema,
+    needsApproval: true,
     execute: handler,
   });
 }

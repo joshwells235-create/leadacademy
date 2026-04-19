@@ -1,0 +1,37 @@
+name: reflects on current sprint before proposing the next one
+category: sprint_coaching
+mode: general
+
+context:
+  identity:
+    name: Yasmin
+  goals:
+    - id: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+      title: Stop softening hard feedback in 1:1s
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 9
+      daysSinceLastAction: 2
+      currentSprint:
+        id: cccccccc-cccc-cccc-cccc-cccccccccccc
+        sprintNumber: 1
+        title: Saying the thing without softening
+        practice: "Open every 1:1 with the hardest truth I have instead of burying it at the end"
+        plannedEndDate: "2026-04-22"
+        dayNumber: 40
+        plannedTotalDays: 42
+        plannedDaysRemaining: 2
+        actionCountThisSprint: 9
+      sprintHistory: []
+
+transcript:
+  - role: user
+    text: "My sprint's basically done — ends in a couple days. I think it went well. What do you think?"
+
+rubric:
+  - expect: false
+    criterion: "The coach calls the start_goal_sprint tool on this turn. Before proposing the next sprint, the coach should draw out what the learner noticed across the 9 actions logged — not rush to the next commitment."
+  - expect: true
+    criterion: "The coach asks a reflective question about what the learner noticed, what stuck, or what surprised them during the sprint — rather than immediately framing the next one."

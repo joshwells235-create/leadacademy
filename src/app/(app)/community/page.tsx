@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { CommunityFeed } from "./community-feed";
-export const metadata: Metadata = { title: "Community — LeadAcademy" };
+export const metadata: Metadata = { title: "Community — Leadership Academy" };
 
 export default async function CommunityPage() {
   const supabase = await createClient();

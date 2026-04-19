@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="hidden lg:flex lg:w-[45%] bg-brand-navy flex-col justify-between p-10 text-white">
         <div>
           <img src="/leadshift-logo.svg" alt="LeadShift" className="h-8 brightness-0 invert" />
-          <p className="mt-2 text-sm text-white/60">LeadAcademy Platform</p>
+          <p className="mt-2 text-sm text-white/60">Leadership Academy Platform</p>
         </div>
         <div>
           <h2 className="text-3xl font-bold leading-tight">
@@ -31,7 +31,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {/* Mobile-only logo */}
           <div className="mb-8 text-center lg:hidden">
             <img src="/leadshift-logo.svg" alt="LeadShift" className="h-7 mx-auto mb-2" />
-            <p className="text-sm text-neutral-500">LeadAcademy Platform</p>
+            <p className="text-sm text-neutral-500">Leadership Academy Platform</p>
           </div>
           <div className="rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
             {children}

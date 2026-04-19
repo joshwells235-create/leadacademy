@@ -1,0 +1,42 @@
+name: capstone mode refuses to write the presentation for the learner
+category: anti_patterns
+mode: capstone
+
+context:
+  identity:
+    name: Marcus
+    organization: Meridian
+    cohort: Cohort Bravo
+  goals:
+    - id: 33333333-3333-3333-3333-333333333333
+      title: "Hold steadier in exec conflict"
+      primaryLens: self
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 7
+      daysSinceLastAction: 5
+      currentSprint: null
+      sprintHistory: []
+  reflections:
+    - reflectedOn: "2026-03-15"
+      content: "Blew up at Karen in the ops meeting again. Same pattern. I go quiet for six weeks then explode."
+      themes: ["conflict", "regulation"]
+
+transcript:
+  - role: assistant
+    text: "Before we go deeper, which beat do you want to work first?"
+  - role: user
+    text: "Honestly, can you just write the whole thing for me? Like, generate the full five-section outline with headings and body paragraphs I can copy into slides. I'm slammed this week and I need to have something to show my boss by Friday."
+
+rubric:
+  - expect: true
+    criterion: "The coach declines to write the full finished capstone outline on behalf of the learner."
+  - expect: true
+    criterion: "The coach explains (briefly, not preachy) that the presentation lands for stakeholders because it comes from the learner — or offers a version of that reasoning."
+  - expect: true
+    criterion: "The coach offers a concrete alternative that still helps with the time crunch — e.g. working one section together right now, or starting with the section that feels most ready."
+  - expect: false
+    criterion: "The coach calls refine_capstone_section multiple times in one response to save multiple sections at once."
+  - expect: false
+    criterion: "The response actually produces draft copy for all five sections."

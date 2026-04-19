@@ -1,33 +1,111 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
 import { createClient } from "@/lib/supabase/server";
+import { ConsultantOverridePanel } from "./consultant-override-panel";
 
 type Props = { params: Promise<{ id: string; userId: string }> };
 
 export default async function SuperLearnerPage({ params }: Props) {
   const { id: orgId, userId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  const { data: profile } = await supabase.from("profiles").select("super_admin").eq("user_id", user!.id).maybeSingle();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("super_admin")
+    .eq("user_id", user!.id)
+    .maybeSingle();
   if (!profile?.super_admin) redirect("/dashboard");
 
-  const [learnerProfile, goalsRes, actionsRes, reflectionsRes, assessmentRes, conversationsRes] = await Promise.all([
+  const [
+    learnerProfile,
+    goalsRes,
+    actionsRes,
+    reflectionsRes,
+    assessmentRes,
+    conversationsRes,
+    capstoneRes,
+    learnerMembershipRes,
+    consultantCandidatesRes,
+  ] = await Promise.all([
     supabase.from("profiles").select("display_name, timezone").eq("user_id", userId).maybeSingle(),
-    supabase.from("goals").select("id, title, status, primary_lens, impact_self, impact_others, impact_org").eq("user_id", userId).neq("status", "archived").order("created_at", { ascending: false }),
-    supabase.from("action_logs").select("id, description, occurred_on, impact_area").eq("user_id", userId).order("occurred_on", { ascending: false }).limit(15),
-    supabase.from("reflections").select("id, content, themes, reflected_on").eq("user_id", userId).order("reflected_on", { ascending: false }).limit(10),
+    supabase
+      .from("goals")
+      .select("id, title, status, primary_lens, impact_self, impact_others, impact_org")
+      .eq("user_id", userId)
+      .neq("status", "archived")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("action_logs")
+      .select("id, description, occurred_on, impact_area")
+      .eq("user_id", userId)
+      .order("occurred_on", { ascending: false })
+      .limit(15),
+    supabase
+      .from("reflections")
+      .select("id, content, themes, reflected_on")
+      .eq("user_id", userId)
+      .order("reflected_on", { ascending: false })
+      .limit(10),
     supabase.from("assessments").select("ai_summary").eq("user_id", userId).maybeSingle(),
-    supabase.from("ai_conversations").select("id, mode, last_message_at, title").eq("user_id", userId).order("last_message_at", { ascending: false, nullsFirst: false }).limit(10),
+    supabase
+      .from("ai_conversations")
+      .select("id, mode, last_message_at, title")
+      .eq("user_id", userId)
+      .order("last_message_at", { ascending: false, nullsFirst: false })
+      .limit(10),
+    supabase
+      .from("capstone_outlines")
+      .select("outline, status, shared_at, finalized_at, updated_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("memberships")
+      .select("consultant_user_id, cohort_id, cohorts(id, consultant_user_id)")
+      .eq("user_id", userId)
+      .eq("org_id", orgId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("memberships")
+      .select("user_id, profiles:user_id(display_name)")
+      .eq("org_id", orgId)
+      .eq("role", "consultant")
+      .eq("status", "active"),
   ]);
+
+  const mem = learnerMembershipRes.data;
+  const cohortDefaultConsultantId = mem?.cohorts?.consultant_user_id ?? null;
+  const overrideConsultantId = mem?.consultant_user_id ?? null;
+
+  const consultantCandidates = (consultantCandidatesRes.data ?? []).map((c) => ({
+    user_id: c.user_id,
+    display_name:
+      (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
+  }));
+  const nameById = new Map(consultantCandidates.map((c) => [c.user_id, c.display_name]));
+  const overrideConsultantName = overrideConsultantId
+    ? (nameById.get(overrideConsultantId) ?? null)
+    : null;
+  const cohortDefaultConsultantName = cohortDefaultConsultantId
+    ? (nameById.get(cohortDefaultConsultantId) ?? null)
+    : null;
 
   const name = learnerProfile.data?.display_name ?? "Unknown";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
-        <Link href="/super/orgs" className="hover:text-brand-blue">Orgs</Link>
+        <Link href="/super/orgs" className="hover:text-brand-blue">
+          Orgs
+        </Link>
         <span>/</span>
-        <Link href={`/super/orgs/${orgId}`} className="hover:text-brand-blue">Org</Link>
+        <Link href={`/super/orgs/${orgId}`} className="hover:text-brand-blue">
+          Org
+        </Link>
         <span>/</span>
         <span className="font-medium text-brand-navy">{name}</span>
       </nav>
@@ -48,7 +126,10 @@ export default async function SuperLearnerPage({ params }: Props) {
         {/* Actions */}
         <Section title="Recent Actions" count={actionsRes.data?.length}>
           {(actionsRes.data ?? []).map((a) => (
-            <div key={a.id} className="text-sm"><span className="text-xs text-neutral-400 mr-2">{a.occurred_on}</span>{a.description}</div>
+            <div key={a.id} className="text-sm">
+              <span className="text-xs text-neutral-400 mr-2">{a.occurred_on}</span>
+              {a.description}
+            </div>
           ))}
         </Section>
 
@@ -59,7 +140,13 @@ export default async function SuperLearnerPage({ params }: Props) {
               <span className="text-xs text-neutral-400 mr-2">{r.reflected_on}</span>
               <span className="line-clamp-2">{r.content}</span>
               {r.themes && r.themes.length > 0 && (
-                <div className="flex gap-1 mt-1">{r.themes.map((t: string) => <span key={t} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px]">{t}</span>)}</div>
+                <div className="flex gap-1 mt-1">
+                  {r.themes.map((t: string) => (
+                    <span key={t} className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px]">
+                      {t}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           ))}
@@ -67,34 +154,77 @@ export default async function SuperLearnerPage({ params }: Props) {
 
         {/* Assessment summary */}
         <Section title="Assessment Summary">
-          {assessmentRes.data?.ai_summary && typeof assessmentRes.data.ai_summary === "object" && Object.keys(assessmentRes.data.ai_summary).length > 0 ? (
-            Object.entries(assessmentRes.data.ai_summary as Record<string, { summary?: string }>).map(([key, val]) => (
+          {assessmentRes.data?.ai_summary &&
+          typeof assessmentRes.data.ai_summary === "object" &&
+          Object.keys(assessmentRes.data.ai_summary).length > 0 ? (
+            Object.entries(
+              assessmentRes.data.ai_summary as Record<string, { summary?: string }>,
+            ).map(([key, val]) => (
               <div key={key} className="mb-2">
-                <div className="font-medium text-xs uppercase text-neutral-500">{key === "pi" ? "Predictive Index" : key === "eqi" ? "EQ-i 2.0" : "360 Feedback"}</div>
+                <div className="font-medium text-xs uppercase text-neutral-500">
+                  {key === "pi" ? "Predictive Index" : key === "eqi" ? "EQ-i 2.0" : "360 Feedback"}
+                </div>
                 {val?.summary && <p className="text-sm text-neutral-700">{val.summary}</p>}
               </div>
             ))
-          ) : <p className="text-sm text-neutral-500">No assessments uploaded.</p>}
+          ) : (
+            <p className="text-sm text-neutral-500">No assessments uploaded.</p>
+          )}
         </Section>
 
         {/* AI Conversations */}
         <Section title="AI Conversations" count={conversationsRes.data?.length}>
           {(conversationsRes.data ?? []).map((c) => (
-            <Link key={c.id} href={`/super/conversations/${c.id}`} className="block text-sm hover:text-brand-blue transition">
-              <span className="rounded-full bg-brand-blue-light px-1.5 py-0.5 text-[10px] text-brand-blue mr-1">{c.mode}</span>
-              {c.title ?? "Untitled"} — {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : "no messages"}
+            <Link
+              key={c.id}
+              href={`/super/conversations/${c.id}`}
+              className="block text-sm hover:text-brand-blue transition"
+            >
+              <span className="rounded-full bg-brand-blue-light px-1.5 py-0.5 text-[10px] text-brand-blue mr-1">
+                {c.mode}
+              </span>
+              {c.title ?? "Untitled"} —{" "}
+              {c.last_message_at ? new Date(c.last_message_at).toLocaleDateString() : "no messages"}
             </Link>
           ))}
         </Section>
+
+        {/* Capstone */}
+        <Section title="Capstone">
+          <CapstoneReadonly row={capstoneRes.data ?? null} viewerRole="admin" />
+        </Section>
+
+        {/* Consultant override */}
+        {mem && (
+          <ConsultantOverridePanel
+            learnerUserId={userId}
+            currentOverrideUserId={overrideConsultantId}
+            currentOverrideName={overrideConsultantName}
+            cohortDefaultUserId={cohortDefaultConsultantId}
+            cohortDefaultName={cohortDefaultConsultantName}
+            candidates={consultantCandidates}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function Section({ title, count, children }: { title: string; count?: number | null; children: React.ReactNode }) {
+function Section({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count?: number | null;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-      <h2 className="text-sm font-semibold text-brand-navy mb-3">{title}{count != null ? ` (${count})` : ""}</h2>
+      <h2 className="text-sm font-semibold text-brand-navy mb-3">
+        {title}
+        {count != null ? ` (${count})` : ""}
+      </h2>
       <div className="space-y-2">{children}</div>
     </div>
   );

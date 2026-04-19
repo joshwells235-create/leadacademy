@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
 import { createClient } from "@/lib/supabase/server";
 import { CoachNoteEditor } from "./coach-note-editor";
 import { ActionItemsPanel } from "./action-items-panel";
@@ -20,7 +21,7 @@ export default async function CoachLearnerPage({ params }: Props) {
   const { data: profile } = await supabase.from("profiles").select("super_admin").eq("user_id", user.id).maybeSingle();
   if (!assignment && !profile?.super_admin) notFound();
 
-  const [learnerProfile, goalsRes, actionsRes, reflectionsRes, assessmentRes, preSessionRes, coachNoteRes, recapsRes, itemsRes] = await Promise.all([
+  const [learnerProfile, goalsRes, actionsRes, reflectionsRes, assessmentRes, preSessionRes, coachNoteRes, recapsRes, itemsRes, capstoneRes] = await Promise.all([
     supabase.from("profiles").select("display_name, timezone").eq("user_id", learnerId).maybeSingle(),
     supabase.from("goals").select("id, title, status, primary_lens, impact_self, impact_others, impact_org").eq("user_id", learnerId).neq("status", "archived").order("created_at", { ascending: false }),
     supabase.from("action_logs").select("id, description, occurred_on, impact_area, reflection").eq("user_id", learnerId).order("occurred_on", { ascending: false }).limit(10),
@@ -30,6 +31,7 @@ export default async function CoachLearnerPage({ params }: Props) {
     supabase.from("coach_notes").select("id, content, updated_at").eq("coach_user_id", user.id).eq("learner_user_id", learnerId).maybeSingle(),
     supabase.from("session_recaps").select("id, session_date, content, created_at").eq("learner_user_id", learnerId).order("session_date", { ascending: false }).limit(5),
     supabase.from("action_items").select("id, title, description, due_date, completed, completed_at").eq("learner_user_id", learnerId).order("completed").order("due_date", { ascending: true, nullsFirst: false }),
+    supabase.from("capstone_outlines").select("outline, status, shared_at, finalized_at, updated_at").eq("user_id", learnerId).maybeSingle(),
   ]);
 
   const name = learnerProfile.data?.display_name ?? "Unnamed learner";
@@ -138,6 +140,12 @@ export default async function CoachLearnerPage({ params }: Props) {
           <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
             <h2 className="text-sm font-semibold mb-2">Action items</h2>
             <ActionItemsPanel learnerId={learnerId} items={itemsRes.data ?? []} />
+          </div>
+
+          {/* Capstone */}
+          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold mb-2">Capstone</h2>
+            <CapstoneReadonly row={capstoneRes.data ?? null} viewerRole="coach" />
           </div>
         </div>
       </div>

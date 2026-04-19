@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { AddResourceForm } from "./add-resource-form";
 import { ResourceGrid } from "./resource-grid";
-export const metadata: Metadata = { title: "Resources — LeadAcademy" };
+export const metadata: Metadata = { title: "Resources — Leadership Academy" };
 
 export default async function ResourcesPage() {
   const supabase = await createClient();

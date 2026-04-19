@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ActionLogForm } from "./action-log-form";
-export const metadata: Metadata = { title: "Action Log — LeadAcademy" };
+export const metadata: Metadata = { title: "Action Log — Leadership Academy" };
 
 type Props = { searchParams: Promise<{ goalId?: string }> };
 

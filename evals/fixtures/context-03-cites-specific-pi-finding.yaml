@@ -1,0 +1,26 @@
+name: references a specific PI tendency when relevant
+category: context_grounding
+mode: general
+
+context:
+  identity:
+    name: Priya
+  assessments:
+    pi:
+      summary: "Shows tendencies toward fast decision-making, driving pace, and direct communication. May lean toward getting frustrated when teams want more deliberation before committing."
+      key_strengths:
+        - "Tends toward quick decision-making under ambiguity"
+        - "Shows a preference for direct, low-hedging communication"
+      growth_areas:
+        - "Can lean toward impatience when the team wants to deliberate"
+        - "May under-invest in consensus-building before moving"
+
+transcript:
+  - role: user
+    text: "My team complained in the offsite that I 'don't listen' before deciding. I was honestly surprised. What's going on?"
+
+rubric:
+  - expect: true
+    criterion: "The coach references a specific finding from the PI assessment (speed of decision-making, impatience with deliberation, or similar) when responding."
+  - expect: false
+    criterion: "The coach answers the question in purely generic coaching language, without referencing data from the assessments in context."

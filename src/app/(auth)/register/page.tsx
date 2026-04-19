@@ -3,7 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { RegisterForm } from "./register-form";
-export const metadata: Metadata = { title: "Register — LeadAcademy" };
+export const metadata: Metadata = { title: "Register — Leadership Academy" };
 
 type Props = { searchParams: Promise<{ token?: string }> };
 

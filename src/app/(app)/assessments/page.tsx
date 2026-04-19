@@ -1,13 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { startAssessmentDebrief } from "@/lib/assessments/actions";
 import { createClient } from "@/lib/supabase/server";
 import { AssessmentUploader } from "./assessment-uploader";
-export const metadata: Metadata = { title: "Assessments — LeadAcademy" };
+export const metadata: Metadata = { title: "Assessments — Leadership Academy" };
 
 const TYPES: { key: "pi" | "eqi" | "threesixty"; label: string; description: string }[] = [
-  { key: "pi", label: "Predictive Index (PI)", description: "Behavioral and cognitive assessment." },
+  { key: "pi", label: "Predictive Index (PI)", description: "Behavioral assessment." },
   { key: "eqi", label: "EQ-i 2.0", description: "Emotional intelligence assessment." },
-  { key: "threesixty", label: "360-Degree Feedback", description: "Multi-rater feedback from peers, reports, and managers." },
+  {
+    key: "threesixty",
+    label: "360-Degree Feedback",
+    description: "Multi-rater feedback from peers, reports, and managers.",
+  },
 ];
 
 export default async function AssessmentsPage() {
@@ -18,14 +22,14 @@ export default async function AssessmentsPage() {
 
   const { data: assessment } = await supabase
     .from("assessments")
-    .select("id, ai_summary")
+    .select("id")
     .eq("user_id", user!.id)
     .maybeSingle();
 
   const { data: docs } = assessment
     ? await supabase
         .from("assessment_documents")
-        .select("id, type, file_name, status, error_message, ai_summary, uploaded_at")
+        .select("id, type, file_name, status, error_message, uploaded_at")
         .eq("assessment_id", assessment.id)
     : { data: [] };
 
@@ -47,12 +51,14 @@ export default async function AssessmentsPage() {
           </p>
         </div>
         {readyCount > 0 && (
-          <Link
-            href="/coach-chat?mode=assessment"
-            className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-          >
-            Debrief with coach
-          </Link>
+          <form action={startAssessmentDebrief}>
+            <button
+              type="submit"
+              className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
+            >
+              Debrief with coach
+            </button>
+          </form>
         )}
       </div>
 
@@ -84,8 +90,11 @@ export default async function AssessmentsPage() {
                 )}
               </div>
 
-              {doc?.status === "ready" && doc.ai_summary && typeof doc.ai_summary === "object" ? (
-                <AssessmentSummary summary={doc.ai_summary as Record<string, unknown>} />
+              {doc?.status === "ready" ? (
+                <p className="mt-3 text-sm text-neutral-600">
+                  Ready. The coach has your findings — start the debrief below to walk through them
+                  together.
+                </p>
               ) : doc?.status === "error" ? (
                 <div className="mt-3 text-sm text-red-700">
                   Processing failed: {doc.error_message ?? "unknown error"}. Try re-uploading.
@@ -107,65 +116,14 @@ export default async function AssessmentsPage() {
             {readyCount === 1 ? "1 assessment" : `${readyCount} assessments`} processed. The coach
             can walk you through the key findings and help you connect them to your goals.
           </p>
-          <Link
-            href="/coach-chat?mode=assessment"
-            className="mt-3 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-          >
-            Start assessment debrief
-          </Link>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function AssessmentSummary({ summary }: { summary: Record<string, unknown> }) {
-  const s = summary as {
-    summary?: string;
-    key_strengths?: string[];
-    growth_areas?: string[];
-    coaching_implications?: string;
-  };
-
-  return (
-    <div className="mt-4 space-y-3 text-sm">
-      {s.summary && <p className="text-neutral-800">{s.summary}</p>}
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {s.key_strengths && s.key_strengths.length > 0 && (
-          <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-              Key strengths
-            </h3>
-            <ul className="mt-1 space-y-0.5 text-neutral-700">
-              {s.key_strengths.map((str, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span className="text-emerald-500">+</span> {str}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-        {s.growth_areas && s.growth_areas.length > 0 && (
-          <div>
-            <h3 className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-              Growth areas
-            </h3>
-            <ul className="mt-1 space-y-0.5 text-neutral-700">
-              {s.growth_areas.map((area, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span className="text-amber-500">~</span> {area}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      {s.coaching_implications && (
-        <div className="rounded border border-neutral-100 bg-neutral-50 p-3 text-xs text-neutral-700">
-          <span className="font-medium text-neutral-500">Coaching implication:</span>{" "}
-          {s.coaching_implications}
+          <form action={startAssessmentDebrief} className="mt-3">
+            <button
+              type="submit"
+              className="inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
+            >
+              Start assessment debrief
+            </button>
+          </form>
         </div>
       )}
     </div>

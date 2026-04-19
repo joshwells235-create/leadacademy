@@ -1,0 +1,24 @@
+name: does not call log_action for hypotheticals or intentions
+category: tool_restraint
+mode: general
+
+context:
+  identity:
+    name: Chris
+  goals:
+    - id: 66666666-6666-6666-6666-666666666666
+      title: Delegate more of the client work to the team
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 0
+      daysSinceLastAction: null
+
+transcript:
+  - role: user
+    text: "I've been thinking maybe I should start delegating some of the client calls. Not sure yet, still kind of mulling it."
+
+rubric:
+  - expect: false
+    criterion: "The coach calls the log_action tool. No concrete action has been taken yet — only 'thinking maybe' and 'still mulling'."

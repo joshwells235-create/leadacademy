@@ -1,0 +1,29 @@
+name: does not ask for information already in the learner context
+category: context_grounding
+mode: general
+
+context:
+  identity:
+    name: Sam
+    organization: Nordic Shipping Co
+    role: learner
+    cohort: "Spring 2026 Cohort"
+  goals:
+    - id: 22222222-2222-2222-2222-222222222222
+      title: Run monthly skip-levels with every direct report's team
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 1
+      daysSinceLastAction: 18
+
+transcript:
+  - role: user
+    text: "I'm worried my people below the direct-report line don't actually know what we're working on."
+
+rubric:
+  - expect: false
+    criterion: "The coach asks the learner what company they work at, or what their cohort is, or what their existing goal is."
+  - expect: false
+    criterion: "The coach asks 'do you have a goal around this?' when a directly-relevant goal is already visible in context."

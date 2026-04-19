@@ -1,32 +1,38 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  type UIMessage,
+} from "ai";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { type ApprovalHandler, renderToolPart, type ToolPart } from "./tool-renderers";
 
-type Mode = "general" | "goal";
+type Mode = "general" | "goal" | "reflection" | "assessment" | "capstone";
 
 export function CoachChat({
   mode,
   goalContext,
   initialConversationId,
+  initialMessages,
   placeholder = "Tell the coach what's on your mind…",
   emptyHint,
 }: {
   mode: Mode;
   goalContext?: { primaryLens?: "self" | "others" | "org"; goalId?: string };
   initialConversationId?: string;
+  initialMessages?: UIMessage[];
   placeholder?: string;
   emptyHint?: React.ReactNode;
 }) {
-  const [conversationId, setConversationId] = useState<string | undefined>(
-    initialConversationId,
-  );
+  const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [input, setInput] = useState("");
   const endRef = useRef<HTMLDivElement>(null);
 
-  const { messages, sendMessage, status, error } = useChat({
+  const { messages, sendMessage, status, error, addToolApprovalResponse } = useChat({
+    messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
       body: () => ({ mode, goalContext, conversationId }),
@@ -35,16 +41,20 @@ export function CoachChat({
         body: { messages, ...(body as object) },
       }),
     }),
+    // When all pending approvals on the last assistant message are resolved,
+    // auto-send the continuation so the coach can react to the decision.
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithApprovalResponses,
     onFinish: ({ message }) => {
-      // Capture the server-assigned conversationId from custom response header.
-      const conversationFromHeader = (message as unknown as { _responseHeaders?: Record<string, string> })
-        ?._responseHeaders?.["x-conversation-id"];
+      const conversationFromHeader = (
+        message as unknown as { _responseHeaders?: Record<string, string> }
+      )?._responseHeaders?.["x-conversation-id"];
       if (conversationFromHeader && !conversationId) {
         setConversationId(conversationFromHeader);
       }
     },
   });
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trigger scroll on each messages update
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -58,6 +68,12 @@ export function CoachChat({
     sendMessage({ text: trimmed });
     setInput("");
   };
+
+  const handleApproval: ApprovalHandler = async (approvalId, approved) => {
+    await addToolApprovalResponse({ id: approvalId, approved });
+  };
+
+  const latestAssistantId = findLatestAssistantId(messages);
 
   return (
     <div className="flex h-full min-h-[60vh] flex-col rounded-lg border border-neutral-200 bg-white shadow-sm">
@@ -80,7 +96,11 @@ export function CoachChat({
                       : "bg-brand-light text-brand-navy"
                   }`}
                 >
-                  <MessageContent message={m} />
+                  <MessageContent
+                    message={m}
+                    isLatestMessage={m.id === latestAssistantId}
+                    onApproval={handleApproval}
+                  />
                 </div>
               </li>
             ))}
@@ -137,47 +157,49 @@ export function CoachChat({
   );
 }
 
-function MessageContent({ message }: { message: { parts?: unknown[]; role: string } }) {
-  const parts = (message.parts ?? []) as Array<
-    | { type: "text"; text: string }
-    | { type: "reasoning"; text: string }
-    | { type: "tool-finalize_goal"; state?: string; output?: { id?: string; title?: string; error?: string } }
-    | { type: string; [key: string]: unknown }
-  >;
+function findLatestAssistantId(messages: UIMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role === "assistant") return messages[i].id;
+  }
+  return null;
+}
+
+type GenericPart =
+  | { type: "text"; text: string }
+  | { type: "reasoning"; text: string }
+  | ({ type: string } & Record<string, unknown>);
+
+function MessageContent({
+  message,
+  isLatestMessage,
+  onApproval,
+}: {
+  message: { id: string; parts?: unknown[]; role: string };
+  isLatestMessage: boolean;
+  onApproval: ApprovalHandler;
+}) {
+  const parts = (message.parts ?? []) as GenericPart[];
 
   return (
     <>
       {parts.map((part, i) => {
+        const key = `${message.id}-${i}`;
         if (part.type === "text") {
           return (
-            <p key={i} className="whitespace-pre-wrap">
+            <p key={key} className="whitespace-pre-wrap">
               {(part as { text: string }).text}
             </p>
           );
         }
-        if (part.type === "tool-finalize_goal") {
-          const p = part as {
-            state?: string;
-            output?: { id?: string; title?: string; error?: string };
-          };
-          if (p.state === "output-available" && p.output) {
-            if (p.output.error) {
-              return (
-                <p key={i} className="mt-1 text-red-700">
-                  Couldn't save goal: {p.output.error}
-                </p>
-              );
-            }
-            return (
-              <p key={i} className="mt-1 rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-900">
-                ✓ Saved goal: <strong>{p.output.title}</strong>
-              </p>
-            );
-          }
+        if (typeof part.type === "string" && part.type.startsWith("tool-")) {
           return (
-            <p key={i} className="mt-1 text-neutral-500 italic">
-              saving goal…
-            </p>
+            <div key={key}>
+              {renderToolPart({
+                part: part as unknown as ToolPart,
+                isLatestMessage,
+                onApproval,
+              })}
+            </div>
           );
         }
         return null;

@@ -42,6 +42,7 @@ export function InviteForm({ cohorts }: { cohorts: { id: string; name: string }[
             <option value="learner">Learner</option>
             <option value="coach">Coach</option>
             <option value="org_admin">Org Admin</option>
+            <option value="consultant">Consultant</option>
           </select>
           <select value={cohortId} onChange={(e) => setCohortId(e.target.value)} className="rounded-md border border-neutral-300 px-3 py-2 text-sm">
             <option value="">No cohort</option>

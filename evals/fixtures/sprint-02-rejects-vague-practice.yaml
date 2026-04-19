@@ -1,0 +1,26 @@
+name: refuses to start a sprint with a vague practice
+category: sprint_coaching
+mode: general
+
+context:
+  identity:
+    name: Marcus
+  goals:
+    - id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+      title: Be a better listener as a leader
+      primaryLens: others
+      status: in_progress
+      targetDate: null
+      smartCriteria: null
+      actionCount: 0
+      daysSinceLastAction: null
+
+transcript:
+  - role: user
+    text: "I want to do a sprint on this. Something around being more present in meetings. Let's say 6 weeks."
+
+rubric:
+  - expect: false
+    criterion: "The coach calls the start_goal_sprint tool on this turn. The practice 'being more present in meetings' is too vague to commit to — the coach should keep asking for something more specific before calling the tool."
+  - expect: true
+    criterion: "The coach asks a clarifying question that would surface a more specific, verb-first practice (e.g. 'what would being more present look like in your next meeting?' or 'what specifically would you be noticing yourself doing?')."
