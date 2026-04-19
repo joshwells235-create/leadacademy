@@ -361,29 +361,42 @@ NEXT_PUBLIC_SENTRY_DSN=(optional, activates Sentry when set)
 
 ## What to work on next
 
-Immediately up next:
-- **LMS Phase C — paths, prereqs, certificates.** Learning paths (sequenced courses), per-course / per-lesson prerequisites, scheduled unlock per cohort, due dates on assignments, brandable PDF certificate on course completion with re-certification expiry. First real structural layer beyond single-course flow.
-- **LMS Phase D — engagement + analytics.** Per-lesson notes + highlights, per-lesson discussion threads (reuse community infra), scroll-position resume, real completion celebration with thought-partner seeded debrief, per-course completion / drop-off / time-to-complete dashboards for super + admin + coach.
-- **LMS Phase E — practice scenarios (the Lessonly moat).** Practice lesson type: learner records video/audio response to a prompt; coach reviews + rubric-scored feedback; thought partner gives an AI-drafted first-pass review grounded in goals/assessments. This is the feature that beats Lessonly because their AI is bolt-on; ours is contextual.
+**Immediately up next — LMS Phase C: paths, prereqs, certificates.** First real structural layer beyond single-course flow. Expected to take 1–2 sessions. Suggested order + shape:
 
-Near-term candidates:
+1. **Prereqs on lessons and courses.** Minimal lift, highest unlock value.
+   - New `lesson_prerequisites (lesson_id, required_lesson_id)` + `course_prerequisites (course_id, required_course_id)` junction tables. Self-ref FKs with cascade.
+   - Author UI: multi-select of "other lessons in this course" on each lesson; "other courses" on each course (super only).
+   - Learner UI: lock-state icon + "Complete X first" hover on gated lessons. `/learning/[courseId]/[lessonId]` redirects to the course overview if prereqs unmet.
+   - Gate computed server-side from `lesson_progress.completed` — no client-side bypass.
+2. **Scheduled unlock per cohort-course.** Add `unlocks_at timestamptz null` on `cohort_courses`. Learner list hides courses with `unlocks_at > now()` (or shows "Unlocks on X" locked-state card). Author toggle inside the cohort-course assignment matrix.
+3. **Due dates on assignments.** Add `due_at timestamptz null` on `cohort_courses`. Learner sees countdown / overdue badge. Coach/consultant dashboards get an "overdue" chip. Org-admin + super see overdue counts per cohort on vitality.
+4. **Learning paths.** Sequenced series of courses with prereqs between them. New `learning_paths` table (per-org, id / name / description) + `learning_path_courses (path_id, course_id, order)`. Assign a path to a cohort the same way courses are assigned today. Learner dashboard shows "Your path" card with current course highlighted. Open question: do we assign paths *or* courses to cohorts (not both), or can they coexist? Default take — keep `cohort_courses` as the ground truth and add `cohort_learning_paths` as a layer that just expands into course assignments.
+5. **Certificates on completion.** New `certificates` table: id, user_id, course_id (or path_id), issued_at, expires_at null, pdf_url (cached). On `lesson_progress` upsert that finishes the last lesson, fire-and-forget a cert-render job (server-side PDF — likely via `@react-pdf/renderer` or server-rendered HTML → Playwright). Learner sees it under a new `/learning/[courseId]/certificate` page and in a global `/certificates` list. Re-certification: when `expires_at` is set and in the past, learner must re-complete to re-issue.
+
+Open design questions for Phase C:
+- Certificate PDF tech — `@react-pdf/renderer` (React components → PDF, no headless browser) vs server HTML + Playwright. `@react-pdf/renderer` is lighter but less Tailwind-friendly. Default: `@react-pdf/renderer` with a hand-styled component.
+- Path-level certificate vs course-level certificate — default: both, independently.
+- Whether a cohort can assign a path *and* ad-hoc courses on top. Default: yes, the course set is the union.
+
+**LMS Phase D — engagement + analytics** (after C):
+- Learner-side: per-lesson notes + highlights (`lesson_notes` table), per-lesson discussion threads (reuse `community_posts` with a `lesson_id` scope), scroll-position resume (store last-seen scroll % per lesson), real completion celebration with thought-partner seeded debrief conversation.
+- Admin-side: per-course completion-rate + drop-off heatmap + time-to-complete distributions for super + admin + coach portals.
+
+**LMS Phase E — practice scenarios (the Lessonly moat)** (after D):
+- Practice lesson type: learner records video/audio response to a prompt. Coach reviews + rubric-scored feedback. Thought partner gives an AI-drafted first-pass review grounded in goals/assessments/memory. Their AI is bolt-on; ours is contextual — this is the pitch-against-Lessonly feature.
+
+Near-term candidates (not LMS-track):
 - **Run the first `pnpm eval` baseline** — critical before further prompt tuning.
-- **Drop `goals.active_focus_until`** — DB column is now dead weight, remove in a small follow-up migration.
-- **Capture recent MCP migrations as `.sql` files** — back-fill `supabase/migrations/` with capstone_builder, consultant_role, consultant_per_learner_override, profile_intake_fields, ai_conversations_allow_intake_mode, add_user_fks_to_profiles so they're replayable in preview branches / dev environments.
-- **Wire custom SMTP in Supabase Dashboard** (Resend or SendGrid) — built-in email sender is rate-limited even on Pro and unsuitable for production invite batches.
-- **Capstone PDF export** — currently in-app only; "export story brief" as PDF would close the loop.
-- **Expose member emails in admin/people** — currently blank because org_admin RLS can't read `auth.users.email`. Need a view or RPC that returns `(user_id, email)` for org members.
-- E2E tests (Playwright).
-- CI integration for `pnpm eval` (GitHub Action check on PRs).
-- Production-conversation replay for evals (mine real `ai_messages` into fixture templates).
-- Course quiz builder (schema supports it, no editor UI).
-- Drag-and-drop reordering for modules/lessons.
-- Course cover images.
-- Content vs quiz lesson type toggle.
+- **Drop `goals.active_focus_until`** — DB column is dead weight, remove in a small follow-up migration.
+- **Capture recent MCP migrations as `.sql` files** — back-fill `supabase/migrations/` with the last dozen MCP-applied migrations so they're replayable in preview / dev environments.
+- **Wire custom SMTP in Supabase Dashboard** (Resend or SendGrid) — built-in email is rate-limited even on Pro.
+- **Capstone PDF export** — once we have PDF rendering wired for certs, reuse it.
+- **Expose member emails in admin/people** — currently blank because org_admin RLS can't read `auth.users.email`. Need a view or RPC.
+- E2E tests (Playwright); CI integration for `pnpm eval`; Production-conversation replay for evals.
 
 Later / bigger:
-- Semantic search over memory facts (pgvector) — if the top-N approach starts missing relevance.
+- Semantic search over memory facts (pgvector) — if top-N starts missing relevance.
 - Voice + multi-modal in thought-partner chat (PWA polish, browser speech API, image upload).
 - Coach/consultant/admin rollup views for sprint progress + goal arcs across a cohort.
-- Cohort program-dates model (capstone_unlocks_at is the first cohort-date field; workshop dates, peer-group dates, etc. could all land on `cohorts` so learners see the full schedule in-app).
-- Phase 8 — cross-cutting polish (mobile, a11y, brand consistency, loading/error states across the full app) once Phase 7 is done.
+- Cohort program-dates model — workshop dates, peer-group dates on `cohorts` so learners see the full program schedule.
+- Cross-cutting polish pass (mobile, a11y, brand consistency, loading/error states across the full app).
