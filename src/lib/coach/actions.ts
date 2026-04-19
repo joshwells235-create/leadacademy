@@ -28,12 +28,24 @@ export async function createPreSessionNote(
     sessionDate: formData.get("sessionDate") || undefined,
   });
   if (!parsed.success) {
-    return { status: "error", message: "Fix the errors below.", fieldErrors: parsed.error.flatten().fieldErrors };
+    return {
+      status: "error",
+      message: "Fix the errors below.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
   }
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { status: "error", message: "not signed in" };
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: mem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
   if (!mem) return { status: "error", message: "no membership" };
 
   const { error } = await supabase.from("pre_session_notes").insert({
@@ -53,17 +65,28 @@ export async function createPreSessionNote(
 // --- Coach notes (coach-private, upsert) ---
 export async function saveCoachNote(learnerId: string, content: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "not signed in" };
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: mem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
   if (!mem) return { error: "no membership" };
 
-  const { error } = await supabase.from("coach_notes").upsert({
-    coach_user_id: user.id,
-    learner_user_id: learnerId,
-    org_id: mem.org_id,
-    content,
-  }, { onConflict: "coach_user_id,learner_user_id" });
+  const { error } = await supabase.from("coach_notes").upsert(
+    {
+      coach_user_id: user.id,
+      learner_user_id: learnerId,
+      org_id: mem.org_id,
+      content,
+    },
+    { onConflict: "coach_user_id,learner_user_id" },
+  );
   if (error) return { error: error.message };
   return { ok: true };
 }
@@ -71,29 +94,54 @@ export async function saveCoachNote(learnerId: string, content: string) {
 // --- Session recaps ---
 export async function createSessionRecap(learnerId: string, content: string, sessionDate: string) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "not signed in" };
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: mem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
   if (!mem) return { error: "no membership" };
 
-  const { data, error } = await supabase.from("session_recaps").insert({
-    coach_user_id: user.id,
-    learner_user_id: learnerId,
-    org_id: mem.org_id,
-    session_date: sessionDate,
-    content,
-  }).select("id").single();
+  const { data, error } = await supabase
+    .from("session_recaps")
+    .insert({
+      coach_user_id: user.id,
+      learner_user_id: learnerId,
+      org_id: mem.org_id,
+      session_date: sessionDate,
+      content,
+    })
+    .select("id")
+    .single();
   if (error) return { error: error.message };
   revalidatePath(`/coach/learners/${learnerId}`);
   return { ok: true, id: data.id };
 }
 
 // --- Action items ---
-export async function createActionItem(learnerId: string, title: string, description?: string, dueDate?: string) {
+export async function createActionItem(
+  learnerId: string,
+  title: string,
+  description?: string,
+  dueDate?: string,
+) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: "not signed in" };
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
+  const { data: mem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
   if (!mem) return { error: "no membership" };
 
   const { error } = await supabase.from("action_items").insert({
@@ -112,12 +160,19 @@ export async function createActionItem(learnerId: string, title: string, descrip
 
 export async function toggleActionItem(itemId: string) {
   const supabase = await createClient();
-  const { data: item } = await supabase.from("action_items").select("completed").eq("id", itemId).maybeSingle();
+  const { data: item } = await supabase
+    .from("action_items")
+    .select("completed")
+    .eq("id", itemId)
+    .maybeSingle();
   if (!item) return { error: "not found" };
-  const { error } = await supabase.from("action_items").update({
-    completed: !item.completed,
-    completed_at: !item.completed ? new Date().toISOString() : null,
-  }).eq("id", itemId);
+  const { error } = await supabase
+    .from("action_items")
+    .update({
+      completed: !item.completed,
+      completed_at: !item.completed ? new Date().toISOString() : null,
+    })
+    .eq("id", itemId);
   if (error) return { error: error.message };
   revalidatePath("/dashboard");
   return { ok: true };
