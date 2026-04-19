@@ -1,7 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listMemoryFacts } from "@/lib/ai/memory/list-facts";
 import type { Database, Json } from "@/lib/types/database";
-import type { AssessmentKind, AssessmentSummary, LearnerContext, LensKey } from "./types";
+import type {
+  AssessmentKind,
+  AssessmentSummary,
+  LearnerContext,
+  LensKey,
+  ProfileContext,
+} from "./types";
 
 const MEMORY_CONTEXT_LIMIT = 15;
 
@@ -33,7 +39,13 @@ export async function assembleLearnerContext(
     dailyChallengesRes,
     sprintsRes,
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name, timezone").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select(
+        "display_name, timezone, role_title, function_area, team_size, total_org_influence, tenure_at_org, tenure_in_leadership, company_size, industry, context_notes, intake_completed_at",
+      )
+      .eq("user_id", userId)
+      .maybeSingle(),
     supabase
       .from("memberships")
       .select("role, cohorts(name), organizations(name)")
@@ -118,6 +130,19 @@ export async function assembleLearnerContext(
     role: membershipRes.data?.role ?? null,
   };
 
+  const profile: ProfileContext = {
+    roleTitle: profileRes.data?.role_title ?? null,
+    functionArea: profileRes.data?.function_area ?? null,
+    teamSize: profileRes.data?.team_size ?? null,
+    totalOrgInfluence: profileRes.data?.total_org_influence ?? null,
+    tenureAtOrg: profileRes.data?.tenure_at_org ?? null,
+    tenureInLeadership: profileRes.data?.tenure_in_leadership ?? null,
+    companySize: profileRes.data?.company_size ?? null,
+    industry: profileRes.data?.industry ?? null,
+    contextNotes: profileRes.data?.context_notes ?? null,
+    intakeCompletedAt: profileRes.data?.intake_completed_at ?? null,
+  };
+
   const assessments = parseAssessments(assessmentRes.data?.ai_summary);
   const assessmentCombinedThemes = parseCombinedThemes(assessmentRes.data?.ai_summary);
 
@@ -197,6 +222,7 @@ export async function assembleLearnerContext(
 
   return {
     identity,
+    profile,
     assessments,
     assessmentCombinedThemes,
     goals,

@@ -79,6 +79,7 @@ export function TopNav({
           <MobileLink href="/community" onClick={() => setMobileOpen(false)}>Community</MobileLink>
           <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>Messages</MobileLink>
           <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>Thought Partner</MobileLink>
+          <MobileLink href="/profile" onClick={() => setMobileOpen(false)}>Your profile</MobileLink>
           <MobileLink href="/pre-session" onClick={() => setMobileOpen(false)}>Pre-session Prep</MobileLink>
           <div className="my-2 border-t border-white/10" />
           {(isOrgAdmin || superAdmin) && <MobileLink href="/admin/dashboard" onClick={() => setMobileOpen(false)}>Admin Portal</MobileLink>}
@@ -165,6 +166,8 @@ function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, isC
               <div className="text-xs text-neutral-500">{userEmail}</div>
               {superAdmin && <span className="mt-1 inline-block rounded-full bg-brand-pink px-2 py-0.5 text-[10px] font-medium text-white">super admin</span>}
             </div>
+            <DropdownLink href="/profile" onClick={() => setOpen(false)}>Your profile</DropdownLink>
+            <DropdownLink href="/memory" onClick={() => setOpen(false)}>What your thought partner remembers</DropdownLink>
             <DropdownLink href="/pre-session" onClick={() => setOpen(false)}>Pre-session Prep</DropdownLink>
             {(isCoach || isOrgAdmin || superAdmin || isConsultant) && (
               <>

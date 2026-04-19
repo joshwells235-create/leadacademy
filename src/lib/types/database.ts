@@ -1484,31 +1484,61 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          company_size: string | null
+          context_notes: string | null
           created_at: string
           display_name: string | null
+          function_area: string | null
+          industry: string | null
+          intake_completed_at: string | null
           proactivity_enabled: boolean
+          role_title: string | null
           super_admin: boolean
+          team_size: number | null
+          tenure_at_org: string | null
+          tenure_in_leadership: string | null
           timezone: string
+          total_org_influence: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
+          company_size?: string | null
+          context_notes?: string | null
           created_at?: string
           display_name?: string | null
+          function_area?: string | null
+          industry?: string | null
+          intake_completed_at?: string | null
           proactivity_enabled?: boolean
+          role_title?: string | null
           super_admin?: boolean
+          team_size?: number | null
+          tenure_at_org?: string | null
+          tenure_in_leadership?: string | null
           timezone?: string
+          total_org_influence?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           avatar_url?: string | null
+          company_size?: string | null
+          context_notes?: string | null
           created_at?: string
           display_name?: string | null
+          function_area?: string | null
+          industry?: string | null
+          intake_completed_at?: string | null
           proactivity_enabled?: boolean
+          role_title?: string | null
           super_admin?: boolean
+          team_size?: number | null
+          tenure_at_org?: string | null
+          tenure_in_leadership?: string | null
           timezone?: string
+          total_org_influence?: number | null
           updated_at?: string
           user_id?: string
         }

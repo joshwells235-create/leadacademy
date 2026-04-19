@@ -12,6 +12,7 @@ import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { CAPSTONE_MODE } from "@/lib/ai/prompts/modes/capstone";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
+import { INTAKE_MODE } from "@/lib/ai/prompts/modes/intake";
 import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
 import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
@@ -24,8 +25,11 @@ import { buildSuggestLessonTool } from "@/lib/ai/tools/suggest-lesson";
 import { buildSuggestResourceTool } from "@/lib/ai/tools/suggest-resource";
 import { buildTagThemesTool } from "@/lib/ai/tools/tag-themes";
 import { buildUpdateGoalStatusTool } from "@/lib/ai/tools/update-goal-status";
+import { buildUpdateProfileContextTool } from "@/lib/ai/tools/update-profile-context";
 import { createClient } from "@/lib/supabase/server";
-import type { Json } from "@/lib/types/database";
+import type { Database, Json } from "@/lib/types/database";
+
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,12 +40,13 @@ const MODE_PROMPTS: Record<string, string> = {
   reflection: REFLECTION_MODE,
   assessment: ASSESSMENT_MODE,
   capstone: CAPSTONE_MODE,
+  intake: INTAKE_MODE,
 };
 
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
   mode: z
-    .enum(["general", "goal", "reflection", "assessment", "capstone"])
+    .enum(["general", "goal", "reflection", "assessment", "capstone", "intake"])
     .default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
@@ -102,7 +107,8 @@ export async function POST(request: NextRequest) {
       existing.mode === "goal" ||
       existing.mode === "reflection" ||
       existing.mode === "assessment" ||
-      existing.mode === "capstone"
+      existing.mode === "capstone" ||
+      existing.mode === "intake"
     ) {
       mode = existing.mode;
     }
@@ -347,6 +353,69 @@ export async function POST(request: NextRequest) {
     return { id: data.id, title: data.title, status: data.status };
   });
 
+  // update_profile_context — save intake-gathered profile fields to the
+  // learner's profiles row. Auto-applied so the intake conversation
+  // doesn't pile up approval pills; each save renders a small inline card
+  // for transparency.
+  const updateProfileContextTool = buildUpdateProfileContextTool(async (input) => {
+    const updates: ProfileUpdate = {};
+    const updatedFields: string[] = [];
+
+    if (input.role_title !== undefined) {
+      updates.role_title = input.role_title;
+      updatedFields.push("role_title");
+    }
+    if (input.function_area !== undefined) {
+      updates.function_area = input.function_area;
+      updatedFields.push("function_area");
+    }
+    if (input.team_size !== undefined) {
+      updates.team_size = input.team_size;
+      updatedFields.push("team_size");
+    }
+    if (input.total_org_influence !== undefined) {
+      updates.total_org_influence = input.total_org_influence;
+      updatedFields.push("total_org_influence");
+    }
+    if (input.tenure_at_org !== undefined) {
+      updates.tenure_at_org = input.tenure_at_org;
+      updatedFields.push("tenure_at_org");
+    }
+    if (input.tenure_in_leadership !== undefined) {
+      updates.tenure_in_leadership = input.tenure_in_leadership;
+      updatedFields.push("tenure_in_leadership");
+    }
+    if (input.company_size !== undefined) {
+      updates.company_size = input.company_size;
+      updatedFields.push("company_size");
+    }
+    if (input.industry !== undefined) {
+      updates.industry = input.industry;
+      updatedFields.push("industry");
+    }
+    if (input.context_notes !== undefined) {
+      updates.context_notes = input.context_notes;
+      updatedFields.push("context_notes");
+    }
+
+    if (input.mark_complete) {
+      updates.intake_completed_at = new Date().toISOString();
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return { ok: true as const, updated_fields: [], marked_complete: false };
+    }
+
+    const { error } = await supabase.from("profiles").update(updates).eq("user_id", user.id);
+    if (error) return { error: error.message };
+
+    return {
+      ok: true as const,
+      updated_fields: updatedFields,
+      marked_complete: !!input.mark_complete,
+    };
+  });
+
   // refine_capstone_section — merge a single capstone-outline section into
   // the learner's capstone_outlines row (creating the row on first save).
   // Approval-gated; the learner sees the proposed section before it lands.
@@ -495,6 +564,7 @@ export async function POST(request: NextRequest) {
       set_daily_challenge: setDailyChallengeTool,
       start_goal_sprint: startGoalSprintTool,
       refine_capstone_section: refineCapstoneSectionTool,
+      update_profile_context: updateProfileContextTool,
     },
     stopWhen: stepCountIs(8), // Room for 2-3 tool calls + follow-up text per turn.
     onFinish: async (event) => {

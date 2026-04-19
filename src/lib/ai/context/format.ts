@@ -22,6 +22,7 @@ const ASSESSMENT_HIGHLIGHTS_PREVIEW = 500;
 export function formatLearnerContext(ctx: LearnerContext): string {
   const sections: string[] = [];
   sections.push(formatIdentity(ctx));
+  sections.push(formatProfile(ctx));
   sections.push(formatMemory(ctx));
   sections.push(formatAssessments(ctx));
   sections.push(formatGoals(ctx));
@@ -71,6 +72,69 @@ function formatIdentity(ctx: LearnerContext): string {
     ctx.identity.role ? `Role: ${ctx.identity.role}` : null,
     ctx.identity.timezone ? `Timezone: ${ctx.identity.timezone}` : null,
   ].filter(Boolean);
+  return lines.join("\n");
+}
+
+const TENURE_LABEL: Record<string, string> = {
+  "<1y": "less than a year",
+  "1-3y": "1–3 years",
+  "3-7y": "3–7 years",
+  "7y+": "7+ years",
+};
+
+const COMPANY_SIZE_LABEL: Record<string, string> = {
+  solo: "solo",
+  "<50": "under 50 people",
+  "50-250": "50–250 people",
+  "250-1k": "250–1,000 people",
+  "1k-5k": "1,000–5,000 people",
+  "5k+": "5,000+ people",
+};
+
+function formatProfile(ctx: LearnerContext): string {
+  const p = ctx.profile;
+  const hasAny =
+    p.roleTitle ||
+    p.functionArea ||
+    p.teamSize != null ||
+    p.totalOrgInfluence != null ||
+    p.tenureAtOrg ||
+    p.tenureInLeadership ||
+    p.companySize ||
+    p.industry ||
+    p.contextNotes;
+  if (!hasAny) {
+    return "About this leader: (profile not yet gathered — run the intake if this is the first conversation).";
+  }
+
+  const lines: string[] = ["About this leader:"];
+  if (p.roleTitle) lines.push(`- Role: ${p.roleTitle}`);
+  if (p.functionArea) lines.push(`- Function: ${p.functionArea}`);
+  if (p.teamSize != null) {
+    const suffix =
+      p.totalOrgInfluence != null && p.totalOrgInfluence > p.teamSize
+        ? ` (and ~${p.totalOrgInfluence} under them across skip-levels)`
+        : "";
+    lines.push(`- Team: ${p.teamSize} direct report${p.teamSize === 1 ? "" : "s"}${suffix}`);
+  } else if (p.totalOrgInfluence != null) {
+    lines.push(`- ~${p.totalOrgInfluence} people in their org sphere`);
+  }
+  if (p.tenureAtOrg) {
+    lines.push(`- ${TENURE_LABEL[p.tenureAtOrg] ?? p.tenureAtOrg} at their current organization`);
+  }
+  if (p.tenureInLeadership) {
+    lines.push(
+      `- ${TENURE_LABEL[p.tenureInLeadership] ?? p.tenureInLeadership} in leadership roles across their career`,
+    );
+  }
+  if (p.companySize || p.industry) {
+    const size = p.companySize ? COMPANY_SIZE_LABEL[p.companySize] ?? p.companySize : null;
+    const parts = [size, p.industry].filter(Boolean).join(", ");
+    lines.push(`- Company: ${parts}`);
+  }
+  if (p.contextNotes) {
+    lines.push(`- They told you: "${p.contextNotes}"`);
+  }
   return lines.join("\n");
 }
 

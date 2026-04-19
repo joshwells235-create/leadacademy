@@ -99,6 +99,24 @@ export type MemoryFactContextItem = {
   editedByUser: boolean;
 };
 
+/**
+ * Profile fields gathered during intake mode. All optional — the intake
+ * conversation may leave any of them null if the learner skips or doesn't
+ * have a relevant answer.
+ */
+export type ProfileContext = {
+  roleTitle: string | null;
+  functionArea: string | null;
+  teamSize: number | null;
+  totalOrgInfluence: number | null;
+  tenureAtOrg: string | null;
+  tenureInLeadership: string | null;
+  companySize: string | null;
+  industry: string | null;
+  contextNotes: string | null;
+  intakeCompletedAt: string | null;
+};
+
 export type LearnerContext = {
   identity: {
     name: string;
@@ -107,6 +125,7 @@ export type LearnerContext = {
     cohort: string | null;
     role: string | null;
   };
+  profile: ProfileContext;
   assessments: Partial<Record<AssessmentKind, AssessmentSummary>>;
   assessmentCombinedThemes: CombinedAssessmentTheme[];
   goals: GoalContextItem[];

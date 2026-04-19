@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
+import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { createClient } from "@/lib/supabase/server";
 import { CoachNoteEditor } from "./coach-note-editor";
 import { ActionItemsPanel } from "./action-items-panel";
@@ -22,7 +23,7 @@ export default async function CoachLearnerPage({ params }: Props) {
   if (!assignment && !profile?.super_admin) notFound();
 
   const [learnerProfile, goalsRes, actionsRes, reflectionsRes, assessmentRes, preSessionRes, coachNoteRes, recapsRes, itemsRes, capstoneRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, timezone").eq("user_id", learnerId).maybeSingle(),
+    supabase.from("profiles").select("display_name, timezone, role_title, function_area, team_size, total_org_influence, tenure_at_org, tenure_in_leadership, company_size, industry, context_notes, intake_completed_at").eq("user_id", learnerId).maybeSingle(),
     supabase.from("goals").select("id, title, status, primary_lens, impact_self, impact_others, impact_org").eq("user_id", learnerId).neq("status", "archived").order("created_at", { ascending: false }),
     supabase.from("action_logs").select("id, description, occurred_on, impact_area, reflection").eq("user_id", learnerId).order("occurred_on", { ascending: false }).limit(10),
     supabase.from("reflections").select("id, content, themes, reflected_on").eq("user_id", learnerId).order("reflected_on", { ascending: false }).limit(5),
@@ -47,6 +48,11 @@ export default async function CoachLearnerPage({ params }: Props) {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Left column: learner data */}
         <div className="space-y-5">
+          {/* Profile */}
+          <Section title="About this leader">
+            <ProfileReadonly profile={learnerProfile.data ?? null} />
+          </Section>
+
           {/* Goals */}
           <Section title="Goals" count={goalsRes.data?.length}>
             {(goalsRes.data ?? []).map((g) => (

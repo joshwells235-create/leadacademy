@@ -10,6 +10,7 @@ import { SuggestLessonRenderer } from "./suggest-lesson";
 import { SuggestResourceRenderer } from "./suggest-resource";
 import type { ToolRendererProps } from "./types";
 import { UpdateGoalStatusRenderer } from "./update-goal-status";
+import { UpdateProfileContextRenderer } from "./update-profile-context";
 
 type Renderer = (props: ToolRendererProps) => React.ReactNode;
 
@@ -23,6 +24,7 @@ const RENDERERS: Record<string, Renderer> = {
   "tool-set_daily_challenge": SetDailyChallengeRenderer,
   "tool-start_goal_sprint": StartGoalSprintRenderer,
   "tool-refine_capstone_section": RefineCapstoneSectionRenderer,
+  "tool-update_profile_context": UpdateProfileContextRenderer,
   // tag_themes has no UI — it silently enriches a reflection's themes.
   "tool-tag_themes": () => null,
 };

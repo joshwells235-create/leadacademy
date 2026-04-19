@@ -26,7 +26,7 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("display_name, super_admin")
+      .select("display_name, super_admin, intake_completed_at")
       .eq("user_id", user!.id)
       .maybeSingle(),
     supabase
@@ -122,6 +122,11 @@ export default async function DashboardPage() {
       }
     : null;
 
+  // Intake is pending when the learner has never completed it. Learners
+  // who're not yet assigned to a real membership (super-admin staff,
+  // unassigned newcomers) don't need it.
+  const intakePending = membership && !profile?.intake_completed_at;
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Header — warmer for first time */}
@@ -177,6 +182,33 @@ export default async function DashboardPage() {
               cta="Upload assessments"
               done={assessmentsReady > 0}
             />
+          </div>
+        </div>
+      )}
+
+      {/* ── Intake CTA — surfaces when the learner hasn't told their thought partner about themselves yet ── */}
+      {intakePending && !isFirstTime && (
+        <div className="mb-6 rounded-2xl border-2 border-brand-blue/30 bg-gradient-to-br from-brand-blue-light/30 to-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-blue">
+                Before we dig in
+              </p>
+              <h2 className="mt-1 text-base font-bold text-brand-navy">
+                Tell your thought partner about yourself
+              </h2>
+              <p className="mt-1 text-sm text-neutral-700">
+                A quick conversation so every future exchange feels like it already knows you —
+                your role, team, company, and anything else worth knowing. Takes about five
+                minutes.
+              </p>
+            </div>
+            <Link
+              href="/coach-chat?mode=intake"
+              className="shrink-0 rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
+            >
+              Start intake →
+            </Link>
           </div>
         </div>
       )}

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
+import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { createClient } from "@/lib/supabase/server";
 import { ConsultantOverridePanel } from "./consultant-override-panel";
 
@@ -30,7 +31,7 @@ export default async function SuperLearnerPage({ params }: Props) {
     learnerMembershipRes,
     consultantCandidatesRes,
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name, timezone").eq("user_id", userId).maybeSingle(),
+    supabase.from("profiles").select("display_name, timezone, role_title, function_area, team_size, total_org_influence, tenure_at_org, tenure_in_leadership, company_size, industry, context_notes, intake_completed_at").eq("user_id", userId).maybeSingle(),
     supabase
       .from("goals")
       .select("id, title, status, primary_lens, impact_self, impact_others, impact_org")
@@ -113,6 +114,11 @@ export default async function SuperLearnerPage({ params }: Props) {
       <h1 className="text-2xl font-bold text-brand-navy mb-6">{name}</h1>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* Profile */}
+        <Section title="About this leader">
+          <ProfileReadonly profile={learnerProfile.data ?? null} />
+        </Section>
+
         {/* Goals */}
         <Section title="Goals" count={goalsRes.data?.length}>
           {(goalsRes.data ?? []).map((g) => (

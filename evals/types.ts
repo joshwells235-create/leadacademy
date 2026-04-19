@@ -1,6 +1,6 @@
 import type { LearnerContext } from "@/lib/ai/context/types";
 
-export type FixtureMode = "general" | "goal" | "reflection" | "assessment" | "capstone";
+export type FixtureMode = "general" | "goal" | "reflection" | "assessment" | "capstone" | "intake";
 
 export type FixtureMessage = {
   role: "user" | "assistant";

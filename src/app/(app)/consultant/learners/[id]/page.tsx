@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
+import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { createClient } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ id: string }> };
@@ -35,7 +36,7 @@ export default async function ConsultantLearnerPage({ params }: Props) {
     recapsRes,
     capstoneRes,
   ] = await Promise.all([
-    supabase.from("profiles").select("display_name").eq("user_id", learnerId).maybeSingle(),
+    supabase.from("profiles").select("display_name, role_title, function_area, team_size, total_org_influence, tenure_at_org, tenure_in_leadership, company_size, industry, context_notes, intake_completed_at").eq("user_id", learnerId).maybeSingle(),
     supabase
       .from("memberships")
       .select("cohort_id, cohorts(id, name)")
@@ -102,6 +103,10 @@ export default async function ConsultantLearnerPage({ params }: Props) {
       </p>
 
       <div className="mt-6 grid gap-5 lg:grid-cols-2">
+        <Section title="About this leader">
+          <ProfileReadonly profile={learnerProfile.data ?? null} />
+        </Section>
+
         <Section title="Goals" count={goalsRes.data?.length}>
           {(goalsRes.data ?? []).length === 0 ? (
             <p className="text-sm text-neutral-500">No goals yet.</p>

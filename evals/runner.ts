@@ -7,11 +7,13 @@ import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { CAPSTONE_MODE } from "@/lib/ai/prompts/modes/capstone";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
+import { INTAKE_MODE } from "@/lib/ai/prompts/modes/intake";
 import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
 import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
 import { buildLogActionTool } from "@/lib/ai/tools/log-action";
 import { buildRefineCapstoneSectionTool } from "@/lib/ai/tools/refine-capstone-section";
+import { buildUpdateProfileContextTool } from "@/lib/ai/tools/update-profile-context";
 import { buildSetDailyChallengeTool } from "@/lib/ai/tools/set-daily-challenge";
 import { buildStartGoalSprintTool } from "@/lib/ai/tools/start-goal-sprint";
 import { buildSuggestLessonTool } from "@/lib/ai/tools/suggest-lesson";
@@ -26,6 +28,7 @@ const MODE_PROMPTS: Record<Fixture["mode"], string> = {
   reflection: REFLECTION_MODE,
   assessment: ASSESSMENT_MODE,
   capstone: CAPSTONE_MODE,
+  intake: INTAKE_MODE,
 };
 
 const EMPTY_CONTEXT: LearnerContext = {
@@ -35,6 +38,18 @@ const EMPTY_CONTEXT: LearnerContext = {
     organization: null,
     cohort: null,
     role: null,
+  },
+  profile: {
+    roleTitle: null,
+    functionArea: null,
+    teamSize: null,
+    totalOrgInfluence: null,
+    tenureAtOrg: null,
+    tenureInLeadership: null,
+    companySize: null,
+    industry: null,
+    contextNotes: null,
+    intakeCompletedAt: null,
   },
   assessments: {},
   assessmentCombinedThemes: [],
@@ -65,6 +80,7 @@ function buildContext(partial: Fixture["context"]): LearnerContext {
     ...EMPTY_CONTEXT,
     ...partial,
     identity: { ...EMPTY_CONTEXT.identity, ...(partial.identity ?? {}) },
+    profile: { ...EMPTY_CONTEXT.profile, ...(partial.profile ?? {}) },
     dailyChallenge: { ...EMPTY_CONTEXT.dailyChallenge, ...(partial.dailyChallenge ?? {}) },
     assessments: partial.assessments ?? {},
     assessmentCombinedThemes: partial.assessmentCombinedThemes ?? [],
@@ -173,6 +189,14 @@ function buildEvalTools() {
     refine_capstone_section: buildRefineCapstoneSectionTool(async (input) => {
       rememberStatic("refine_capstone_section", input, true);
       return { ok: true as const, kind: input.kind, heading: input.heading };
+    }),
+    update_profile_context: buildUpdateProfileContextTool(async (input) => {
+      rememberStatic("update_profile_context", input);
+      return {
+        ok: true as const,
+        updated_fields: Object.keys(input).filter((k) => k !== "mark_complete"),
+        marked_complete: !!input.mark_complete,
+      };
     }),
   };
 
