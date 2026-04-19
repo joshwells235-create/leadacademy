@@ -66,6 +66,7 @@ function formatMemory(ctx: LearnerContext): string {
 
 function formatIdentity(ctx: LearnerContext): string {
   const lines = [
+    `Today: ${ctx.today.iso} (${ctx.today.weekday}). Use this when choosing any date (goal target_date, sprint planned_end_date, daily challenge for_date). Never pick a date before today.`,
     `Learner: ${ctx.identity.name}`,
     ctx.identity.organization ? `Organization: ${ctx.identity.organization}` : null,
     ctx.identity.cohort ? `Cohort: ${ctx.identity.cohort}` : null,

@@ -130,6 +130,12 @@ export async function assembleLearnerContext(
     role: membershipRes.data?.role ?? null,
   };
 
+  const todayDate = new Date();
+  const todayCtx: LearnerContext["today"] = {
+    iso: today,
+    weekday: todayDate.toLocaleDateString("en-US", { weekday: "long" }),
+  };
+
   const profile: ProfileContext = {
     roleTitle: profileRes.data?.role_title ?? null,
     functionArea: profileRes.data?.function_area ?? null,
@@ -222,6 +228,7 @@ export async function assembleLearnerContext(
 
   return {
     identity,
+    today: todayCtx,
     profile,
     assessments,
     assessmentCombinedThemes,

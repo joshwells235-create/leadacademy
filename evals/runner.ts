@@ -39,6 +39,10 @@ const EMPTY_CONTEXT: LearnerContext = {
     cohort: null,
     role: null,
   },
+  today: {
+    iso: new Date().toISOString().slice(0, 10),
+    weekday: new Date().toLocaleDateString("en-US", { weekday: "long" }),
+  },
   profile: {
     roleTitle: null,
     functionArea: null,
@@ -80,6 +84,7 @@ function buildContext(partial: Fixture["context"]): LearnerContext {
     ...EMPTY_CONTEXT,
     ...partial,
     identity: { ...EMPTY_CONTEXT.identity, ...(partial.identity ?? {}) },
+    today: { ...EMPTY_CONTEXT.today, ...(partial.today ?? {}) },
     profile: { ...EMPTY_CONTEXT.profile, ...(partial.profile ?? {}) },
     dailyChallenge: { ...EMPTY_CONTEXT.dailyChallenge, ...(partial.dailyChallenge ?? {}) },
     assessments: partial.assessments ?? {},

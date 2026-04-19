@@ -178,8 +178,15 @@ export async function POST(request: NextRequest) {
     .filter(Boolean)
     .join("\n");
 
+  const todayIso = new Date().toISOString().slice(0, 10);
+
   // Build tools. `finalize_goal` writes to the DB with the learner's session.
   const finalizeGoalTool = buildFinalizeGoalTool(async (input) => {
+    if (input.target_date && input.target_date < todayIso) {
+      return {
+        error: `target_date ${input.target_date} is in the past (today is ${todayIso}). Pick a future date and re-propose.`,
+      };
+    }
     const { data, error } = await supabase
       .from("goals")
       .insert({
@@ -205,6 +212,12 @@ export async function POST(request: NextRequest) {
   // start_goal_sprint — close any active sprint on this goal and start a
   // new one. Approval-gated; this is a commitment moment.
   const startGoalSprintTool = buildStartGoalSprintTool(async (input) => {
+    if (input.planned_end_date < todayIso) {
+      return {
+        error: `planned_end_date ${input.planned_end_date} is in the past (today is ${todayIso}). Sprints need a future end date — pick one 4-8 weeks out and re-propose.`,
+      };
+    }
+
     const { data: goal } = await supabase
       .from("goals")
       .select("id")

@@ -125,6 +125,15 @@ export type LearnerContext = {
     cohort: string | null;
     role: string | null;
   };
+  /**
+   * Today's date in ISO-8601 (YYYY-MM-DD) and weekday name, injected on
+   * every turn so the model never has to guess. Prevents past/future date
+   * hallucinations when it's choosing target dates for goals, sprints, etc.
+   */
+  today: {
+    iso: string;
+    weekday: string;
+  };
   profile: ProfileContext;
   assessments: Partial<Record<AssessmentKind, AssessmentSummary>>;
   assessmentCombinedThemes: CombinedAssessmentTheme[];
