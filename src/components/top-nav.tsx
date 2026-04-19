@@ -97,8 +97,14 @@ export function TopNav({
             <div className="text-sm font-medium text-white">{displayName ?? userEmail}</div>
             <div className="text-xs text-white/50">{memberships[0]?.role ?? (superAdmin ? "super admin" : "")}</div>
           </div>
+          {/* Do NOT close the menu on click — setMobileOpen(false) unmounts this
+              form before the browser submits it, so logoutAction never runs.
+              The redirect inside logoutAction replaces the page anyway. */}
           <form action={logoutAction}>
-            <button type="submit" onClick={() => setMobileOpen(false)} className="w-full text-left rounded-md px-3 py-2 text-sm text-white/75 hover:bg-white/10 transition">
+            <button
+              type="submit"
+              className="w-full text-left rounded-md px-3 py-2 text-sm text-white/75 hover:bg-white/10 transition"
+            >
               Sign out
             </button>
           </form>
@@ -189,8 +195,17 @@ function UserMenu({ displayName, userEmail, superAdmin, isCoach, isOrgAdmin, isC
               </>
             )}
             <div className="my-1 border-t border-neutral-100" />
+            {/* Do NOT close the dropdown on click — setOpen(false) unmounts the
+                form inside this `{open && (...)}` block before the browser can
+                submit it, so logoutAction never runs. The redirect inside
+                logoutAction unmounts everything anyway. */}
             <form action={logoutAction}>
-              <button type="submit" className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-brand-light transition" onClick={() => setOpen(false)}>Sign out</button>
+              <button
+                type="submit"
+                className="w-full px-3 py-2 text-left text-sm text-neutral-700 hover:bg-brand-light transition"
+              >
+                Sign out
+              </button>
             </form>
           </div>
         </>
