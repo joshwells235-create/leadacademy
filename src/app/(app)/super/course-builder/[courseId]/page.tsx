@@ -27,7 +27,7 @@ export default async function CourseEditorPage({ params }: Props) {
 
   const { data: modules } = await supabase
     .from("modules")
-    .select("id, title, description, status, order, duration_minutes")
+    .select("id, title, description, status, order, duration_minutes, learning_objectives")
     .eq("course_id", courseId)
     .order("order");
 
@@ -37,7 +37,9 @@ export default async function CourseEditorPage({ params }: Props) {
     moduleIds.length > 0
       ? await supabase
           .from("lessons")
-          .select("id, module_id, title, type, order, video_url, content")
+          .select(
+            "id, module_id, title, description, duration_minutes, type, order, video_url, content",
+          )
           .in("module_id", moduleIds)
           .order("order")
       : { data: [] };
@@ -46,6 +48,8 @@ export default async function CourseEditorPage({ params }: Props) {
     id: string;
     module_id: string;
     title: string;
+    description: string | null;
+    duration_minutes: number | null;
     type: string;
     order: number;
     video_url: string | null;

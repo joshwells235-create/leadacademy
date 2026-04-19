@@ -5,13 +5,23 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { LessonEditor } from "@/components/editor/lesson-editor";
+import { QuizAnalytics, type QuizAnalyticsData } from "@/components/quiz/quiz-analytics";
+import { QuizBuilder, type QuizQuestion, type QuizSettings } from "@/components/quiz/quiz-builder";
 import { ConfirmBlock } from "@/components/ui/confirm-dialog";
-import { deleteLesson, updateLesson } from "@/lib/learning/actions";
+import {
+  deleteLesson,
+  linkLessonResource,
+  unlinkLessonResource,
+  updateLesson,
+} from "@/lib/learning/actions";
+import { providerLabel, resolveVideoEmbed } from "@/lib/learning/video-embed";
 import type { Json } from "@/lib/types/database";
 
 type Lesson = {
   id: string;
   title: string;
+  description: string | null;
+  duration_minutes: number | null;
   type: string;
   content: Json;
   video_url: string | null;
@@ -19,6 +29,9 @@ type Lesson = {
   quiz: Json;
   module_id: string;
 };
+
+type LinkedResource = { id: string; title: string; type: string; url: string };
+type ResourceOption = { id: string; title: string; type: string };
 
 type Material = { name: string; url: string; path?: string };
 
@@ -29,13 +42,26 @@ export function LessonEditorWrapper({
   courseId,
   prevLesson,
   nextLesson,
+  linkedResources = [],
+  allResources = [],
+  quizSettings = null,
+  quizQuestions = [],
+  quizAnalytics,
 }: {
   lesson: Lesson;
   courseId: string;
   prevLesson?: SiblingLesson;
   nextLesson?: SiblingLesson;
+  linkedResources?: LinkedResource[];
+  allResources?: ResourceOption[];
+  quizSettings?: QuizSettings | null;
+  quizQuestions?: QuizQuestion[];
+  quizAnalytics?: QuizAnalyticsData;
 }) {
   const [title, setTitle] = useState(lesson.title);
+  const [lessonType, setLessonType] = useState<string>(lesson.type || "lesson");
+  const [description, setDescription] = useState(lesson.description ?? "");
+  const [durationMinutes, setDurationMinutes] = useState(lesson.duration_minutes?.toString() ?? "");
   const [videoUrl, setVideoUrl] = useState(lesson.video_url ?? "");
   const [materials, setMaterials] = useState<Material[]>(
     Array.isArray(lesson.materials) ? (lesson.materials as Material[]) : [],
@@ -55,10 +81,16 @@ export function LessonEditorWrapper({
 
   // Use refs for auto-save to avoid stale closures.
   const titleRef = useRef(title);
+  const typeRef = useRef(lessonType);
+  const descriptionRef = useRef(description);
+  const durationRef = useRef(durationMinutes);
   const contentRef = useRef(content);
   const videoUrlRef = useRef(videoUrl);
   const materialsRef = useRef(materials);
   titleRef.current = title;
+  typeRef.current = lessonType;
+  descriptionRef.current = description;
+  durationRef.current = durationMinutes;
   contentRef.current = content;
   videoUrlRef.current = videoUrl;
   materialsRef.current = materials;
@@ -66,8 +98,13 @@ export function LessonEditorWrapper({
   const doSave = useCallback(() => {
     start(async () => {
       setSaveState("saving");
+      const durationRaw = durationRef.current.trim();
+      const durationValue = durationRaw === "" ? null : Number.parseInt(durationRaw, 10);
       await updateLesson(lesson.id, courseId, {
         title: titleRef.current,
+        type: typeRef.current,
+        description: descriptionRef.current.trim() || null,
+        duration_minutes: Number.isFinite(durationValue as number) ? durationValue : null,
         content: contentRef.current as object,
         video_url: videoUrlRef.current || null,
         materials: materialsRef.current as unknown as object,
@@ -129,15 +166,55 @@ export function LessonEditorWrapper({
     <div className="space-y-6">
       {/* Header: title + save + nav */}
       <div className="flex items-start justify-between gap-4">
-        <input
-          value={title}
-          onChange={(e) => {
-            setTitle(e.target.value);
-            handleChange();
-          }}
-          className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-xl font-bold text-brand-navy focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
-          placeholder="Lesson title"
-        />
+        <div className="flex-1 space-y-2">
+          <input
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              handleChange();
+            }}
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-xl font-bold text-brand-navy focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            placeholder="Lesson title"
+          />
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-neutral-600">Type:</label>
+            <div className="inline-flex rounded-md border border-neutral-300 overflow-hidden text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setLessonType("lesson");
+                  handleChange();
+                }}
+                className={`px-3 py-1 ${
+                  lessonType !== "quiz"
+                    ? "bg-brand-blue text-white"
+                    : "bg-white text-neutral-600 hover:bg-brand-light"
+                }`}
+              >
+                Lesson
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLessonType("quiz");
+                  handleChange();
+                }}
+                className={`px-3 py-1 border-l border-neutral-300 ${
+                  lessonType === "quiz"
+                    ? "bg-brand-pink text-white"
+                    : "bg-white text-neutral-600 hover:bg-brand-light"
+                }`}
+              >
+                Quiz
+              </button>
+            </div>
+            {lessonType === "quiz" && (
+              <span className="text-[11px] text-neutral-500">
+                Quiz passes gate lesson completion.
+              </span>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           <span
             className={`text-xs transition ${
@@ -218,6 +295,50 @@ export function LessonEditorWrapper({
         )}
       </div>
 
+      {/* Description + duration */}
+      <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm space-y-3">
+        <div>
+          <label className="block text-sm font-medium text-brand-navy mb-1">
+            Short description (optional)
+          </label>
+          <p className="text-xs text-neutral-500 mb-2">
+            1-2 sentences shown on the course overview and above the full content. Help learners
+            decide if this lesson is what they need right now.
+          </p>
+          <textarea
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              handleChange();
+            }}
+            rows={2}
+            maxLength={500}
+            placeholder="e.g. The 3-question frame for giving feedback that lands without making the other person defensive."
+            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+          />
+        </div>
+        <div>
+          <label className="flex items-center gap-2 text-sm font-medium text-brand-navy">
+            Estimated minutes
+            <input
+              type="number"
+              min={0}
+              max={600}
+              value={durationMinutes}
+              onChange={(e) => {
+                setDurationMinutes(e.target.value);
+                handleChange();
+              }}
+              placeholder="—"
+              className="w-20 rounded-md border border-neutral-300 px-2 py-1 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            />
+            <span className="text-xs text-neutral-500">
+              Rolls up to the course total + gives learners a time budget.
+            </span>
+          </label>
+        </div>
+      </div>
+
       {/* Video URL */}
       <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         <label className="block text-sm font-medium text-brand-navy mb-1">Video (optional)</label>
@@ -246,15 +367,7 @@ export function LessonEditorWrapper({
             </button>
           )}
         </div>
-        {videoUrl && /^https?:\/\/.+/.test(videoUrl) && (
-          <div className="mt-3 aspect-video max-w-xl rounded-lg overflow-hidden border border-neutral-200">
-            <iframe
-              src={videoUrl.replace("watch?v=", "embed/")}
-              className="h-full w-full"
-              allowFullScreen
-            />
-          </div>
-        )}
+        <VideoEmbedPreview videoUrl={videoUrl} />
       </div>
 
       {/* Rich content editor */}
@@ -331,6 +444,172 @@ export function LessonEditorWrapper({
           {uploadingFile ? "Uploading..." : "+ Upload a file"}
         </button>
       </div>
+
+      {/* Quiz builder — only when type is quiz */}
+      {lessonType === "quiz" && (
+        <>
+          <QuizBuilder lessonId={lesson.id} settings={quizSettings} questions={quizQuestions} />
+          {quizAnalytics && <QuizAnalytics data={quizAnalytics} />}
+        </>
+      )}
+
+      {/* Linked resources from the library */}
+      <LinkedResourcesPanel lessonId={lesson.id} linked={linkedResources} all={allResources} />
+    </div>
+  );
+}
+
+function LinkedResourcesPanel({
+  lessonId,
+  linked,
+  all,
+}: {
+  lessonId: string;
+  linked: LinkedResource[];
+  all: ResourceOption[];
+}) {
+  const [picker, setPicker] = useState<string>("");
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const linkedIds = new Set(linked.map((r) => r.id));
+  const available = all.filter((r) => !linkedIds.has(r.id));
+
+  const addResource = () => {
+    if (!picker) return;
+    setError(null);
+    const target = picker;
+    setPicker("");
+    start(async () => {
+      const res = await linkLessonResource(lessonId, target);
+      if ("error" in res && res.error) {
+        setError(res.error);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  const removeResource = (resourceId: string) => {
+    setError(null);
+    start(async () => {
+      const res = await unlinkLessonResource(lessonId, resourceId);
+      if ("error" in res && res.error) {
+        setError(res.error);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  return (
+    <div className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="mb-2">
+        <label className="block text-sm font-medium text-brand-navy">
+          Related resources (optional)
+        </label>
+        <p className="text-xs text-neutral-500">
+          Link articles, videos, or worksheets from the{" "}
+          <Link href="/super/resources" className="text-brand-blue hover:underline">
+            resource library
+          </Link>
+          . Shown to learners alongside this lesson as recommended reading.
+        </p>
+      </div>
+
+      {linked.length > 0 && (
+        <ul className="space-y-1.5 mb-3">
+          {linked.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center justify-between rounded-md border border-neutral-200 bg-brand-light/40 px-3 py-2 text-sm"
+            >
+              <div className="min-w-0 flex items-center gap-2">
+                <span className="rounded bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-blue">
+                  {r.type}
+                </span>
+                <a
+                  href={r.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-navy hover:text-brand-blue truncate"
+                >
+                  {r.title}
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeResource(r.id)}
+                disabled={pending}
+                className="text-xs text-neutral-400 hover:text-brand-pink disabled:opacity-60"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {available.length > 0 ? (
+        <div className="flex items-center gap-2">
+          <select
+            value={picker}
+            onChange={(e) => setPicker(e.target.value)}
+            className="flex-1 rounded-md border border-neutral-300 bg-white px-2 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+            aria-label="Pick a resource to link"
+          >
+            <option value="">— pick a resource to attach —</option>
+            {available.map((r) => (
+              <option key={r.id} value={r.id}>
+                [{r.type}] {r.title}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={addResource}
+            disabled={pending || !picker}
+            className="rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark disabled:opacity-60"
+          >
+            Attach
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs text-neutral-500">
+          No more resources to link — every resource in the library is already attached.
+        </p>
+      )}
+      {error && <p className="mt-2 text-xs text-red-700">{error}</p>}
+    </div>
+  );
+}
+
+function VideoEmbedPreview({ videoUrl }: { videoUrl: string }) {
+  if (!videoUrl.trim()) return null;
+  const resolved = resolveVideoEmbed(videoUrl);
+  if (!resolved) {
+    return (
+      <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        Can't recognize this video URL. Paste a YouTube (e.g. youtube.com/watch?v=… or youtu.be/…),
+        Vimeo, or Loom share/embed link.
+      </div>
+    );
+  }
+  return (
+    <div className="mt-3">
+      <div className="aspect-video max-w-xl rounded-lg overflow-hidden border border-neutral-200">
+        <iframe
+          src={resolved.embedUrl}
+          title={`${providerLabel(resolved.provider)} video preview`}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+      <p className="mt-1 text-[11px] text-neutral-500">
+        Embedded as {providerLabel(resolved.provider)} video.
+      </p>
     </div>
   );
 }
