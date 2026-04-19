@@ -1,13 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { resetPasswordAction, type ActionState } from "@/lib/auth/actions";
-import {
-  FormField,
-  TextInput,
-  SubmitButton,
-  FormError,
-} from "@/components/ui/form-field";
+import { FormError, FormField, SubmitButton, TextInput } from "@/components/ui/form-field";
+import { type ActionState, resetPasswordAction } from "@/lib/auth/actions";
 
 const initialState: ActionState = { status: "idle" };
 

@@ -67,12 +67,22 @@ export async function registerAction(_prev: ActionState, formData: FormData): Pr
   const invite = invites[0];
 
   // Sign up with the email from the invite (user doesn't type email — it's bound to the token).
+  // After Supabase's confirmation email is clicked, we need two hops: first
+  // /auth/callback to exchange the code for a session, then /auth/consume
+  // to run consume_invitation with the token. The consume URL is passed as
+  // the `next` param — URL-encoded so the inner `?token=` doesn't get
+  // flattened into a top-level query string. Historically this was
+  // `/onboarding/consume`, a path that doesn't exist; correct path is
+  // `/auth/consume`.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const consumePath = `/auth/consume?token=${encodeURIComponent(parsed.data.token)}`;
+  const emailRedirectTo = `${baseUrl}/auth/callback?next=${encodeURIComponent(consumePath)}`;
   const { error: signUpError } = await supabase.auth.signUp({
     email: invite.email,
     password: parsed.data.password,
     options: {
       data: { display_name: parsed.data.displayName },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/callback?next=/onboarding/consume?token=${encodeURIComponent(parsed.data.token)}`,
+      emailRedirectTo,
     },
   });
   if (signUpError) {

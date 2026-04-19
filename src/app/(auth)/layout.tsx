@@ -11,13 +11,15 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
         </div>
         <div>
           <h2 className="text-3xl font-bold leading-tight">
-            Build leaders.<br />
-            Align teams.<br />
+            Build leaders.
+            <br />
+            Align teams.
+            <br />
             Accelerate performance.
           </h2>
           <p className="mt-4 text-white/70 max-w-sm leading-relaxed">
-            A leadership development platform powered by AI coaching, integrative goal-setting,
-            and structured learning — built by LeadShift.
+            A leadership development platform powered by AI coaching, integrative goal-setting, and
+            structured learning — built by LeadShift.
           </p>
         </div>
         <p className="text-xs text-white/40">
@@ -37,7 +39,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             {children}
           </div>
           <p className="mt-6 text-center text-xs text-neutral-400">
-            Need help? Contact <a href="mailto:support@leadshift.com" className="text-brand-blue hover:underline">support@leadshift.com</a>
+            Need help? Contact{" "}
+            <a href="mailto:support@leadshift.com" className="text-brand-blue hover:underline">
+              support@leadshift.com
+            </a>
           </p>
         </div>
       </div>

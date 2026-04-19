@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { forgotPasswordAction, type ActionState } from "@/lib/auth/actions";
 import {
-  FormField,
-  TextInput,
-  SubmitButton,
   FormError,
+  FormField,
   FormSuccess,
+  SubmitButton,
+  TextInput,
 } from "@/components/ui/form-field";
+import { type ActionState, forgotPasswordAction } from "@/lib/auth/actions";
 
 const initialState: ActionState = { status: "idle" };
 
