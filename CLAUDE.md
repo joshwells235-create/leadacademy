@@ -46,6 +46,10 @@ role; don't rename code without a reason. When writing new user-visible strings,
 - **AI calls:** Always server-side via `/api/ai/*` routes. Key never in browser. Every conversation persisted to `ai_conversations` + `ai_messages`. Usage tracked in `ai_usage`.
 - **Seeded openers for new conversations.** Mode-switching CTAs (intake, capstone, assessment debrief, from-nudge) go through a server action that creates the conversation, seeds the thought partner's first message, and redirects to `/coach-chat?c=<id>`. Never drop the learner on a blank canvas for these flows — if you add a new mode, seed an opener.
 - **AI-mode check constraint.** `ai_conversations.mode` has a CHECK constraint listing the allowed modes. **When adding a new mode, update the constraint in the DB alongside the TypeScript enum / Zod schema / runner map** — otherwise inserts fail silently and the fallback redirect lands the user on a blank chat. Current modes: `general | goal | reflection | assessment | capstone | intake`.
+- **Today's date goes into every learner context.** `LearnerContext.today = { iso, weekday }` is populated in `assembleLearnerContext` from `new Date()` and rendered as the first line of the identity block: `Today: 2026-04-19 (Sunday). Use this when choosing any date — never pick a date before today.` Without this, the model hallucinates past target dates when doing "X days from now" math. Every mode inherits it since they share the context assembler.
+- **Sanitize dangling tool parts before convertToModelMessages.** The chat route runs `sanitizeDanglingToolParts(messages)` which strips `tool-*` parts from assistant messages that aren't in `output-available` / `output-error` state. This handles the case where a learner types a new message instead of clicking an approval pill — without the sanitizer, Anthropic rejects the next turn with "tool_use_id X is not followed by tool_result blocks" and the conversation gets stuck. Don't remove this without replacing it.
+- **Backstop date validation in the handlers.** `finalize_goal` and `start_goal_sprint` return an error if `target_date` / `planned_end_date` is before today. The tool-use ecosystem is resilient: a rejected tool call shows the AI the error, and it re-proposes with a corrected date.
+- **Nudge detectors gate by artifact age.** Any "it's been quiet for N days" detector (`goal_check_in`, `sprint_quiet`) must require the underlying artifact to have existed for at least that many days. Otherwise a brand-new goal/sprint trivially satisfies "no action in N days" and the nudge fires seconds after creation. The existing detectors use `.lte("created_at", cutoff)` on the source table.
 - **Migrations via MCP.** Most schema changes are applied directly via `mcp__…__apply_migration` rather than tracked as files under `supabase/migrations/`. The one pre-existing `.sql` file is the foundations migration; everything since lives only in Supabase's migration history. Take this into account if replicating in a local / preview environment.
 - **No cron infrastructure.** Async work (memory distillation, nudge detection, title generation, assessment rollup synthesis) runs fire-and-forget inside the request that naturally triggers it.
 
@@ -95,7 +99,7 @@ Everything below is the AI thought-partner loop. Most production value lives her
 ### Context assembled on every chat turn (`src/lib/ai/context/`)
 
 One canonical learner context is built on every turn from the real DB — shared across modes, callers, and the proactive-nudge opener generator. Sections:
-- Identity + membership
+- Identity + membership + **today's date** (so the model never has to guess)
 - **About this leader** (profile intake fields — role, team, company, tenure, free-text context; absent when intake hasn't happened yet)
 - All uploaded assessment summaries, PLUS combined-themes synthesis when ≥2 reports are present
 - Active goals with per-goal action count, days since last action, **current sprint** block (title, practice, day X of Y, action_count_this_sprint), **sprint history** summary
@@ -148,6 +152,7 @@ Tool renderers live in `src/components/chat/tool-renderers/` with a registry-bas
 - Detector runs inline on dashboard visits (skips first-time users). One nudge per check, first match wins. Respects `profiles.proactivity_enabled`.
 - Rate limits: **2 nudges / rolling 7 days** (global cap, dismissal still counts), per-pattern cooldown (default 14 days).
 - 9 patterns, in priority order: `sprint_ending_soon`, `sprint_needs_review`, `challenge_followup`, `undebriefed_assessment`, `sprint_quiet`, `reflection_streak_broken`, `new_course_waiting`, `momentum_surge`, `goal_check_in`
+- **Artifact-age gates.** "Quiet" detectors (`goal_check_in`, `sprint_quiet`) require the underlying goal/sprint to be at least as old as the lookback window — otherwise they'd trivially fire on brand-new artifacts. `goal_check_in` needs goal created ≥45 days ago; `sprint_quiet` needs sprint created ≥10 days ago.
 - Clicking a nudge card routes to `/coach-chat/from-nudge/[id]` which generates a rich Sonnet opener grounded in pattern data + full learner context, seeds a new conversation, marks nudge as acted, redirects into `/coach-chat?c=<id>`
 - Dismiss action sets `dismissed_at` (counts toward cap — can't dismiss to refill)
 
