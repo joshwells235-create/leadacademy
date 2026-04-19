@@ -52,6 +52,12 @@ role; don't rename code without a reason. When writing new user-visible strings,
 - **Nudge detectors gate by artifact age.** Any "it's been quiet for N days" detector (`goal_check_in`, `sprint_quiet`) must require the underlying artifact to have existed for at least that many days. Otherwise a brand-new goal/sprint trivially satisfies "no action in N days" and the nudge fires seconds after creation. The existing detectors use `.lte("created_at", cutoff)` on the source table.
 - **Migrations via MCP.** Most schema changes are applied directly via `mcp__…__apply_migration` rather than tracked as files under `supabase/migrations/`. The one pre-existing `.sql` file is the foundations migration; everything since lives only in Supabase's migration history. Take this into account if replicating in a local / preview environment.
 - **No cron infrastructure.** Async work (memory distillation, nudge detection, title generation, assessment rollup synthesis) runs fire-and-forget inside the request that naturally triggers it.
+- **PostgREST embed queries require explicit FKs.** `supabase.from("X").select("profiles:user_id(display_name)")` only resolves if there's a foreign key from `X.user_id → profiles.user_id`. `auth.users.id` isn't enough — the FK must be direct to `profiles`. The `add_user_fks_to_profiles` migration wired these up for `memberships`, `coach_assignments`, `session_recaps`, `action_items`, and `cohorts.consultant_user_id`. Without the FK, the embed silently returns null and the page falls back to `[]` — a nasty silent-failure mode. If you add a new `*_user_id` column that needs profile embeds, add the FK in the same migration.
+- **Shared admin UI primitives live at `src/components/ui/` and `src/lib/admin/`.** `ConfirmBlock` (confirm-dialog.tsx) is the house pattern for destructive / caution / restorative actions — never use browser `confirm()` in admin surfaces. `ROLE_LABEL` / `ROLE_DESCRIPTION` / `ROLE_BADGE_CLASS` in `lib/admin/roles.ts` are the single source of truth for displaying role names; raw DB role strings (`org_admin`, `learner`, etc.) should not appear in the UI.
+- **Don't trigger state updates in the onClick of a submit button inside a conditionally-rendered form.** If `{open && <form action={serverAction}><button onClick={() => setOpen(false)}>Submit</button></form>}`, clicking the button fires `setOpen(false)` synchronously → React unmounts the form → the browser never submits. This bit sign-out twice (mobile + desktop dropdowns). The fix: let the server action's `redirect()` unmount the tree; don't close the menu in the onClick.
+- **Invite-consumption is email-confirmation-gated.** `registerAction` only calls `consume_invitation` when `supabase.auth.getUser().email_confirmed_at` is truthy — otherwise the Supabase SDK can surface the user object from the in-memory signUp result without a real session cookie, and the RPC fails with "invitation invalid" because `auth.uid()` resolves to null inside the SECURITY DEFINER function. When confirmation is needed, fall through to the "check your email" branch and let `/auth/consume` handle the consume step after the link is clicked.
+- **Email delivery in production requires custom SMTP.** Supabase's built-in email sender is development-only even on Pro tier (rate-limited at ~30/hour). Configure custom SMTP (Resend / SendGrid / Postmark) in Supabase Dashboard → Auth → SMTP Settings before any real invite batch. The `manuallyAddMember` action exists as an escape hatch when SMTP is down: creates a confirmed user directly with a temp password, bypasses the email flow entirely.
+- **Supabase auth redirect allowlist must include `/auth/callback` wildcards.** Redirect URLs (dashboard) must include `https://leadacademy.vercel.app/**` (and the localhost equivalent). Without the wildcard, Supabase rejects the session exchange with an `invalid_grant`-style error when `?next=...` query strings are present.
 
 ## Brand
 
@@ -234,19 +240,20 @@ Key cross-references:
 - `/pre-session` — coaching session prep form
 
 ### Coach
-- `/coach/dashboard` — assigned learners with stats
-- `/coach/learners/[id]` — full learner view + profile panel + notes + recaps + action items + capstone (read-only)
+- `/coach/dashboard` — searchable / filterable / sortable learner grid, per-card "what's new since your last recap" chips, sprint vitality, coaching-since date
+- `/coach/learners/[id]` — top "since last recap" strip, prev/next nav (←/→ keyboard), sprint vitality on goals, thought-partner activity panel (read-only), AI-drafted session recap button, full action-item / notes / recap UI
 
 ### Consultant
-- `/consultant/dashboard` — cohorts the user consults on (default OR override)
-- `/consultant/cohorts/[cohortId]` — cohort detail with learner roster filtered to effective-consultant learners, coach list
-- `/consultant/learners/[id]` — read-only learner view (profile, goals, actions, reflections, assessment summary, recent session recaps, capstone). Consultants don't write coach notes.
+- `/consultant/dashboard` — cohorts the user consults on (default OR override); per-cohort vitality chips (% active, active sprints, assessment coverage, no-coach flag); collapsible role explainer
+- `/consultant/cohorts/[cohortId]` — cohort detail with at-a-glance vitality metrics, reflection themes strip, searchable/filterable roster, coaches panel with learner-count per coach + inline "Assign / change coach" control, cohort metadata editor (description + capstone unlock date)
+- `/consultant/learners/[id]` — prev/next keyboard nav, "in the last 14 days" strip, sprint vitality, thought-partner activity panel, session-recap coach attribution, override badge when scope is via per-learner override
 
 ### Org Admin
-- `/admin/dashboard` — org-wide stats + per-learner activity table
-- `/admin/people` — invite (roles include consultant), role management, coach assignment
-- `/admin/cohorts` — cohort CRUD
-- `/admin/activity` — audit log
+- `/admin/dashboard` — 6-metric vitality grid (active members / learners / active 14d / no coach / intake pending / pending invites), cohorts-ending-soon card, per-cohort vitality table
+- `/admin/people` — searchable + filterable + sortable members table (role / cohort / coach / at-risk flags / status), bulk select + sticky action bar (move cohort / assign coach / archive / unarchive), at-risk chips per row (No coach / Quiet 14d+ / Intake pending), inline cohort & coach pickers, role-change with in-UI confirm; invitations panel with pending/accepted/expired counts + Resend + Revoke; coach-load bar chart; three invite modes (single / bulk paste / manual-add-user)
+- `/admin/cohorts` — cohort list with edit-in-place + archive (with "reassign N members first" guard); consultant-name pills
+- `/admin/cohorts/[cohortId]` — cohort detail with full roster, multi-select bulk-move to another cohort, consultant label
+- `/admin/activity` — audit log with actor / action / date-range filters, humanized action labels, CSV export
 
 ### Super Admin
 - `/super/orgs`, `/super/orgs/[id]` — org management + settings + cohort panel (assign consultant, set capstone unlock date)
@@ -299,6 +306,26 @@ Each phase ended with sign-off + implementation, not just a writeup. See the pha
 
 Plus: Leadership Academy branding sweep (all user-facing strings).
 
+### UX polish sweep (Phases 1–6)
+
+A portal-by-portal UX rebuild. Each phase: thorough audit → triage → three-batch implementation. Notable cross-cutting patterns:
+
+- **Shared helpers**: `lib/coach/since-last-session.ts` (anchored on last recap), `lib/consultant/since-last-visit.ts` (rolling 14d), `lib/consultant/cohort-vitality.ts` (reused across consultant + admin dashboards for consistent numbers).
+- **Seeded openers for all conversation modes**: goal / reflection / general now all flow through `lib/thought-partner/start-session.ts` so learners never land on a blank chat. Intake opener rewritten with trust/privacy framing + explicit completion transition.
+- **"What's new" pattern** on every cross-role learner view: coach dashboard + learner detail, consultant learner detail, admin People (via at-risk chips).
+
+1. **Learner first-run** — seeded openers, intake privacy framing + explicit completion transition, dashboard intro card explaining Thought Partner before any CTA uses the term, register form polish (password live-validate, show-pw, humanized role, locked-email explainer), chat chrome (animated thinking bubble, friendly errors, approval-pill "waiting on you" tag), empty-hint rewrite without insider jargon.
+2. **Learner daily loop** — clickable dashboard stat cards, sprint vitality on goal cards, sprint chips on action-log rows, sprint-progress labels with `role="progressbar"`, reflection form collapsible with expanded-default for new users, sidebar mode-badge colors, in-UI conversation delete confirm, age-aware chat resumption subheading ("picking up from Tuesday"), seeded-opener failsafe banner.
+3. **Learner depth** — capstone share/finalize inline confirms with "what becomes visible / stays editable" explainers, community audience banner (Posting to COHORT vs ALUMNI NETWORK, color-coded), assessment re-upload confirm, message send-failure visible states with Retry/Discard, pre-session privacy explainer, assessment "Ready" top banner with Combined-themes chip, capstone locked state with days-remaining + prep links, memory dropped third-person requirement + confidence-dot labels + source-conversation links, lesson viewer module-scoped "Lesson X of Y in <Module>" breadcrumb, message timestamps with date context, community comment cap + a11y.
+4. **Coach portal** — `/coach/dashboard` search/filter/sort with "since last recap" chips, sprint vitality on cards, coaching-since-date, "New" assignment chip. Learner detail: prev/next nav + ←/→ keyboard shortcuts, since-last-recap top strip, thought-partner activity panel, ownership labels (Private to you / Visible to learner / From learner). **AI session-recap drafts wired** (`lib/coach/recap-draft-action.ts`) — Sonnet drafts a 150-word recap grounded in learner activity since coach's last recap; coach edits before saving. Action items gain description field + default due date + overdue highlighting.
+5. **Consultant portal** — `consultant/layout.tsx` route-boundary auth guard; dashboard vitality chips per cohort; cohort detail at-a-glance metrics + reflection-themes strip + searchable/filterable roster + coaches panel with inline coach-assignment control; cohort metadata editor; learner detail with prev/next nav + 14d rolling what's-new + sprint vitality + TP activity + session-recap coach attribution + override badge.
+6. **Org admin portal** — `add_user_fks_to_profiles` migration fixed the silent PostgREST-embed failure that was showing "0 active members" when members existed. People page: search/filter/sort across role/cohort/coach/at-risk-flags/status, bulk select + sticky action bar, at-risk chips per row, inline cohort & coach pickers, role-change with in-UI confirm. Three invite modes: single (sticky defaults), bulk paste, manual-add-user (creates confirmed user with temp password — SMTP-bypass escape hatch). Invitations panel with Resend (rotates token + extends expiry) + Revoke. Coach-load bar-chart panel. Cohort management gains /admin/cohorts/[cohortId] detail page with multi-select bulk-move. Activity log gains filters (actor / action / date range) + humanized action labels + CSV export. Shared primitives: `ConfirmBlock`, `ROLE_LABEL` map, `requireAdmin` helper, activity-emitting admin action pattern.
+
+Bug fixes shipped alongside Phase 6:
+- Invite confirmation flow: corrected `/auth/consume` path (was `/onboarding/consume`), fixed nested `?token=` encoding.
+- `registerAction` only consumes invite when `email_confirmed_at` is set — SDK sometimes surfaces user object without session.
+- Sign-out buttons no longer unmount mid-click via conditional-form + onClick pattern.
+
 ## Env vars
 
 ```
@@ -312,24 +339,27 @@ NEXT_PUBLIC_SENTRY_DSN=(optional, activates Sentry when set)
 
 ## What to work on next
 
+Immediately up next:
+- **Phase 7 — super-admin portal UX sweep** (`/super/*`). Should match the Phase 4–6 patterns: route-boundary auth guard (already present but worth auditing), searchable/filterable org + cohort + user tables, shared `ConfirmBlock` for destructive actions, cross-org vitality signals, activity-log with filters. Surfaces to audit: `/super/orgs`, `/super/orgs/[id]`, `/super/orgs/[id]/members/[userId]`, `/super/orgs/[id]/assign-courses`, `/super/course-builder`, `/super/ai-usage`, `/super/conversations` + `[id]`, `/super/moderation`, `/super/export`.
+
 Near-term candidates:
-- **Seed openers for the remaining modes** — goal, reflection, and plain general start fresh conversations blank. Pattern (server action → generate opener → redirect) is proven; extend it.
-- **Run the first `pnpm eval` baseline** — critical before further prompt tuning
-- **Drop `goals.active_focus_until`** — DB column is now dead weight, remove in a small follow-up migration
-- **Capture recent MCP migrations as `.sql` files** — back-fill `supabase/migrations/` with capstone_builder, consultant_role, consultant_per_learner_override, profile_intake_fields, ai_conversations_allow_intake_mode so they're replayable in preview branches / dev environments
-- **Capstone PDF export** — currently in-app only; "export story brief" as PDF would close the loop
-- E2E tests (Playwright)
-- Supabase Auth URL configuration for production email flows (password reset, invite confirmation)
-- AI-generated session recap drafts (schema + route prepped, button not wired)
-- CI integration for `pnpm eval` (GitHub Action check on PRs)
-- Production-conversation replay for evals (Phase 6.1 — mine real `ai_messages` into fixture templates)
-- Course quiz builder (schema supports it, no editor UI)
-- Drag-and-drop reordering for modules/lessons
-- Course cover images
-- Content vs quiz lesson type toggle
+- **Run the first `pnpm eval` baseline** — critical before further prompt tuning.
+- **Drop `goals.active_focus_until`** — DB column is now dead weight, remove in a small follow-up migration.
+- **Capture recent MCP migrations as `.sql` files** — back-fill `supabase/migrations/` with capstone_builder, consultant_role, consultant_per_learner_override, profile_intake_fields, ai_conversations_allow_intake_mode, add_user_fks_to_profiles so they're replayable in preview branches / dev environments.
+- **Wire custom SMTP in Supabase Dashboard** (Resend or SendGrid) — built-in email sender is rate-limited even on Pro and unsuitable for production invite batches.
+- **Capstone PDF export** — currently in-app only; "export story brief" as PDF would close the loop.
+- **Expose member emails in admin/people** — currently blank because org_admin RLS can't read `auth.users.email`. Need a view or RPC that returns `(user_id, email)` for org members.
+- E2E tests (Playwright).
+- CI integration for `pnpm eval` (GitHub Action check on PRs).
+- Production-conversation replay for evals (mine real `ai_messages` into fixture templates).
+- Course quiz builder (schema supports it, no editor UI).
+- Drag-and-drop reordering for modules/lessons.
+- Course cover images.
+- Content vs quiz lesson type toggle.
 
 Later / bigger:
-- Semantic search over memory facts (pgvector) — if the top-N approach starts missing relevance
-- Voice + multi-modal in thought-partner chat (PWA polish, browser speech API, image upload)
-- Coach/consultant/admin rollup views for sprint progress + goal arcs across a cohort
-- Cohort program-dates model (capstone_unlocks_at is the first cohort-date field; workshop dates, peer-group dates, etc. could all land on `cohorts` so learners see the full schedule in-app)
+- Semantic search over memory facts (pgvector) — if the top-N approach starts missing relevance.
+- Voice + multi-modal in thought-partner chat (PWA polish, browser speech API, image upload).
+- Coach/consultant/admin rollup views for sprint progress + goal arcs across a cohort.
+- Cohort program-dates model (capstone_unlocks_at is the first cohort-date field; workshop dates, peer-group dates, etc. could all land on `cohorts` so learners see the full schedule in-app).
+- Phase 8 — cross-cutting polish (mobile, a11y, brand consistency, loading/error states across the full app) once Phase 7 is done.
