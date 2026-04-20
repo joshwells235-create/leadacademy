@@ -122,6 +122,9 @@ export function TopNav({
           <MobileLink href="/resources" onClick={() => setMobileOpen(false)}>
             Resources
           </MobileLink>
+          <MobileLink href="/certificates" onClick={() => setMobileOpen(false)}>
+            Certificates
+          </MobileLink>
           {capstoneAvailable && (
             <MobileLink href="/capstone" onClick={() => setMobileOpen(false)}>
               Capstone
@@ -177,6 +180,9 @@ export function TopNav({
               </MobileLink>
               <MobileLink href="/super/learning-paths" onClick={() => setMobileOpen(false)}>
                 Learning Paths
+              </MobileLink>
+              <MobileLink href="/super/certificates" onClick={() => setMobileOpen(false)}>
+                Certificates
               </MobileLink>
               <MobileLink href="/super/ai-usage" onClick={() => setMobileOpen(false)}>
                 AI Usage
@@ -246,6 +252,9 @@ function GrowthDropdown({ capstoneAvailable }: { capstoneAvailable: boolean }) {
             </DropdownLink>
             <DropdownLink href="/assessments" onClick={() => setOpen(false)}>
               Assessments
+            </DropdownLink>
+            <DropdownLink href="/certificates" onClick={() => setOpen(false)}>
+              Certificates
             </DropdownLink>
             <DropdownLink href="/resources" onClick={() => setOpen(false)}>
               Resources
@@ -375,6 +384,9 @@ function UserMenu({
                     </DropdownLink>
                     <DropdownLink href="/super/learning-paths" onClick={() => setOpen(false)}>
                       Learning Paths
+                    </DropdownLink>
+                    <DropdownLink href="/super/certificates" onClick={() => setOpen(false)}>
+                      Certificates
                     </DropdownLink>
                     <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>
                       Resource Library

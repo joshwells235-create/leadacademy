@@ -47,12 +47,14 @@ export async function updateCourse(
     description?: string;
     status?: string;
     image_url?: string;
+    cert_validity_months?: number | null;
   },
 ) {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };
   const supabase = await createClient();
-  const { error } = await supabase.from("courses").update(updates).eq("id", id);
+  // biome-ignore lint/suspicious/noExplicitAny: runtime-shaped partial update
+  const { error } = await supabase.from("courses").update(updates as any).eq("id", id);
   if (error) return { error: error.message };
   revalidatePath(`/super/course-builder/${id}`);
   revalidatePath("/super/course-builder");
@@ -513,5 +515,11 @@ export async function markLessonComplete(lessonId: string) {
     completed_at: new Date().toISOString(),
   });
   if (error) return { error: error.message };
+
+  // Fire-and-forget: attempt to issue course + path certs now that this
+  // lesson is complete. Best-effort; never blocks the progress write.
+  const { onLessonCompleted } = await import("@/lib/certificates/on-completion");
+  void onLessonCompleted({ userId: user.id, lessonId });
+
   return { ok: true };
 }

@@ -98,6 +98,7 @@ const updateSchema = z.object({
   name: z.string().trim().min(1).max(200).optional(),
   description: z.string().trim().max(2000).optional().nullable(),
   org_id: z.string().uuid().optional().nullable(),
+  cert_validity_months: z.number().int().min(1).max(600).optional().nullable(),
 });
 
 export async function updatePath(
@@ -112,6 +113,8 @@ export async function updatePath(
   if (parsed.data.name !== undefined) update.name = parsed.data.name;
   if (parsed.data.description !== undefined) update.description = parsed.data.description;
   if (parsed.data.org_id !== undefined) update.org_id = parsed.data.org_id;
+  if (parsed.data.cert_validity_months !== undefined)
+    update.cert_validity_months = parsed.data.cert_validity_months;
   if (Object.keys(update).length === 0) return { ok: true };
 
   const admin = createAdminClient();
@@ -321,6 +324,33 @@ export async function assignPathToCohort(
     .select("org_id")
     .eq("id", cohortId)
     .maybeSingle();
+
+  // Auto-cover: any cohort learner who's already completed every course
+  // in this path gets a path certificate now (instead of waiting for
+  // them to re-complete something). Runs inline but fire-and-forget per
+  // learner so a single failure doesn't derail assignment.
+  try {
+    const { data: learners } = await admin
+      .from("memberships")
+      .select("user_id")
+      .eq("cohort_id", cohortId)
+      .eq("status", "active");
+    if (learners && learners.length > 0) {
+      const { maybeIssueCertificate } = await import("@/lib/certificates/issue");
+      await Promise.allSettled(
+        learners.map((l) =>
+          maybeIssueCertificate({
+            kind: "path",
+            userId: l.user_id,
+            pathId,
+            cohortId,
+          }),
+        ),
+      );
+    }
+  } catch {
+    // Auto-cover is best-effort; don't fail assignment if it errors.
+  }
 
   await logActivity({
     actorId: ctx.userId,

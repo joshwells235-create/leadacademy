@@ -17,6 +17,7 @@ type Path = {
   description: string | null;
   org_id: string | null;
   updated_at: string;
+  cert_validity_months?: number | null;
 };
 type Org = { id: string; name: string };
 type Course = { id: string; title: string; status: string };
@@ -47,6 +48,9 @@ export function PathEditor({
   const [name, setName] = useState(path.name);
   const [description, setDescription] = useState(path.description ?? "");
   const [orgId, setOrgId] = useState(path.org_id ?? "");
+  const [certValidity, setCertValidity] = useState<string>(
+    path.cert_validity_months ? String(path.cert_validity_months) : "",
+  );
   const [metaPending, startMeta] = useTransition();
   const [metaState, setMetaState] = useState<"idle" | "saved" | "error">("idle");
   const [metaErr, setMetaErr] = useState<string | null>(null);
@@ -86,11 +90,14 @@ export function PathEditor({
   const saveMeta = () => {
     setMetaErr(null);
     startMeta(async () => {
+      const raw = certValidity.trim();
+      const months = raw === "" ? null : Number.parseInt(raw, 10);
       const res = await updatePath({
         pathId: path.id,
         name,
         description,
         org_id: orgId || null,
+        cert_validity_months: Number.isFinite(months as number) ? months : null,
       });
       if ("error" in res) {
         setMetaState("error");
@@ -176,6 +183,26 @@ export function PathEditor({
               rows={2}
               className="mt-1 block w-full rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
             />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="text-xs font-medium text-neutral-600">Certificate validity</span>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={600}
+                value={certValidity}
+                onChange={(e) => {
+                  setCertValidity(e.target.value);
+                  setMetaState("idle");
+                }}
+                placeholder="Non-expiring"
+                className="w-32 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              />
+              <span className="text-[11px] text-neutral-500">
+                months — leave blank to make path certificates non-expiring
+              </span>
+            </div>
           </label>
         </div>
         <div className="mt-3 flex items-center justify-between">

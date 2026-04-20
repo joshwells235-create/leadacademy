@@ -626,6 +626,84 @@ export type Database = {
           },
         ]
       }
+      certificates: {
+        Row: {
+          cohort_id: string | null
+          course_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          issued_at: string
+          path_id: string | null
+          pdf_url: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          user_id: string
+        }
+        Insert: {
+          cohort_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          issued_at?: string
+          path_id?: string | null
+          pdf_url?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id: string
+        }
+        Update: {
+          cohort_id?: string | null
+          course_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          issued_at?: string
+          path_id?: string | null
+          pdf_url?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificates_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "certificates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       coach_assignments: {
         Row: {
           active_from: string
@@ -1071,6 +1149,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          cert_validity_months: number | null
           created_at: string
           description: string | null
           id: string
@@ -1081,6 +1160,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cert_validity_months?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1091,6 +1171,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cert_validity_months?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1438,6 +1519,7 @@ export type Database = {
       }
       learning_paths: {
         Row: {
+          cert_validity_months: number | null
           created_at: string
           description: string | null
           id: string
@@ -1446,6 +1528,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cert_validity_months?: number | null
           created_at?: string
           description?: string | null
           id?: string
@@ -1454,6 +1537,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cert_validity_months?: number | null
           created_at?: string
           description?: string | null
           id?: string

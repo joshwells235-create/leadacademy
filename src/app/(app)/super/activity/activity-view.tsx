@@ -47,6 +47,8 @@ const ACTION_LABEL: Record<string, string> = {
   "super.path.courses_set": "Set learning path course list",
   "super.path.assigned": "Assigned learning path to cohort",
   "super.path.unassigned": "Unassigned learning path from cohort",
+  "super.certificate.revoked": "Revoked certificate",
+  "super.certificate.restored": "Restored revoked certificate",
   "super.post.deleted": "Deleted community post",
   "super.comment.deleted": "Deleted community comment",
   "super.user.profile_updated": "Edited user profile",

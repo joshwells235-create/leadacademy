@@ -21,6 +21,7 @@ type Course = {
   title: string;
   description: string | null;
   status: string;
+  cert_validity_months?: number | null;
 };
 type Module = {
   id: string;
@@ -55,6 +56,9 @@ export function CourseEditor({
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description ?? "");
   const [status, setStatus] = useState(course.status);
+  const [certValidity, setCertValidity] = useState<string>(
+    course.cert_validity_months ? String(course.cert_validity_months) : "",
+  );
   const [pending, start] = useTransition();
   const [saveState, setSaveState] = useState<"idle" | "saved">("idle");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -65,17 +69,22 @@ export function CourseEditor({
   const titleRef = useRef(title);
   const descRef = useRef(description);
   const statusRef = useRef(status);
+  const certValidityRef = useRef(certValidity);
   titleRef.current = title;
   descRef.current = description;
   statusRef.current = status;
+  certValidityRef.current = certValidity;
 
   const saveCourse = useCallback(
     () =>
       start(async () => {
+        const raw = certValidityRef.current.trim();
+        const months = raw === "" ? null : Number.parseInt(raw, 10);
         await updateCourse(course.id, {
           title: titleRef.current,
           description: descRef.current || undefined,
           status: statusRef.current,
+          cert_validity_months: Number.isFinite(months as number) ? months : null,
         });
         setSaveState("saved");
         setTimeout(() => setSaveState("idle"), 3000);
@@ -217,6 +226,30 @@ export function CourseEditor({
               className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
               placeholder="What will learners gain from this course? Write 2-3 sentences."
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-navy mb-1">
+              Certificate validity
+            </label>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min={1}
+                max={600}
+                value={certValidity}
+                onChange={(e) => setCertValidity(e.target.value)}
+                placeholder="Non-expiring"
+                className="w-32 rounded-md border border-neutral-300 px-3 py-1.5 text-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue"
+              />
+              <span className="text-xs text-neutral-500">
+                months — leave blank for non-expiring
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] text-neutral-500">
+              When a learner completes this course, a certificate is issued automatically. If set,
+              the certificate expires after this many months and the learner can re-complete to
+              renew.
+            </p>
           </div>
           <div className="text-xs pt-1">
             <span className="text-neutral-500">

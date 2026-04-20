@@ -456,6 +456,9 @@ export async function submitQuizAttempt(
       completed: true,
       completed_at: new Date().toISOString(),
     });
+    // Fire-and-forget certificate issuance.
+    const { onLessonCompleted } = await import("@/lib/certificates/on-completion");
+    void onLessonCompleted({ userId: user.id, lessonId });
   }
 
   const courseId = (lesson?.modules as unknown as { course_id?: string } | null)?.course_id;

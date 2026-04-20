@@ -12,7 +12,7 @@ export default async function LearningPathDetailPage({ params }: Props) {
   const [pathRes, orgsRes, allCoursesRes, pathCoursesRes, assignmentsRes] = await Promise.all([
     supabase
       .from("learning_paths")
-      .select("id, name, description, org_id, updated_at")
+      .select("id, name, description, org_id, updated_at, cert_validity_months")
       .eq("id", pathId)
       .maybeSingle(),
     supabase.from("organizations").select("id, name").order("name"),
