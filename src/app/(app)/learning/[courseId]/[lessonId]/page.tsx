@@ -16,6 +16,10 @@ export default async function LessonViewerPage({ params }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  // Defense in depth: the (app) layout redirects unauth users, but under
+  // Next 16 RSC streaming the page body can still start rendering. Without
+  // this guard `user!.id` crashes with "Cannot read properties of null".
+  if (!user) redirect("/login");
 
   const { data: lesson } = await supabase
     .from("lessons")

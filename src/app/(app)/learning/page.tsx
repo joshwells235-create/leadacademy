@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { computeCourseGates } from "@/lib/learning/access-gate";
 import { computeDueStatus, dueStatusChipClass, dueStatusLabel } from "@/lib/learning/due-status";
 import { createClient } from "@/lib/supabase/server";
@@ -10,6 +11,7 @@ export default async function LearningPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: membership } = await supabase
     .from("memberships")

@@ -15,6 +15,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: course } = await supabase
     .from("courses")
