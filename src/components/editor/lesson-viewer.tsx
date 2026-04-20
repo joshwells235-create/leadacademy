@@ -21,34 +21,42 @@ export function LessonViewer({ content }: { content: JSONContent }) {
     return <p className="text-sm text-neutral-500 italic">No content yet.</p>;
   }
 
-  const rawHtml = generateHTML(content, [
-    StarterKit.configure({ heading: { levels: [2, 3, 4] } }),
-    Image.configure({
-      HTMLAttributes: { class: "rounded-lg max-w-full h-auto", loading: "lazy" },
-    }),
-    Link.configure({
-      HTMLAttributes: {
-        class: "text-brand-blue underline",
-        target: "_blank",
-        rel: "noopener noreferrer",
-      },
-    }),
-    Youtube.configure({ HTMLAttributes: { class: "rounded-lg w-full aspect-video" } }),
-    Table.configure({
-      HTMLAttributes: { class: "course-table border-collapse my-4 w-full text-sm" },
-    }),
-    TableRow,
-    TableHeader.configure({
-      HTMLAttributes: {
-        class: "bg-brand-light font-semibold text-left px-3 py-2 border border-neutral-300",
-      },
-    }),
-    TableCell.configure({
-      HTMLAttributes: { class: "px-3 py-2 border border-neutral-300 align-top" },
-    }),
-  ]);
+  // Tiptap's generateHTML + DOMPurify run at request time on the server.
+  // On Vercel's serverless runtime, happy-dom (a Tiptap peer dep) has
+  // thrown "Failed to load external stylesheet" when rendering certain
+  // nodes — that error shouldn't 500 the whole lesson page. Catch, log
+  // with full context so `/super/ai-errors`-style tooling can surface it,
+  // and render a graceful fallback so the learner still sees the page.
+  let html: string;
+  try {
+    const rawHtml = generateHTML(content, [
+      StarterKit.configure({ heading: { levels: [2, 3, 4] }, link: false }),
+      Image.configure({
+        HTMLAttributes: { class: "rounded-lg max-w-full h-auto", loading: "lazy" },
+      }),
+      Link.configure({
+        HTMLAttributes: {
+          class: "text-brand-blue underline",
+          target: "_blank",
+          rel: "noopener noreferrer",
+        },
+      }),
+      Youtube.configure({ HTMLAttributes: { class: "rounded-lg w-full aspect-video" } }),
+      Table.configure({
+        HTMLAttributes: { class: "course-table border-collapse my-4 w-full text-sm" },
+      }),
+      TableRow,
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: "bg-brand-light font-semibold text-left px-3 py-2 border border-neutral-300",
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: { class: "px-3 py-2 border border-neutral-300 align-top" },
+      }),
+    ]);
 
-  const html = DOMPurify.sanitize(rawHtml, {
+    html = DOMPurify.sanitize(rawHtml, {
     // Tiptap block + inline elements, plus iframe (for YouTube) with a
     // uri regex restriction. No <script>, no inline event handlers, no
     // data: URIs for images.
@@ -104,7 +112,31 @@ export function LessonViewer({ content }: { content: JSONContent }) {
     ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
     ADD_TAGS: ["iframe"],
     ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "data-tone"],
-  });
+    });
+  } catch (e) {
+    // Log the full message + stack so we can see exactly what's failing
+    // when "Preview as learner" hits this path on Vercel. Don't 500 the
+    // page — the lesson body may render fine for other learners and a
+    // rich error is more useful than a broken page.
+    console.error(
+      "[lesson-viewer] generateHTML/sanitize failed:",
+      e instanceof Error ? e.stack ?? e.message : e,
+    );
+    return (
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="font-semibold">Couldn't render this lesson's content.</p>
+        <p className="mt-1 text-xs text-amber-800">
+          The text is saved — something went wrong rendering it for display.
+          The content team has been notified.
+          {e instanceof Error && (
+            <span className="mt-1 block font-mono text-[10px] text-amber-700/80">
+              {e.message}
+            </span>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div
