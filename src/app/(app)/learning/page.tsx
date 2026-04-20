@@ -317,6 +317,7 @@ export default async function LearningPage() {
             const p = progressMap[c.id] ?? { total: 0, completed: 0 };
             const pct = p.total > 0 ? Math.round((p.completed / p.total) * 100) : 0;
             const isComplete = p.completed === p.total && p.total > 0;
+            const isEmpty = p.total === 0;
             const gate = courseGates.get(c.id);
             const isLocked = gate ? !gate.unlocked : false;
             const due = computeDueStatus(c.due_at, isComplete);
@@ -344,14 +345,16 @@ export default async function LearningPage() {
                       className={`text-sm font-bold ${
                         isLocked
                           ? "text-neutral-400"
-                          : isComplete
-                            ? "text-emerald-600"
-                            : "text-brand-blue"
+                          : isEmpty
+                            ? "text-neutral-400"
+                            : isComplete
+                              ? "text-emerald-600"
+                              : "text-brand-blue"
                       }`}
                     >
-                      {isLocked ? "Locked" : isComplete ? "✓" : `${pct}%`}
+                      {isLocked ? "Locked" : isEmpty ? "Being built" : isComplete ? "✓" : `${pct}%`}
                     </span>
-                    {!isLocked && due.status !== "none" && due.status !== "complete" && (
+                    {!isLocked && !isEmpty && due.status !== "none" && due.status !== "complete" && (
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${dueStatusChipClass(due)}`}
                       >
@@ -368,7 +371,7 @@ export default async function LearningPage() {
                     />
                   </div>
                 )}
-                {!isLocked && (
+                {!isLocked && !isEmpty && (
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-xs text-neutral-500">
                       {p.completed}/{p.total} lessons completed
@@ -382,6 +385,12 @@ export default async function LearningPage() {
                       <span className="text-xs text-emerald-600 font-medium">Course complete!</span>
                     )}
                   </div>
+                )}
+                {!isLocked && isEmpty && (
+                  <p className="mt-2 text-xs text-neutral-500">
+                    The LeadShift team is finishing the content. You'll see modules here once it's
+                    published.
+                  </p>
                 )}
               </>
             );

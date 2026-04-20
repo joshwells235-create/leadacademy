@@ -201,41 +201,59 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
         </div>
       )}
 
-      {/* Overall progress bar + stats */}
-      <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-brand-navy">
-            {completedCount === totalLessons && totalLessons > 0
-              ? "Course complete!"
-              : `${completedCount} of ${totalLessons} lessons completed`}
-          </span>
-          <span className="text-sm font-bold text-brand-blue">{pct}%</span>
+      {totalLessons === 0 ? (
+        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-2xl">📘</p>
+          <h2 className="mt-2 font-semibold text-brand-navy">This course is still being built</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-neutral-600">
+            The LeadShift team is finishing up the modules for this course. You'll see them here
+            the moment they're published — and your program admin will usually flag it when it's
+            ready to start.
+          </p>
+          <Link
+            href="/learning"
+            className="mt-4 inline-block text-sm font-medium text-brand-blue hover:underline"
+          >
+            ← Back to Learning
+          </Link>
         </div>
-        <div className="h-2 rounded-full bg-neutral-200">
-          <div
-            className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-brand-blue"}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <div className="mt-2 flex items-center justify-between">
-          <span className="text-xs text-neutral-500">
-            {(modules ?? []).length} module{(modules ?? []).length !== 1 ? "s" : ""}
-            {totalDuration > 0 ? ` · ~${totalDuration} min total` : ""}
-          </span>
-          {nextUncompletedLesson && (
-            <Link
-              href={`/learning/${courseId}/${nextUncompletedLesson.id}`}
-              className="rounded-md bg-brand-blue px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
-            >
-              {completedCount === 0 ? "Start course →" : "Continue →"}
-            </Link>
-          )}
-        </div>
-      </div>
+      ) : (
+        <>
+          {/* Overall progress bar + stats */}
+          <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-brand-navy">
+                {completedCount === totalLessons && totalLessons > 0
+                  ? "Course complete!"
+                  : `${completedCount} of ${totalLessons} lessons completed`}
+              </span>
+              <span className="text-sm font-bold text-brand-blue">{pct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-neutral-200">
+              <div
+                className={`h-full rounded-full transition-all ${pct === 100 ? "bg-emerald-500" : "bg-brand-blue"}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-neutral-500">
+                {(modules ?? []).length} module{(modules ?? []).length !== 1 ? "s" : ""}
+                {totalDuration > 0 ? ` · ~${totalDuration} min total` : ""}
+              </span>
+              {nextUncompletedLesson && (
+                <Link
+                  href={`/learning/${courseId}/${nextUncompletedLesson.id}`}
+                  className="rounded-md bg-brand-blue px-4 py-1.5 text-sm font-medium text-white hover:bg-brand-blue-dark"
+                >
+                  {completedCount === 0 ? "Start course →" : "Continue →"}
+                </Link>
+              )}
+            </div>
+          </div>
 
-      {/* Module list */}
-      <div className="mt-6 space-y-4">
-        {(modules ?? []).map((m, mIdx) => {
+          {/* Module list */}
+          <div className="mt-6 space-y-4">
+            {(modules ?? []).map((m, mIdx) => {
           const moduleLessons = lessonsByModule[m.id] ?? [];
           const done = moduleLessons.filter((l) => completedIds.has(l.id)).length;
           const allDone = done === moduleLessons.length && moduleLessons.length > 0;
@@ -358,7 +376,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
             </div>
           );
         })}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

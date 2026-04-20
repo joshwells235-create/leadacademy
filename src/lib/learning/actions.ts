@@ -212,7 +212,7 @@ export async function createModule(courseId: string, title: string) {
   const nextOrder = (existing?.order ?? -1) + 1;
   const { data, error } = await supabase
     .from("modules")
-    .insert({ course_id: courseId, title, order: nextOrder })
+    .insert({ course_id: courseId, title, order: nextOrder, status: "published" })
     .select("id")
     .single();
   if (error) return { error: error.message };
