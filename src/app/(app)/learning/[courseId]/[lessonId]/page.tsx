@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LessonViewer } from "@/components/editor/lesson-viewer";
 import { type PlayerQuestion, QuizPlayer } from "@/components/quiz/quiz-player";
+import { stampLessonStarted } from "@/lib/analytics/stamp-started";
 import { computeSingleLessonGate } from "@/lib/learning/access-gate";
 import { resolveVideoEmbed } from "@/lib/learning/video-embed";
 import { createClient } from "@/lib/supabase/server";
@@ -77,6 +78,13 @@ export default async function LessonViewerPage({ params }: Props) {
   }
 
   const isQuiz = lesson.type === "quiz";
+
+  // Fire-and-forget: stamp started_at so drop-off + time-to-complete
+  // analytics have a signal. Skipped for super-admins so preview views
+  // don't muddy the metrics with author activity.
+  if (!profile?.super_admin) {
+    void stampLessonStarted({ userId: user.id, lessonId });
+  }
 
   const [modRes, progressRes, siblingsRes, courseRes, linkedResourcesRes] = await Promise.all([
     supabase.from("modules").select("title, course_id").eq("id", lesson.module_id).maybeSingle(),

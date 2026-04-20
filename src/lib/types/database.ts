@@ -1599,6 +1599,7 @@ export type Database = {
           id: string
           lesson_id: string
           score: number | null
+          started_at: string | null
           updated_at: string
           user_id: string
         }
@@ -1609,6 +1610,7 @@ export type Database = {
           id?: string
           lesson_id: string
           score?: number | null
+          started_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1619,6 +1621,7 @@ export type Database = {
           id?: string
           lesson_id?: string
           score?: number | null
+          started_at?: string | null
           updated_at?: string
           user_id?: string
         }

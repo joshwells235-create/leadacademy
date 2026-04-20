@@ -75,12 +75,20 @@ export default async function CourseEditorPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <nav className="mb-4 flex items-center gap-1 text-xs text-neutral-500">
-        <Link href="/super/course-builder" className="hover:text-brand-blue">
-          Courses
+      <nav className="mb-4 flex items-center justify-between gap-1 text-xs text-neutral-500">
+        <div className="flex items-center gap-1">
+          <Link href="/super/course-builder" className="hover:text-brand-blue">
+            Courses
+          </Link>
+          <span>/</span>
+          <span className="font-medium text-brand-navy">{course.title}</span>
+        </div>
+        <Link
+          href={`/super/course-builder/${courseId}/analytics`}
+          className="rounded-md border border-brand-blue/30 bg-white px-3 py-1 font-medium text-brand-blue hover:bg-brand-blue/5"
+        >
+          Analytics →
         </Link>
-        <span>/</span>
-        <span className="font-medium text-brand-navy">{course.title}</span>
       </nav>
 
       <CourseEditor course={course} modules={modules ?? []} lessonsByModule={lessonsByModule} />
