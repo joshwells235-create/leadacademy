@@ -16,9 +16,31 @@ import DOMPurify from "isomorphic-dompurify";
  * scripts / event handlers / data-URIs, so every render goes through
  * DOMPurify with a Tiptap-friendly allowlist before reaching the DOM.
  */
+/**
+ * Returns true if the Tiptap doc is effectively empty — e.g. a fresh
+ * lesson with only an auto-inserted empty paragraph. Skipping the
+ * generateHTML path in that case sidesteps happy-dom entirely, which
+ * has been intermittently throwing "Failed to load external stylesheet"
+ * on Vercel's runtime and 500ing the whole lesson page.
+ */
+function isEffectivelyEmpty(content: JSONContent): boolean {
+  if (!content || !("content" in content)) return true;
+  const inner = content.content;
+  if (!Array.isArray(inner) || inner.length === 0) return true;
+  // Walk the tree for any text or non-paragraph node.
+  const hasSubstance = (node: JSONContent): boolean => {
+    if (node.type === "text" && typeof node.text === "string" && node.text.length > 0)
+      return true;
+    if (node.type && node.type !== "paragraph" && node.type !== "doc") return true;
+    const kids = Array.isArray(node.content) ? node.content : [];
+    return kids.some(hasSubstance);
+  };
+  return !inner.some(hasSubstance);
+}
+
 export function LessonViewer({ content }: { content: JSONContent }) {
-  if (!content || Object.keys(content).length === 0) {
-    return <p className="text-sm text-neutral-500 italic">No content yet.</p>;
+  if (!content || Object.keys(content).length === 0 || isEffectivelyEmpty(content)) {
+    return <p className="text-sm text-neutral-500 italic">No written content for this lesson.</p>;
   }
 
   // Tiptap's generateHTML + DOMPurify run at request time on the server.
