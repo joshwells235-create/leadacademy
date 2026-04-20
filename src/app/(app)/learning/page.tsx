@@ -143,6 +143,57 @@ export default async function LearningPage() {
         courses.map((c) => c.id),
       );
 
+  // C4: paths assigned to the learner's cohort. Each path is a sequenced
+  // series of courses; the path's courses are already materialized into
+  // cohort_courses so completion tracking + locks all use the existing maps.
+  type PathRow = {
+    path_id: string;
+    available_from: string | null;
+    due_at: string | null;
+    learning_paths: {
+      id: string;
+      name: string;
+      description: string | null;
+      learning_path_courses: { course_id: string; order: number }[] | null;
+    } | null;
+  };
+  let learnerPaths: {
+    id: string;
+    name: string;
+    description: string | null;
+    courseIds: string[];
+    available_from: string | null;
+    due_at: string | null;
+  }[] = [];
+  if (membership?.cohort_id) {
+    const { data: pathRows } = await supabase
+      .from("cohort_learning_paths")
+      .select(
+        "path_id, available_from, due_at, learning_paths(id, name, description, learning_path_courses(course_id, order))",
+      )
+      .eq("cohort_id", membership.cohort_id);
+    learnerPaths = ((pathRows ?? []) as unknown as PathRow[])
+      .map((r) => {
+        const lp = r.learning_paths;
+        if (!lp) return null;
+        const orderedCourseIds = (lp.learning_path_courses ?? [])
+          .slice()
+          .sort((a, b) => a.order - b.order)
+          .map((pc) => pc.course_id);
+        return {
+          id: lp.id,
+          name: lp.name,
+          description: lp.description,
+          courseIds: orderedCourseIds,
+          available_from: r.available_from,
+          due_at: r.due_at,
+        };
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null);
+  }
+  // Hide paths whose available_from hasn't arrived yet.
+  const visiblePaths = learnerPaths.filter((p) => !p.available_from || p.available_from <= today);
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-6">
@@ -151,6 +202,103 @@ export default async function LearningPage() {
           Courses assigned to your cohort. Work through them at your own pace.
         </p>
       </div>
+
+      {visiblePaths.length > 0 && (
+        <div className="mb-6 space-y-4">
+          {visiblePaths.map((path) => {
+            // Compute per-course status using the existing progressMap.
+            const totalCourses = path.courseIds.length;
+            const courseStatuses = path.courseIds.map((cid) => {
+              const cp = progressMap[cid] ?? { total: 0, completed: 0 };
+              const courseDone = cp.total > 0 && cp.completed === cp.total;
+              const courseStarted = cp.completed > 0;
+              return { cid, done: courseDone, started: courseStarted };
+            });
+            const completedCount = courseStatuses.filter((s) => s.done).length;
+            // "Current" is the first not-done course; everything after is gated by sequence.
+            const currentIdx = courseStatuses.findIndex((s) => !s.done);
+            const pathPct =
+              totalCourses > 0 ? Math.round((completedCount / totalCourses) * 100) : 0;
+            const pathDue = computeDueStatus(path.due_at, completedCount === totalCourses);
+            return (
+              <section
+                key={path.id}
+                className="rounded-lg border border-brand-blue/30 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-blue">
+                      Your path
+                    </span>
+                    <h2 className="text-lg font-bold text-brand-navy">{path.name}</h2>
+                    {path.description && (
+                      <p className="mt-1 text-sm text-neutral-600">{path.description}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-sm font-bold text-brand-blue">{pathPct}%</span>
+                    {pathDue.status !== "none" && pathDue.status !== "complete" && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${dueStatusChipClass(pathDue)}`}
+                      >
+                        {dueStatusLabel(pathDue)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <ol className="mt-4 space-y-1">
+                  {courseStatuses.map((s, idx) => {
+                    const courseInfo = courses.find((c) => c.id === s.cid);
+                    const upcomingPath = upcoming.find((c) => c.id === s.cid);
+                    const info = courseInfo ?? upcomingPath;
+                    const isCurrent = idx === currentIdx;
+                    const isFutureStep = currentIdx >= 0 && idx > currentIdx;
+                    return (
+                      <li
+                        key={s.cid}
+                        className="flex items-center gap-3 rounded-md bg-white/70 px-3 py-2 text-sm"
+                      >
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-medium ${
+                            s.done
+                              ? "bg-emerald-500 text-white"
+                              : isCurrent
+                                ? "bg-brand-blue text-white"
+                                : "bg-neutral-200 text-neutral-500"
+                          }`}
+                        >
+                          {s.done ? "✓" : idx + 1}
+                        </span>
+                        <span
+                          className={`flex-1 ${
+                            s.done
+                              ? "text-neutral-500"
+                              : isCurrent
+                                ? "font-medium text-brand-navy"
+                                : "text-neutral-600"
+                          }`}
+                        >
+                          {info?.title ?? "(unavailable course)"}
+                        </span>
+                        {info && !isFutureStep ? (
+                          <Link
+                            href={`/learning/${s.cid}`}
+                            className="text-xs font-medium text-brand-blue hover:underline"
+                          >
+                            {s.done ? "Review" : isCurrent ? "Continue →" : "Open →"}
+                          </Link>
+                        ) : (
+                          <span className="text-[11px] text-neutral-400">Up next</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </section>
+            );
+          })}
+        </div>
+      )}
 
       {courses.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">

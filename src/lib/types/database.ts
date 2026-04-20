@@ -831,6 +831,48 @@ export type Database = {
           },
         ]
       }
+      cohort_learning_paths: {
+        Row: {
+          available_from: string | null
+          cohort_id: string
+          created_at: string
+          due_at: string | null
+          id: string
+          path_id: string
+        }
+        Insert: {
+          available_from?: string | null
+          cohort_id: string
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          path_id: string
+        }
+        Update: {
+          available_from?: string | null
+          cohort_id?: string
+          created_at?: string
+          due_at?: string | null
+          id?: string
+          path_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cohort_learning_paths_cohort_id_fkey"
+            columns: ["cohort_id"]
+            isOneToOne: false
+            referencedRelation: "cohorts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cohort_learning_paths_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cohorts: {
         Row: {
           capstone_unlocks_at: string | null
@@ -1351,6 +1393,80 @@ export type Database = {
             columns: ["source_conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_path_courses: {
+        Row: {
+          course_id: string
+          created_at: string
+          id: string
+          order: number
+          path_id: string
+        }
+        Insert: {
+          course_id: string
+          created_at?: string
+          id?: string
+          order?: number
+          path_id: string
+        }
+        Update: {
+          course_id?: string
+          created_at?: string
+          id?: string
+          order?: number
+          path_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_path_courses_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "learning_path_courses_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_paths: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          org_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_paths_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
