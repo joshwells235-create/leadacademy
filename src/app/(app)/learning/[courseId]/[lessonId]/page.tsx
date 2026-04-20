@@ -2,6 +2,8 @@ import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LessonViewer } from "@/components/editor/lesson-viewer";
+import { LessonNotes } from "@/components/learning/lesson-notes";
+import { ScrollResume } from "@/components/learning/scroll-resume";
 import { type PlayerQuestion, QuizPlayer } from "@/components/quiz/quiz-player";
 import { stampLessonStarted } from "@/lib/analytics/stamp-started";
 import { computeSingleLessonGate } from "@/lib/learning/access-gate";
@@ -86,26 +88,33 @@ export default async function LessonViewerPage({ params }: Props) {
     void stampLessonStarted({ userId: user.id, lessonId });
   }
 
-  const [modRes, progressRes, siblingsRes, courseRes, linkedResourcesRes] = await Promise.all([
-    supabase.from("modules").select("title, course_id").eq("id", lesson.module_id).maybeSingle(),
-    supabase
-      .from("lesson_progress")
-      .select("completed")
-      .eq("user_id", user!.id)
-      .eq("lesson_id", lessonId)
-      .maybeSingle(),
-    supabase
-      .from("lessons")
-      .select("id, title, order")
-      .eq("module_id", lesson.module_id)
-      .order("order"),
-    supabase.from("courses").select("title").eq("id", courseId).maybeSingle(),
-    supabase
-      .from("lesson_resources")
-      .select("order, resources(id, title, type, url)")
-      .eq("lesson_id", lessonId)
-      .order("order"),
-  ]);
+  const [modRes, progressRes, siblingsRes, courseRes, linkedResourcesRes, noteRes] =
+    await Promise.all([
+      supabase.from("modules").select("title, course_id").eq("id", lesson.module_id).maybeSingle(),
+      supabase
+        .from("lesson_progress")
+        .select("completed, last_scroll_pct")
+        .eq("user_id", user!.id)
+        .eq("lesson_id", lessonId)
+        .maybeSingle(),
+      supabase
+        .from("lessons")
+        .select("id, title, order")
+        .eq("module_id", lesson.module_id)
+        .order("order"),
+      supabase.from("courses").select("title").eq("id", courseId).maybeSingle(),
+      supabase
+        .from("lesson_resources")
+        .select("order, resources(id, title, type, url)")
+        .eq("lesson_id", lessonId)
+        .order("order"),
+      supabase
+        .from("lesson_notes")
+        .select("content")
+        .eq("user_id", user!.id)
+        .eq("lesson_id", lessonId)
+        .maybeSingle(),
+    ]);
 
   // Quiz-specific load (only if quiz lesson).
   const [quizSettingsRes, quizQuestionsRes, quizAttemptsRes, lastAttemptRes] = isQuiz
@@ -157,6 +166,9 @@ export default async function LessonViewerPage({ params }: Props) {
       ? (lesson.content as JSONContent)
       : null;
 
+  const initialScrollPct = progressRes.data?.last_scroll_pct ?? null;
+  const initialNoteContent = noteRes.data?.content ?? "";
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       {/* Breadcrumb — always visible so the learner never loses their place. */}
@@ -174,6 +186,8 @@ export default async function LessonViewerPage({ params }: Props) {
         <span aria-hidden>/</span>
         <span className="text-neutral-700">{modRes.data?.title ?? "Module"}</span>
       </nav>
+
+      <ScrollResume lessonId={lessonId} initialPct={initialScrollPct} />
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
@@ -343,8 +357,14 @@ export default async function LessonViewerPage({ params }: Props) {
           </div>
         )}
 
+      {/* Private per-lesson notes — also feed LearnerContext so the
+          thought partner knows what this learner has been flagging. */}
+      <div className="mt-6">
+        <LessonNotes lessonId={lessonId} initialContent={initialNoteContent} />
+      </div>
+
       {/* Completion + navigation */}
-      <div className="mt-8 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
         {!isQuiz && (
           <div className="flex items-center justify-center mb-4">
             <MarkCompleteButton

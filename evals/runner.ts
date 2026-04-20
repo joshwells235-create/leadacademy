@@ -13,13 +13,13 @@ import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
 import { buildLogActionTool } from "@/lib/ai/tools/log-action";
 import { buildRefineCapstoneSectionTool } from "@/lib/ai/tools/refine-capstone-section";
-import { buildUpdateProfileContextTool } from "@/lib/ai/tools/update-profile-context";
 import { buildSetDailyChallengeTool } from "@/lib/ai/tools/set-daily-challenge";
 import { buildStartGoalSprintTool } from "@/lib/ai/tools/start-goal-sprint";
 import { buildSuggestLessonTool } from "@/lib/ai/tools/suggest-lesson";
 import { buildSuggestResourceTool } from "@/lib/ai/tools/suggest-resource";
 import { buildTagThemesTool } from "@/lib/ai/tools/tag-themes";
 import { buildUpdateGoalStatusTool } from "@/lib/ai/tools/update-goal-status";
+import { buildUpdateProfileContextTool } from "@/lib/ai/tools/update-profile-context";
 import type { Fixture, RunnerOutput, ToolCallCapture } from "./types";
 
 const MODE_PROMPTS: Record<Fixture["mode"], string> = {
@@ -71,6 +71,7 @@ const EMPTY_CONTEXT: LearnerContext = {
     totalLast7Days: 0,
   },
   memoryFacts: [],
+  lessonNotes: [],
 };
 
 /**
@@ -94,6 +95,7 @@ function buildContext(partial: Fixture["context"]): LearnerContext {
     reflections: partial.reflections ?? [],
     openActionItems: partial.openActionItems ?? [],
     memoryFacts: partial.memoryFacts ?? [],
+    lessonNotes: partial.lessonNotes ?? [],
   };
 }
 

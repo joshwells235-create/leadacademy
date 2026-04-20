@@ -226,6 +226,37 @@ export async function assembleLearnerContext(
     editedByUser: f.editedByUser,
   }));
 
+  // LMS Phase D3 — recent lesson notes feed LearnerContext so the
+  // thought partner is aware of what the learner is flagging in real
+  // time. Cap at 10 most-recently-updated; anything older is signal-thin.
+  const { data: noteRows } = await supabase
+    .from("lesson_notes")
+    .select("content, updated_at, lessons(title, modules(courses(title)))")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(10);
+  const lessonNotes: LearnerContext["lessonNotes"] = (
+    (noteRows ?? []) as unknown as Array<{
+      content: string;
+      updated_at: string;
+      lessons: {
+        title: string;
+        modules: { courses: { title: string } | { title: string }[] | null } | null;
+      } | null;
+    }>
+  ).map((r) => {
+    const courses = r.lessons?.modules?.courses;
+    const courseTitle = Array.isArray(courses)
+      ? (courses[0]?.title ?? null)
+      : (courses?.title ?? null);
+    return {
+      lessonTitle: r.lessons?.title ?? "(lesson removed)",
+      courseTitle,
+      content: r.content,
+      updatedAt: r.updated_at,
+    };
+  });
+
   return {
     identity,
     today: todayCtx,
@@ -241,6 +272,7 @@ export async function assembleLearnerContext(
     courseProgress,
     dailyChallenge,
     memoryFacts,
+    lessonNotes,
   };
 }
 

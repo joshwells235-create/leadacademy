@@ -31,8 +31,31 @@ export function formatLearnerContext(ctx: LearnerContext): string {
   sections.push(formatSessionRecap(ctx));
   sections.push(formatActionItems(ctx));
   sections.push(formatCourseProgress(ctx));
+  sections.push(formatLessonNotes(ctx));
   sections.push(formatDailyChallenge(ctx));
   return sections.filter(Boolean).join("\n\n");
+}
+
+const LESSON_NOTE_PREVIEW = 400;
+
+function formatLessonNotes(ctx: LearnerContext): string {
+  if (ctx.lessonNotes.length === 0) return "";
+  const lines: string[] = [
+    "Recent private notes this learner wrote while working through lessons (their own words, what they flagged as important to them). Reference these directly when it helps them pick up a thread:",
+  ];
+  for (const note of ctx.lessonNotes) {
+    const trimmed = note.content.trim();
+    const snippet =
+      trimmed.length > LESSON_NOTE_PREVIEW ? `${trimmed.slice(0, LESSON_NOTE_PREVIEW)}…` : trimmed;
+    const header = note.courseTitle
+      ? `"${note.lessonTitle}" (${note.courseTitle}) — ${note.updatedAt.slice(0, 10)}`
+      : `"${note.lessonTitle}" — ${note.updatedAt.slice(0, 10)}`;
+    lines.push(`- ${header}:`);
+    for (const line of snippet.split(/\r?\n/)) {
+      if (line.trim().length > 0) lines.push(`  ${line}`);
+    }
+  }
+  return lines.join("\n");
 }
 
 function formatMemory(ctx: LearnerContext): string {
@@ -129,7 +152,7 @@ function formatProfile(ctx: LearnerContext): string {
     );
   }
   if (p.companySize || p.industry) {
-    const size = p.companySize ? COMPANY_SIZE_LABEL[p.companySize] ?? p.companySize : null;
+    const size = p.companySize ? (COMPANY_SIZE_LABEL[p.companySize] ?? p.companySize) : null;
     const parts = [size, p.industry].filter(Boolean).join(", ");
     lines.push(`- Company: ${parts}`);
   }

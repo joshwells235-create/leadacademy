@@ -91,6 +91,20 @@ export type DailyChallengeContextItem = {
   totalLast7Days: number;
 };
 
+/**
+ * LMS Phase D3 — a recent private note the learner wrote against a
+ * specific lesson. Fed into LearnerContext so the thought partner can
+ * pick up threads in chat without the learner re-explaining. The
+ * differentiator — peer LMSs keep notes private-to-the-learner; ours
+ * become live context for the AI.
+ */
+export type LessonNoteContextItem = {
+  lessonTitle: string;
+  courseTitle: string | null;
+  content: string;
+  updatedAt: string;
+};
+
 export type MemoryFactContextItem = {
   type: MemoryType;
   content: string;
@@ -146,4 +160,5 @@ export type LearnerContext = {
   courseProgress: CourseProgressContextItem | null;
   dailyChallenge: DailyChallengeContextItem;
   memoryFacts: MemoryFactContextItem[];
+  lessonNotes: LessonNoteContextItem[];
 };

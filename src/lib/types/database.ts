@@ -196,6 +196,7 @@ export type Database = {
       ai_conversations: {
         Row: {
           context_ref: Json
+          course_id: string | null
           created_at: string
           distilled_at: string | null
           id: string
@@ -208,6 +209,7 @@ export type Database = {
         }
         Insert: {
           context_ref?: Json
+          course_id?: string | null
           created_at?: string
           distilled_at?: string | null
           id?: string
@@ -220,6 +222,7 @@ export type Database = {
         }
         Update: {
           context_ref?: Json
+          course_id?: string | null
           created_at?: string
           distilled_at?: string | null
           id?: string
@@ -231,6 +234,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_conversations_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "ai_conversations_org_id_fkey"
             columns: ["org_id"]
@@ -1555,6 +1565,48 @@ export type Database = {
           },
         ]
       }
+      lesson_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lesson_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_notes_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_notes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       lesson_prerequisites: {
         Row: {
           created_at: string
@@ -1597,6 +1649,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          last_scroll_pct: number | null
           lesson_id: string
           score: number | null
           started_at: string | null
@@ -1608,6 +1661,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          last_scroll_pct?: number | null
           lesson_id: string
           score?: number | null
           started_at?: string | null
@@ -1619,6 +1673,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          last_scroll_pct?: number | null
           lesson_id?: string
           score?: number | null
           started_at?: string | null
