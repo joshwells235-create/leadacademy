@@ -111,12 +111,14 @@ export default async function CoachDashboardPage() {
       newPreSessionNotes: stats?.newPreSessionNotes ?? 0,
       newConversationActivity: stats?.newConversationActivity ?? 0,
       newCompletedActionItems: stats?.newCompletedActionItems ?? 0,
+      flaggedQuestionsWaiting: stats?.flaggedQuestionsWaiting ?? 0,
       hasAnyNew: stats
         ? stats.newActions +
             stats.newReflections +
             stats.newPreSessionNotes +
             stats.newConversationActivity +
-            stats.newCompletedActionItems >
+            stats.newCompletedActionItems +
+            stats.flaggedQuestionsWaiting >
           0
         : false,
       daysSinceAnchor: stats?.daysSinceAnchor ?? 0,

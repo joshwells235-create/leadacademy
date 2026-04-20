@@ -1690,6 +1690,76 @@ export type Database = {
           },
         ]
       }
+      lesson_questions: {
+        Row: {
+          ai_answer: string | null
+          answered_at: string | null
+          asked_at: string
+          coach_responded_at: string | null
+          coach_response: string | null
+          coach_user_id: string | null
+          created_at: string
+          flagged_to_coach_at: string | null
+          id: string
+          lesson_id: string
+          question: string
+          resolved_at: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_answer?: string | null
+          answered_at?: string | null
+          asked_at?: string
+          coach_responded_at?: string | null
+          coach_response?: string | null
+          coach_user_id?: string | null
+          created_at?: string
+          flagged_to_coach_at?: string | null
+          id?: string
+          lesson_id: string
+          question: string
+          resolved_at?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_answer?: string | null
+          answered_at?: string | null
+          asked_at?: string
+          coach_responded_at?: string | null
+          coach_response?: string | null
+          coach_user_id?: string | null
+          created_at?: string
+          flagged_to_coach_at?: string | null
+          id?: string
+          lesson_id?: string
+          question?: string
+          resolved_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_questions_coach_user_id_fkey"
+            columns: ["coach_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "lesson_questions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_questions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       lesson_resources: {
         Row: {
           created_at: string

@@ -20,6 +20,11 @@ export type SinceLastSessionStats = {
   newNudges: number;
   /** Action items the learner has marked complete since the anchor. */
   newCompletedActionItems: number;
+  /**
+   * D4 — lesson-question flags the learner raised since the anchor that
+   * the coach hasn't responded to yet. Actionable triage signal.
+   */
+  flaggedQuestionsWaiting: number;
 };
 
 const FALLBACK_DAYS = 14;
@@ -67,40 +72,54 @@ export async function getSinceLastSessionStats(
     ),
   );
 
-  const [actionsRes, reflectionsRes, preSessionRes, convosRes, nudgesRes, completedItemsRes] =
-    await Promise.all([
-      supabase
-        .from("action_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", learnerUserId)
-        .gt("occurred_on", anchorDate),
-      supabase
-        .from("reflections")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", learnerUserId)
-        .gt("reflected_on", anchorDate),
-      supabase
-        .from("pre_session_notes")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", learnerUserId)
-        .gte("created_at", anchorTs),
-      supabase
-        .from("ai_conversations")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", learnerUserId)
-        .gte("last_message_at", anchorTs),
-      supabase
-        .from("coach_nudges")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", learnerUserId)
-        .gte("created_at", anchorTs),
-      supabase
-        .from("action_items")
-        .select("id", { count: "exact", head: true })
-        .eq("learner_user_id", learnerUserId)
-        .eq("completed", true)
-        .gte("completed_at", anchorTs),
-    ]);
+  const [
+    actionsRes,
+    reflectionsRes,
+    preSessionRes,
+    convosRes,
+    nudgesRes,
+    completedItemsRes,
+    flaggedQuestionsRes,
+  ] = await Promise.all([
+    supabase
+      .from("action_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .gt("occurred_on", anchorDate),
+    supabase
+      .from("reflections")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .gt("reflected_on", anchorDate),
+    supabase
+      .from("pre_session_notes")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .gte("created_at", anchorTs),
+    supabase
+      .from("ai_conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .gte("last_message_at", anchorTs),
+    supabase
+      .from("coach_nudges")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .gte("created_at", anchorTs),
+    supabase
+      .from("action_items")
+      .select("id", { count: "exact", head: true })
+      .eq("learner_user_id", learnerUserId)
+      .eq("completed", true)
+      .gte("completed_at", anchorTs),
+    supabase
+      .from("lesson_questions")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", learnerUserId)
+      .not("flagged_to_coach_at", "is", null)
+      .is("coach_responded_at", null)
+      .is("resolved_at", null),
+  ]);
 
   return {
     anchorDate,
@@ -112,6 +131,7 @@ export async function getSinceLastSessionStats(
     newConversationActivity: convosRes.count ?? 0,
     newNudges: nudgesRes.count ?? 0,
     newCompletedActionItems: completedItemsRes.count ?? 0,
+    flaggedQuestionsWaiting: flaggedQuestionsRes.count ?? 0,
   };
 }
 

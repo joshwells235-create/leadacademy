@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LessonViewer } from "@/components/editor/lesson-viewer";
 import { LessonNotes } from "@/components/learning/lesson-notes";
+import { LessonQuestions, type PriorQuestion } from "@/components/learning/lesson-questions";
 import { ScrollResume } from "@/components/learning/scroll-resume";
 import { type PlayerQuestion, QuizPlayer } from "@/components/quiz/quiz-player";
 import { stampLessonStarted } from "@/lib/analytics/stamp-started";
@@ -88,7 +89,7 @@ export default async function LessonViewerPage({ params }: Props) {
     void stampLessonStarted({ userId: user.id, lessonId });
   }
 
-  const [modRes, progressRes, siblingsRes, courseRes, linkedResourcesRes, noteRes] =
+  const [modRes, progressRes, siblingsRes, courseRes, linkedResourcesRes, noteRes, questionsRes] =
     await Promise.all([
       supabase.from("modules").select("title, course_id").eq("id", lesson.module_id).maybeSingle(),
       supabase
@@ -114,6 +115,15 @@ export default async function LessonViewerPage({ params }: Props) {
         .eq("user_id", user!.id)
         .eq("lesson_id", lessonId)
         .maybeSingle(),
+      supabase
+        .from("lesson_questions")
+        .select(
+          "id, question, ai_answer, asked_at, flagged_to_coach_at, coach_response, coach_responded_at, resolved_at",
+        )
+        .eq("user_id", user!.id)
+        .eq("lesson_id", lessonId)
+        .order("asked_at", { ascending: false })
+        .limit(20),
     ]);
 
   // Quiz-specific load (only if quiz lesson).
@@ -168,6 +178,16 @@ export default async function LessonViewerPage({ params }: Props) {
 
   const initialScrollPct = progressRes.data?.last_scroll_pct ?? null;
   const initialNoteContent = noteRes.data?.content ?? "";
+  const initialQuestions: PriorQuestion[] = (questionsRes.data ?? []).map((q) => ({
+    id: q.id,
+    question: q.question,
+    aiAnswer: q.ai_answer,
+    askedAt: q.asked_at,
+    flaggedToCoachAt: q.flagged_to_coach_at,
+    coachResponse: q.coach_response,
+    coachRespondedAt: q.coach_responded_at,
+    resolvedAt: q.resolved_at,
+  }));
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -361,6 +381,12 @@ export default async function LessonViewerPage({ params }: Props) {
           thought partner knows what this learner has been flagging. */}
       <div className="mt-6">
         <LessonNotes lessonId={lessonId} initialContent={initialNoteContent} />
+      </div>
+
+      {/* Ask-the-room Q&A — thought partner answers grounded in lesson +
+          learner context; one-click flag escalates to coach. */}
+      <div className="mt-4">
+        <LessonQuestions lessonId={lessonId} initialQuestions={initialQuestions} />
       </div>
 
       {/* Completion + navigation */}

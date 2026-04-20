@@ -19,6 +19,7 @@ export type LearnerCardData = {
   newPreSessionNotes: number;
   newConversationActivity: number;
   newCompletedActionItems: number;
+  flaggedQuestionsWaiting: number;
   hasAnyNew: boolean;
   daysSinceAnchor: number;
 };
@@ -144,6 +145,12 @@ function LearnerCard({ learner: l }: { learner: LearnerCardData }) {
   if (l.newPreSessionNotes > 0) {
     chips.push({
       label: `New prep · ${l.newPreSessionNotes}`,
+      tone: "pink",
+    });
+  }
+  if (l.flaggedQuestionsWaiting > 0) {
+    chips.push({
+      label: `${l.flaggedQuestionsWaiting} flagged question${l.flaggedQuestionsWaiting === 1 ? "" : "s"}`,
       tone: "pink",
     });
   }

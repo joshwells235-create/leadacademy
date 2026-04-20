@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CapstoneReadonly } from "@/components/capstone/capstone-readonly";
+import { type CoachFlaggedQuestion, FlaggedQuestions } from "@/components/coach/flagged-questions";
 import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { getSinceLastSessionStats } from "@/lib/coach/since-last-session";
 import { createClient } from "@/lib/supabase/server";
@@ -81,6 +82,7 @@ export default async function CoachLearnerPage({ params }: Props) {
     capstoneRes,
     conversationsRes,
     nudgesRes,
+    flaggedQuestionsRes,
     sinceStats,
   ] = await Promise.all([
     supabase
@@ -164,6 +166,16 @@ export default async function CoachLearnerPage({ params }: Props) {
       .eq("user_id", learnerId)
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("lesson_questions")
+      .select(
+        "id, lesson_id, question, ai_answer, asked_at, flagged_to_coach_at, coach_response, coach_responded_at, lessons(id, title, modules(course_id, courses(id, title)))",
+      )
+      .eq("user_id", learnerId)
+      .not("flagged_to_coach_at", "is", null)
+      .is("resolved_at", null)
+      .order("flagged_to_coach_at", { ascending: false })
+      .limit(20),
     getSinceLastSessionStats(supabase, user.id, learnerId),
   ]);
 
@@ -346,6 +358,48 @@ export default async function CoachLearnerPage({ params }: Props) {
             conversations={conversationsRes.data ?? []}
             nudges={nudgesRes.data ?? []}
             anchorDate={sinceStats.anchorDate}
+          />
+
+          {/* Flagged lesson questions — learner wants a human take. */}
+          <FlaggedQuestions
+            rows={(
+              (flaggedQuestionsRes.data ?? []) as unknown as Array<{
+                id: string;
+                lesson_id: string;
+                question: string;
+                ai_answer: string | null;
+                asked_at: string;
+                flagged_to_coach_at: string | null;
+                coach_response: string | null;
+                coach_responded_at: string | null;
+                lessons: {
+                  id: string;
+                  title: string;
+                  modules: {
+                    course_id: string;
+                    courses: { id: string; title: string } | { id: string; title: string }[] | null;
+                  } | null;
+                } | null;
+              }>
+            ).map((r): CoachFlaggedQuestion => {
+              const lesson = r.lessons;
+              const courses = lesson?.modules?.courses;
+              const course = Array.isArray(courses) ? courses[0] : courses;
+              return {
+                id: r.id,
+                learnerUserId: learnerId,
+                lessonId: r.lesson_id,
+                lessonTitle: lesson?.title ?? "(removed lesson)",
+                courseId: course?.id ?? null,
+                courseTitle: course?.title ?? null,
+                question: r.question,
+                aiAnswer: r.ai_answer,
+                askedAt: r.asked_at,
+                flaggedAt: r.flagged_to_coach_at ?? r.asked_at,
+                coachResponse: r.coach_response,
+                coachRespondedAt: r.coach_responded_at,
+              };
+            })}
           />
         </div>
 

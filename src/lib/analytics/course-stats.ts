@@ -62,6 +62,14 @@ export type CourseStats = {
   debriefsStarted: number;
   /** Subset of `debriefsStarted` who are also in the `completed` set. */
   debriefsAmongCompleters: number;
+  /**
+   * D4 — total lesson-scoped questions asked across the course (AI
+   * answered first). High volume on a single lesson = content is
+   * confusing there and worth tightening.
+   */
+  questionsAsked: number;
+  /** Subset escalated to coach (AI answer didn't land). */
+  questionsFlagged: number;
 };
 
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -137,6 +145,8 @@ export async function getCourseStats(
       quietLearners: 0,
       debriefsStarted: 0,
       debriefsAmongCompleters: 0,
+      questionsAsked: 0,
+      questionsFlagged: 0,
       steps: orderedLessons.map((l) => ({
         lessonId: l.id,
         title: l.title,
@@ -293,6 +303,15 @@ export async function getCourseStats(
     if (completedLearners.has(u)) debriefsAmongCompleters += 1;
   }
 
+  // ---- Lesson questions asked + flagged across this course's lessons ----
+  const { data: questionRows } = await supabase
+    .from("lesson_questions")
+    .select("id, flagged_to_coach_at")
+    .in("lesson_id", lessonIds)
+    .in("user_id", learnerIds);
+  const questionsAsked = questionRows?.length ?? 0;
+  const questionsFlagged = questionRows?.filter((q) => q.flagged_to_coach_at !== null).length ?? 0;
+
   return {
     courseId,
     cohortId: cohortId ?? null,
@@ -303,6 +322,8 @@ export async function getCourseStats(
     quietLearners,
     debriefsStarted: debriefLearners.size,
     debriefsAmongCompleters,
+    questionsAsked,
+    questionsFlagged,
     steps,
   };
 }

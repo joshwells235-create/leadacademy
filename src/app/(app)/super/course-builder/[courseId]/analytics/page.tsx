@@ -155,32 +155,50 @@ export default async function CourseAnalyticsPage({ params, searchParams }: Prop
 
       {/* AI-engagement row — the differentiator. Peers can ship completion
           rate; nobody can ship "how many of your completers integrated
-          the learning via an AI debrief." */}
-      <div className="mb-6 rounded-lg border border-brand-pink/20 bg-gradient-to-br from-brand-pink/5 to-white px-5 py-4 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
-              AI-grounded engagement
-            </p>
-            <p className="mt-1 text-2xl font-bold text-brand-navy">
-              {stats.debriefsAmongCompleters}
-              <span className="ml-1 text-sm font-normal text-neutral-500">
-                of {stats.completed} completers debriefed
+          the learning via an AI debrief" + "how many asked questions
+          mid-lesson and got grounded answers." */}
+      <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-brand-pink/20 bg-gradient-to-br from-brand-pink/5 to-white px-5 py-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+            Completers who debriefed
+          </p>
+          <p className="mt-1 text-2xl font-bold text-brand-navy">
+            {stats.debriefsAmongCompleters}
+            <span className="ml-1 text-sm font-normal text-neutral-500">of {stats.completed}</span>
+            {stats.debriefsStarted > stats.debriefsAmongCompleters && (
+              <span className="ml-2 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] text-brand-blue align-middle">
+                +{stats.debriefsStarted - stats.debriefsAmongCompleters} in progress
               </span>
-            </p>
-            <p className="mt-0.5 text-xs text-neutral-600">
-              {stats.completed === 0
-                ? "No completers yet. Debriefs fire from the course-complete banner."
-                : stats.debriefsAmongCompleters / Math.max(1, stats.completed) >= 0.5
-                  ? "Strong integration — more than half of completers bridged the course to real leadership situations with their thought partner."
-                  : "Room to grow. The 48h debrief nudge will re-prompt completers who miss the moment."}
-            </p>
-          </div>
-          {stats.debriefsStarted > stats.debriefsAmongCompleters && (
-            <span className="rounded-full bg-brand-blue/10 px-2 py-0.5 text-[11px] text-brand-blue">
-              +{stats.debriefsStarted - stats.debriefsAmongCompleters} in progress
-            </span>
-          )}
+            )}
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-600">
+            {stats.completed === 0
+              ? "No completers yet. Debriefs fire from the course-complete banner."
+              : stats.debriefsAmongCompleters / Math.max(1, stats.completed) >= 0.5
+                ? "Strong integration — more than half of completers bridged the course to real leadership situations with their thought partner."
+                : "Room to grow. The 48h debrief nudge re-prompts completers who miss the moment."}
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-brand-pink/20 bg-gradient-to-br from-brand-pink/5 to-white px-5 py-4 shadow-sm">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+            Questions asked mid-lesson
+          </p>
+          <p className="mt-1 text-2xl font-bold text-brand-navy">
+            {stats.questionsAsked}
+            {stats.questionsFlagged > 0 && (
+              <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800 align-middle">
+                {stats.questionsFlagged} escalated to coach
+              </span>
+            )}
+          </p>
+          <p className="mt-0.5 text-xs text-neutral-600">
+            {stats.questionsAsked === 0
+              ? "Learners haven't asked anything yet. The panel lives inline on every lesson."
+              : stats.questionsFlagged / Math.max(1, stats.questionsAsked) >= 0.4
+                ? "High escalation rate — the AI answers aren't landing. Worth auditing the lesson content."
+                : "Most questions are resolving with the AI's first-pass answer. Coaches only see the ones that actually need them."}
+          </p>
         </div>
       </div>
 
