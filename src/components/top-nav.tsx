@@ -148,24 +148,27 @@ export function TopNav({
           <MobileLink href="/pre-session" onClick={() => setMobileOpen(false)}>
             Pre-session Prep
           </MobileLink>
-          <div className="my-2 border-t border-white/10" />
+          {(isOrgAdmin || superAdmin || isCoach || showConsultantPortal) && (
+            <MobileSection>Portals</MobileSection>
+          )}
           {(isOrgAdmin || superAdmin) && (
             <MobileLink href="/admin/dashboard" onClick={() => setMobileOpen(false)}>
-              Admin Portal
+              Admin
             </MobileLink>
           )}
           {isCoach && (
             <MobileLink href="/coach/dashboard" onClick={() => setMobileOpen(false)}>
-              Coach Portal
+              Coach
             </MobileLink>
           )}
           {showConsultantPortal && (
             <MobileLink href="/consultant/dashboard" onClick={() => setMobileOpen(false)}>
-              Consultant Portal
+              Consultant
             </MobileLink>
           )}
           {superAdmin && (
             <>
+              <MobileSection>People &amp; access</MobileSection>
               <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>
                 Organizations
               </MobileLink>
@@ -175,6 +178,8 @@ export function TopNav({
               <MobileLink href="/super/invitations" onClick={() => setMobileOpen(false)}>
                 Invitations
               </MobileLink>
+
+              <MobileSection>Content</MobileSection>
               <MobileLink href="/super/course-builder" onClick={() => setMobileOpen(false)}>
                 Course Builder
               </MobileLink>
@@ -184,6 +189,8 @@ export function TopNav({
               <MobileLink href="/super/certificates" onClick={() => setMobileOpen(false)}>
                 Certificates
               </MobileLink>
+
+              <MobileSection>Insights</MobileSection>
               <MobileLink href="/super/ai-usage" onClick={() => setMobileOpen(false)}>
                 AI Usage
               </MobileLink>
@@ -349,27 +356,25 @@ function UserMenu({
             </DropdownLink>
             {(isCoach || isOrgAdmin || superAdmin || isConsultant) && (
               <>
-                <div className="my-1 border-t border-neutral-100" />
-                <div className="px-3 py-1 text-[10px] font-medium uppercase tracking-wide text-neutral-400">
-                  Admin
-                </div>
+                <DropdownSection>Portals</DropdownSection>
                 {(isOrgAdmin || superAdmin) && (
                   <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>
-                    Admin Portal
+                    Admin
                   </DropdownLink>
                 )}
                 {isCoach && (
                   <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>
-                    Coach Portal
+                    Coach
                   </DropdownLink>
                 )}
                 {isConsultant && (
                   <DropdownLink href="/consultant/dashboard" onClick={() => setOpen(false)}>
-                    Consultant Portal
+                    Consultant
                   </DropdownLink>
                 )}
                 {superAdmin && (
                   <>
+                    <DropdownSection>People &amp; access</DropdownSection>
                     <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
                       Organizations
                     </DropdownLink>
@@ -379,6 +384,8 @@ function UserMenu({
                     <DropdownLink href="/super/invitations" onClick={() => setOpen(false)}>
                       Invitations
                     </DropdownLink>
+
+                    <DropdownSection>Content</DropdownSection>
                     <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>
                       Course Builder
                     </DropdownLink>
@@ -391,17 +398,21 @@ function UserMenu({
                     <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>
                       Resource Library
                     </DropdownLink>
+
+                    <DropdownSection>Communication</DropdownSection>
                     <DropdownLink href="/super/announcements" onClick={() => setOpen(false)}>
                       Announcements
                     </DropdownLink>
+                    <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>
+                      Moderation
+                    </DropdownLink>
+
+                    <DropdownSection>Insights</DropdownSection>
                     <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>
                       AI Usage
                     </DropdownLink>
                     <DropdownLink href="/super/conversations" onClick={() => setOpen(false)}>
                       AI Conversations
-                    </DropdownLink>
-                    <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>
-                      Moderation
                     </DropdownLink>
                     <DropdownLink href="/super/activity" onClick={() => setOpen(false)}>
                       Activity Log
@@ -468,10 +479,26 @@ function DropdownLink({
     <Link
       href={href}
       onClick={onClick}
-      className="block px-3 py-2 text-sm text-neutral-700 hover:bg-brand-light transition"
+      className="block px-3 py-1.5 text-sm text-neutral-700 hover:bg-brand-light transition"
     >
       {children}
     </Link>
+  );
+}
+
+/**
+ * Small-caps section label inside a dropdown. Renders a subtle divider
+ * above itself (except when it's the first child) so grouped links
+ * read as a scannable list instead of a wall of text.
+ */
+function DropdownSection({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="mt-1.5 mb-0.5 border-t border-neutral-100 pt-1.5" />
+      <div className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
+        {children}
+      </div>
+    </>
   );
 }
 
@@ -494,5 +521,16 @@ function MobileLink({
     >
       {children}
     </Link>
+  );
+}
+
+function MobileSection({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <div className="mt-3 mb-0.5 border-t border-white/10 pt-2" />
+      <div className="px-3 pb-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/40">
+        {children}
+      </div>
+    </>
   );
 }
