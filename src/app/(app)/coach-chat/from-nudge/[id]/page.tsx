@@ -50,6 +50,34 @@ export default async function FromNudgePage({ params }: Props) {
       ? (nudge.pattern_data as Record<string, unknown>)
       : {};
 
+  // Course-debrief nudges jump straight into the dedicated debrief flow —
+  // that action seeds its own grounded opener, so using the generic
+  // nudge-opener path would just duplicate work and produce a less
+  // course-specific first message. Mark the nudge acted, clear the
+  // notification, and hand off.
+  if (pattern === "course_debrief_pending") {
+    const courseId = typeof patternData.course_id === "string" ? patternData.course_id : null;
+    if (courseId) {
+      const actedAt = new Date().toISOString();
+      await supabase
+        .from("coach_nudges")
+        .update({ acted_at: actedAt })
+        .eq("id", nudge.id)
+        .eq("user_id", user.id);
+      if (nudge.notification_id) {
+        await supabase
+          .from("notifications")
+          .update({ read_at: actedAt })
+          .eq("id", nudge.notification_id)
+          .eq("user_id", user.id);
+      }
+      const { startCourseDebrief } = await import("@/lib/debrief/actions");
+      await startCourseDebrief(courseId);
+      // startCourseDebrief redirects — we shouldn't reach here, but fall
+      // through to the generic flow if somehow we do.
+    }
+  }
+
   // Mode for the seeded conversation. Assessment nudges go to assessment
   // mode; everything else stays in general mode.
   const mode = pattern === "undebriefed_assessment" ? "assessment" : "general";

@@ -53,6 +53,15 @@ export type CourseStats = {
   steps: CourseStepStat[];
   /** Active learners who haven't touched a lesson in 14 days. */
   quietLearners: number;
+  /**
+   * D2 — distinct learners (of enrolled) who opened a `debrief`-mode
+   * thought-partner conversation tied to this course. The AI-engagement
+   * signal no peer LMS can ship: it says "learners aren't just finishing
+   * the course, they're integrating it."
+   */
+  debriefsStarted: number;
+  /** Subset of `debriefsStarted` who are also in the `completed` set. */
+  debriefsAmongCompleters: number;
 };
 
 const FOURTEEN_DAYS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -126,6 +135,8 @@ export async function getCourseStats(
       completed: 0,
       medianMinutesToComplete: null,
       quietLearners: 0,
+      debriefsStarted: 0,
+      debriefsAmongCompleters: 0,
       steps: orderedLessons.map((l) => ({
         lessonId: l.id,
         title: l.title,
@@ -269,6 +280,19 @@ export async function getCourseStats(
     };
   });
 
+  // ---- AI-engagement signal: debrief-mode conversations for this course ----
+  const { data: debriefs } = await supabase
+    .from("ai_conversations")
+    .select("user_id")
+    .eq("mode", "debrief")
+    .contains("context_ref", { courseId })
+    .in("user_id", learnerIds);
+  const debriefLearners = new Set((debriefs ?? []).map((d) => d.user_id));
+  let debriefsAmongCompleters = 0;
+  for (const u of debriefLearners) {
+    if (completedLearners.has(u)) debriefsAmongCompleters += 1;
+  }
+
   return {
     courseId,
     cohortId: cohortId ?? null,
@@ -277,6 +301,8 @@ export async function getCourseStats(
     completed: completedLearners.size,
     medianMinutesToComplete,
     quietLearners,
+    debriefsStarted: debriefLearners.size,
+    debriefsAmongCompleters,
     steps,
   };
 }

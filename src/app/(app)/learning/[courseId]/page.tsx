@@ -171,14 +171,33 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
       )}
 
       {courseComplete && (
-        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-          <p className="text-sm font-semibold text-emerald-900">
-            🎉 You've completed every lesson in this course.
-          </p>
-          <p className="mt-0.5 text-xs text-emerald-800">
-            Take a moment to note what stuck with you — the thought partner can help you turn it
-            into a goal or practice sprint.
-          </p>
+        <div className="mt-4 rounded-lg border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white px-5 py-4 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-emerald-900">
+                🎉 You've finished this course.
+              </p>
+              <p className="mt-0.5 text-xs text-emerald-800">
+                The learning sticks when you connect it to something real. Your thought partner has
+                your goals, sprints, and reflections — take ~5 minutes to debrief what landed and
+                what you'll do with it.
+              </p>
+            </div>
+            <form
+              action={async () => {
+                "use server";
+                const { startCourseDebrief } = await import("@/lib/debrief/actions");
+                await startCourseDebrief(courseId);
+              }}
+            >
+              <button
+                type="submit"
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 whitespace-nowrap"
+              >
+                Debrief with thought partner →
+              </button>
+            </form>
+          </div>
         </div>
       )}
 

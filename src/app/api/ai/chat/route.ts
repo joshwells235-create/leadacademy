@@ -10,6 +10,7 @@ import { estimateCostCents } from "@/lib/ai/pricing";
 import { PERSONA } from "@/lib/ai/prompts/base/persona";
 import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { CAPSTONE_MODE } from "@/lib/ai/prompts/modes/capstone";
+import { DEBRIEF_MODE } from "@/lib/ai/prompts/modes/debrief";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
 import { INTAKE_MODE } from "@/lib/ai/prompts/modes/intake";
@@ -41,12 +42,13 @@ const MODE_PROMPTS: Record<string, string> = {
   assessment: ASSESSMENT_MODE,
   capstone: CAPSTONE_MODE,
   intake: INTAKE_MODE,
+  debrief: DEBRIEF_MODE,
 };
 
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
   mode: z
-    .enum(["general", "goal", "reflection", "assessment", "capstone", "intake"])
+    .enum(["general", "goal", "reflection", "assessment", "capstone", "intake", "debrief"])
     .default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
@@ -108,7 +110,8 @@ export async function POST(request: NextRequest) {
       existing.mode === "reflection" ||
       existing.mode === "assessment" ||
       existing.mode === "capstone" ||
-      existing.mode === "intake"
+      existing.mode === "intake" ||
+      existing.mode === "debrief"
     ) {
       mode = existing.mode;
     }

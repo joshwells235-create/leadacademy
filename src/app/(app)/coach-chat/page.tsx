@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: "Thought Partner — Leadership Acade
 
 const AUTO_RESUME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-type Mode = "general" | "goal" | "reflection" | "assessment" | "capstone" | "intake";
+type Mode = "general" | "goal" | "reflection" | "assessment" | "capstone" | "intake" | "debrief";
 type Lens = "self" | "others" | "org";
 
 type Props = {
@@ -40,7 +40,8 @@ export default async function CoachChatPage({ searchParams }: Props) {
     sp.mode === "reflection" ||
     sp.mode === "assessment" ||
     sp.mode === "capstone" ||
-    sp.mode === "intake"
+    sp.mode === "intake" ||
+    sp.mode === "debrief"
       ? (sp.mode as Mode)
       : "general";
   const requestedLens: Lens | undefined =
@@ -108,7 +109,8 @@ export default async function CoachChatPage({ searchParams }: Props) {
       target.mode === "reflection" ||
       target.mode === "assessment" ||
       target.mode === "capstone" ||
-      target.mode === "intake"
+      target.mode === "intake" ||
+      target.mode === "debrief"
       ? (target.mode as Mode)
       : "general"
     : requestedMode;

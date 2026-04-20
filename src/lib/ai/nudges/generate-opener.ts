@@ -16,6 +16,7 @@ const PATTERN_GUIDANCE: Record<NudgePattern, string> = {
   sprint_quiet: `The learner has an active sprint but hasn't logged an action against the goal in 10+ days. Open with warmth, not pressure. Ask what's happening — life, blockers, stuck thinking. Do NOT imply they're failing or that the sprint is broken.`,
   reflection_streak_broken: `The learner had a reflection rhythm going and stopped for a week. Open gently. This is not about getting them back on a streak — it's about checking in on whether something shifted. Be curious, not prescriptive.`,
   new_course_waiting: `A course was assigned to the learner's cohort and they haven't opened it. Don't push. Mention it exists, name something specific about why it might serve them (tied to a goal or pattern in their context), and ask whether they want to open the first lesson together.`,
+  course_debrief_pending: `The learner finished a course ≥48h ago but hasn't debriefed it with you yet. Note: this opener is only used as a fallback — the from-nudge page normally hands course_debrief_pending nudges off to startCourseDebrief, which seeds a course-specific opener. If we reach this path, keep it warm: name the course they finished, flag that the learning sticks when connected to something real, and invite them into a short debrief.`,
   momentum_surge: `The learner logged 4+ actions in the last 7 days. Celebrate this — it's rare. Name what you're noticing about the pattern, tie it back to their current sprint if relevant, and ask what's working so they can name it for themselves.`,
   goal_check_in: `The learner has a program-long goal with no active sprint and no action in 45+ days. Do NOT imply it's stalled — these goals run the full program. Open as a soft check-in: how's it sitting, what's showing up, does the goal still feel right. If the conversation moves toward renewed energy, the next move is a sprint — but not in the opener.`,
 };
@@ -99,6 +100,8 @@ function fallbackForPattern(pattern: NudgePattern): string {
       return "You were journaling regularly and went quiet this week. Anything shifting?";
     case "new_course_waiting":
       return "There's a course waiting on your cohort that might be a good fit — want to open it together?";
+    case "course_debrief_pending":
+      return "You finished a course a couple of days ago. Worth 10 minutes to debrief what landed before the moment fades?";
     case "momentum_surge":
       return "You're on a real run this week. What's working?";
     case "goal_check_in":

@@ -363,6 +363,98 @@ export const detectGoalCheckIn: Detector = async ({ supabase, userId, now }) => 
   return null;
 };
 
+/**
+ * Learner finished every lesson in an assigned course ≥48h ago and
+ * hasn't opened a debrief-mode conversation for that course. Bridges
+ * the completion moment to the AI-moat debrief — the most valuable
+ * 10 minutes of the whole course.
+ *
+ * Artifact-age gate: the course completion must be at least 48h old.
+ * If the learner just finished and hasn't clicked the celebration CTA
+ * yet, that's fine — give them the day. Fire only if the moment has
+ * genuinely passed.
+ */
+export const detectCourseDebriefPending: Detector = async ({ supabase, userId, now }) => {
+  const fortyEightHoursAgo = new Date(now.getTime() - 2 * DAY_MS).toISOString();
+
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("cohort_id")
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  if (!membership?.cohort_id) return null;
+
+  // Every course assigned to the learner's cohort.
+  const { data: cohortCourses } = await supabase
+    .from("cohort_courses")
+    .select("course_id, courses(id, title)")
+    .eq("cohort_id", membership.cohort_id);
+  if (!cohortCourses || cohortCourses.length === 0) return null;
+
+  // Pull this learner's completed lesson_progress rows once.
+  const { data: completedRows } = await supabase
+    .from("lesson_progress")
+    .select("lesson_id, completed_at")
+    .eq("user_id", userId)
+    .eq("completed", true);
+  if (!completedRows || completedRows.length === 0) return null;
+
+  const completedLessonIds = new Set(completedRows.map((r) => r.lesson_id));
+  const completedAtByLesson = new Map<string, string | null>();
+  for (const r of completedRows) completedAtByLesson.set(r.lesson_id, r.completed_at);
+
+  for (const cc of cohortCourses) {
+    const course = cc.courses as { id: string; title: string } | null;
+    if (!course) continue;
+
+    // Resolve every lesson in this course.
+    const { data: mods } = await supabase.from("modules").select("id").eq("course_id", course.id);
+    const modIds = (mods ?? []).map((m) => m.id);
+    if (modIds.length === 0) continue;
+    const { data: lessons } = await supabase.from("lessons").select("id").in("module_id", modIds);
+    const lessonIds = (lessons ?? []).map((l) => l.id);
+    if (lessonIds.length === 0) continue;
+
+    // Completed every lesson?
+    const allComplete = lessonIds.every((id) => completedLessonIds.has(id));
+    if (!allComplete) continue;
+
+    // Last completion ≥ 48h ago?
+    const lastCompleted = lessonIds
+      .map((id) => completedAtByLesson.get(id))
+      .filter((t): t is string => !!t)
+      .sort()
+      .pop();
+    if (!lastCompleted) continue;
+    if (lastCompleted > fortyEightHoursAgo) continue;
+
+    // Any debrief-mode conversation for this course already?
+    const { data: debriefs } = await supabase
+      .from("ai_conversations")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("mode", "debrief")
+      .contains("context_ref", { courseId: course.id })
+      .limit(1);
+    if (debriefs && debriefs.length > 0) continue;
+
+    return {
+      pattern: "course_debrief_pending",
+      targetId: course.id,
+      title: `Debrief "${truncate(course.title, 50)}"?`,
+      body: "You finished the course a couple of days ago. 10 minutes with your thought partner now is when the learning actually sticks.",
+      patternData: {
+        course_id: course.id,
+        course_title: course.title,
+        completed_at: lastCompleted,
+      },
+    };
+  }
+  return null;
+};
+
 export const DETECTORS: Record<NudgePattern, Detector> = {
   sprint_ending_soon: detectSprintEndingSoon,
   sprint_needs_review: detectSprintNeedsReview,
@@ -371,6 +463,7 @@ export const DETECTORS: Record<NudgePattern, Detector> = {
   sprint_quiet: detectSprintQuiet,
   reflection_streak_broken: detectReflectionStreakBroken,
   new_course_waiting: detectNewCourseWaiting,
+  course_debrief_pending: detectCourseDebriefPending,
   momentum_surge: detectMomentumSurge,
   goal_check_in: detectGoalCheckIn,
 };

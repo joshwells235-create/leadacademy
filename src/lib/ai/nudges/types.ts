@@ -6,6 +6,7 @@ export const NUDGE_PATTERNS = [
   "sprint_quiet",
   "reflection_streak_broken",
   "new_course_waiting",
+  "course_debrief_pending",
   "momentum_surge",
   "goal_check_in",
 ] as const;
@@ -24,6 +25,7 @@ export const PATTERN_COOLDOWN_DAYS: Record<NudgePattern, number> = {
   sprint_quiet: 14,
   reflection_streak_broken: 14,
   new_course_waiting: 14,
+  course_debrief_pending: 30,
   momentum_surge: 7,
   goal_check_in: 30,
 };
@@ -39,6 +41,7 @@ export const PATTERN_PRIORITY: NudgePattern[] = [
   "undebriefed_assessment",
   "sprint_quiet",
   "reflection_streak_broken",
+  "course_debrief_pending",
   "new_course_waiting",
   "momentum_surge",
   "goal_check_in",
