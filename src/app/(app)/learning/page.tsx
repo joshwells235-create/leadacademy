@@ -132,12 +132,16 @@ export default async function LearningPage() {
     };
   }
 
-  // Course-level gates so the list shows lock state up front.
-  const courseGates = await computeCourseGates(
-    supabase,
-    user!.id,
-    courses.map((c) => c.id),
-  );
+  // Course-level gates so the list shows lock state up front. Super-admins
+  // bypass — the lesson + course page redirects already let them through, so
+  // rendering lock cards in preview mode would just be misleading.
+  const courseGates = profile?.super_admin
+    ? new Map<string, never>()
+    : await computeCourseGates(
+        supabase,
+        user!.id,
+        courses.map((c) => c.id),
+      );
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">

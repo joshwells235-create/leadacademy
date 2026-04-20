@@ -81,11 +81,16 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const completedIds = new Set((progress ?? []).map((p) => p.lesson_id));
 
   // Per-lesson + course-level gates. Course-level gate (this course requires
-  // another course to be done) blocks the entire lesson list.
-  const [lessonGates, courseGates] = await Promise.all([
-    computeCourseLessonGates(supabase, user!.id, courseId),
-    computeCourseGates(supabase, user!.id, [courseId]),
-  ]);
+  // another course to be done) blocks the entire lesson list. Super-admins
+  // bypass for preview — render fully unlocked so the visual state matches
+  // their actual access.
+  const isSuper = !!viewerProfile?.super_admin;
+  const [lessonGates, courseGates] = isSuper
+    ? [new Map<string, never>(), new Map<string, never>()]
+    : await Promise.all([
+        computeCourseLessonGates(supabase, user!.id, courseId),
+        computeCourseGates(supabase, user!.id, [courseId]),
+      ]);
   const courseGate = courseGates.get(courseId);
   const courseLocked = courseGate && !courseGate.unlocked ? courseGate : null;
 
