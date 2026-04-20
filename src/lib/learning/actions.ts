@@ -317,7 +317,7 @@ export async function updateLesson(
     type?: string;
     materials?: object;
   },
-) {
+): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };
   const supabase = await createClient();

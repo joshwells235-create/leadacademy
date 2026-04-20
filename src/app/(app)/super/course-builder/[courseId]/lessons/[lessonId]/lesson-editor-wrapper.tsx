@@ -59,7 +59,9 @@ export function LessonEditorWrapper({
   quizAnalytics?: QuizAnalyticsData;
 }) {
   const [title, setTitle] = useState(lesson.title);
-  const [lessonType, setLessonType] = useState<string>(lesson.type || "lesson");
+  // DB CHECK constraint allows {'content', 'quiz'} only. The button labeled
+  // "Lesson" must save as 'content' — this used to silently 23514-fail saves.
+  const [lessonType, setLessonType] = useState<string>(lesson.type || "content");
   const [description, setDescription] = useState(lesson.description ?? "");
   const [durationMinutes, setDurationMinutes] = useState(lesson.duration_minutes?.toString() ?? "");
   const [videoUrl, setVideoUrl] = useState(lesson.video_url ?? "");
@@ -72,7 +74,10 @@ export function LessonEditorWrapper({
       : { type: "doc", content: [{ type: "paragraph" }] },
   );
   const [pending, start] = useTransition();
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "unsaved">("idle");
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "unsaved" | "error">(
+    "idle",
+  );
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -98,9 +103,10 @@ export function LessonEditorWrapper({
   const doSave = useCallback(() => {
     start(async () => {
       setSaveState("saving");
+      setSaveError(null);
       const durationRaw = durationRef.current.trim();
       const durationValue = durationRaw === "" ? null : Number.parseInt(durationRaw, 10);
-      await updateLesson(lesson.id, courseId, {
+      const res = await updateLesson(lesson.id, courseId, {
         title: titleRef.current,
         type: typeRef.current,
         description: descriptionRef.current.trim() || null,
@@ -109,6 +115,12 @@ export function LessonEditorWrapper({
         video_url: videoUrlRef.current || null,
         materials: materialsRef.current as unknown as object,
       });
+      // Stop pretending the save worked when the action returned an error.
+      if (res && "error" in res) {
+        setSaveState("error");
+        setSaveError(res.error);
+        return;
+      }
       setSaveState("saved");
       setTimeout(() => setSaveState((s) => (s === "saved" ? "idle" : s)), 3000);
     });
@@ -182,7 +194,7 @@ export function LessonEditorWrapper({
               <button
                 type="button"
                 onClick={() => {
-                  setLessonType("lesson");
+                  setLessonType("content");
                   handleChange();
                 }}
                 className={`px-3 py-1 ${
@@ -224,8 +236,11 @@ export function LessonEditorWrapper({
                   ? "text-emerald-600"
                   : saveState === "unsaved"
                     ? "text-amber-500"
-                    : "text-neutral-400"
+                    : saveState === "error"
+                      ? "text-brand-pink"
+                      : "text-neutral-400"
             }`}
+            title={saveState === "error" ? (saveError ?? undefined) : undefined}
           >
             {saveState === "saving"
               ? "Saving..."
@@ -233,7 +248,9 @@ export function LessonEditorWrapper({
                 ? "✓ Saved"
                 : saveState === "unsaved"
                   ? "● Unsaved"
-                  : ""}
+                  : saveState === "error"
+                    ? `⚠ ${saveError ?? "Save failed"}`
+                    : ""}
           </span>
           <button
             onClick={doSave}
