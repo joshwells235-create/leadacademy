@@ -23,24 +23,64 @@ export default async function LearningPage() {
     .eq("user_id", user!.id)
     .maybeSingle();
 
-  let courses: { id: string; title: string; description: string | null; status: string }[] = [];
+  type ListedCourse = {
+    id: string;
+    title: string;
+    description: string | null;
+    status: string;
+    available_from: string | null;
+    available_until: string | null;
+  };
+  let courses: ListedCourse[] = [];
 
   if (membership?.cohort_id) {
     const { data: assigned } = await supabase
       .from("cohort_courses")
-      .select("courses(id, title, description, status)")
+      .select("available_from, available_until, courses(id, title, description, status)")
       .eq("cohort_id", membership.cohort_id);
-    courses = (assigned ?? []).map((a) => a.courses).filter(Boolean) as typeof courses;
+    courses = (assigned ?? [])
+      .map((a) => {
+        const c = a.courses as unknown as Omit<
+          ListedCourse,
+          "available_from" | "available_until"
+        > | null;
+        return c
+          ? { ...c, available_from: a.available_from, available_until: a.available_until }
+          : null;
+      })
+      .filter((c): c is ListedCourse => c !== null);
   }
 
   if (profile?.super_admin) {
+    // Super-admin sees the full catalog with no schedule (preview mode).
     const { data: all } = await supabase
       .from("courses")
       .select("id, title, description, status")
       .eq("status", "published")
       .order("order");
-    courses = all ?? [];
+    courses = (all ?? []).map((c) => ({
+      ...c,
+      available_from: null,
+      available_until: null,
+    }));
   }
+
+  // Bucket by schedule. Today is a YYYY-MM-DD string compared against the
+  // `date`-typed columns the same way Postgres would.
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming: ListedCourse[] = [];
+  const available: ListedCourse[] = [];
+  for (const c of courses) {
+    // Past available_until → hide entirely. Author set an expiration; don't
+    // resurface it on the list.
+    if (c.available_until && c.available_until < today) continue;
+    if (c.available_from && c.available_from > today) {
+      upcoming.push(c);
+      continue;
+    }
+    available.push(c);
+  }
+  courses = available;
 
   // Get progress per course using a reliable query pattern.
   const progressMap: Record<
@@ -195,6 +235,44 @@ export default async function LearningPage() {
             );
           })}
         </ul>
+      )}
+
+      {upcoming.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            Coming up
+          </h2>
+          <ul className="space-y-3">
+            {upcoming.map((c) => (
+              <li key={c.id}>
+                <div
+                  aria-disabled
+                  className="block rounded-lg border border-neutral-200 bg-white p-5 shadow-sm opacity-70"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-brand-navy">{c.title}</h3>
+                      {c.description && (
+                        <p className="mt-1 text-sm text-neutral-600 line-clamp-2">
+                          {c.description}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium text-amber-700">
+                      Unlocks{" "}
+                      {c.available_from
+                        ? new Date(`${c.available_from}T00:00:00`).toLocaleDateString(undefined, {
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "soon"}
+                    </span>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

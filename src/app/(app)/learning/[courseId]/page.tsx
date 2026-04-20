@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { computeCourseGates, computeCourseLessonGates } from "@/lib/learning/access-gate";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,6 +22,41 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
     .eq("id", courseId)
     .maybeSingle();
   if (!course) notFound();
+
+  // Schedule gate: if the learner's cohort assignment for this course has a
+  // future `available_from` or a past `available_until`, redirect to the
+  // learning index. Super-admins bypass for preview.
+  const { data: viewerProfile } = await supabase
+    .from("profiles")
+    .select("super_admin")
+    .eq("user_id", user!.id)
+    .maybeSingle();
+  if (!viewerProfile?.super_admin) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("cohort_id")
+      .eq("user_id", user!.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (membership?.cohort_id) {
+      const { data: assignment } = await supabase
+        .from("cohort_courses")
+        .select("available_from, available_until")
+        .eq("cohort_id", membership.cohort_id)
+        .eq("course_id", courseId)
+        .maybeSingle();
+      if (assignment) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (
+          (assignment.available_from && assignment.available_from > today) ||
+          (assignment.available_until && assignment.available_until < today)
+        ) {
+          redirect("/learning");
+        }
+      }
+    }
+  }
 
   const { data: modules } = await supabase
     .from("modules")

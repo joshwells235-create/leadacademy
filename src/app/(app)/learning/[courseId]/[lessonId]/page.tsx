@@ -26,15 +26,43 @@ export default async function LessonViewerPage({ params }: Props) {
     .maybeSingle();
   if (!lesson) notFound();
 
-  // Prereq gate. If blocked, redirect to course overview with a flash so the
-  // learner sees *why* and which lessons/courses they need to complete first.
-  // Super-admins bypass — they need to be able to preview locked content.
+  // Prereq gate + schedule gate. If blocked, redirect to course overview with
+  // a flash so the learner sees *why* and which lessons/courses they need to
+  // complete first. Super-admins bypass — they need to preview locked content.
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
     .eq("user_id", user!.id)
     .maybeSingle();
   if (!profile?.super_admin) {
+    // Schedule check first — if the course isn't available right now, bounce
+    // to /learning rather than the course detail page (which would itself
+    // bounce on the same rule).
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("cohort_id")
+      .eq("user_id", user!.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (membership?.cohort_id) {
+      const { data: assignment } = await supabase
+        .from("cohort_courses")
+        .select("available_from, available_until")
+        .eq("cohort_id", membership.cohort_id)
+        .eq("course_id", courseId)
+        .maybeSingle();
+      if (assignment) {
+        const today = new Date().toISOString().slice(0, 10);
+        if (
+          (assignment.available_from && assignment.available_from > today) ||
+          (assignment.available_until && assignment.available_until < today)
+        ) {
+          redirect("/learning");
+        }
+      }
+    }
+
     const gate = await computeSingleLessonGate(supabase, user!.id, lessonId);
     if (!gate.unlocked) {
       const blocker = gate.blockedBy[0]?.title ?? "another lesson";

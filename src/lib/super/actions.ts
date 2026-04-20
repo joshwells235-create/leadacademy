@@ -154,6 +154,61 @@ export async function removeCourseFromCohort(cohortId: string, courseId: string)
   return { ok: true };
 }
 
+/**
+ * LMS Phase C2 — set the unlock window for a (cohort, course) assignment.
+ * Reuses the existing `available_from` / `available_until` columns
+ * (`date`, nullable). Pass empty string or null to clear a side. The
+ * assignment must already exist; the matrix toggles existence separately.
+ */
+export async function updateCohortCourseSchedule(
+  cohortId: string,
+  courseId: string,
+  schedule: { available_from?: string | null; available_until?: string | null },
+): Promise<{ ok: true } | { error: string }> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+
+  // Normalize empty strings to null so the date column stays clean.
+  const normalize = (v: string | null | undefined) =>
+    v === undefined ? undefined : v === "" ? null : v;
+  const from = normalize(schedule.available_from);
+  const until = normalize(schedule.available_until);
+
+  // Reject obvious nonsense before round-tripping the DB.
+  if (from && until && until < from)
+    return { error: "Available-until can't be before available-from." };
+
+  const admin = createAdminClient();
+  const update: { available_from?: string | null; available_until?: string | null } = {};
+  if (from !== undefined) update.available_from = from;
+  if (until !== undefined) update.available_until = until;
+  if (Object.keys(update).length === 0) return { ok: true };
+
+  const { error } = await admin
+    .from("cohort_courses")
+    .update(update)
+    .eq("cohort_id", cohortId)
+    .eq("course_id", courseId);
+  if (error) return { error: error.message };
+
+  const { data: cohort } = await admin
+    .from("cohorts")
+    .select("org_id")
+    .eq("id", cohortId)
+    .maybeSingle();
+
+  await logSuperActivity({
+    userId: ctx.userId,
+    orgId: cohort?.org_id ?? null,
+    action: "super.cohort.course_scheduled",
+    targetType: "cohort",
+    targetId: cohortId,
+    details: { course_id: courseId, ...update },
+  });
+
+  return { ok: true };
+}
+
 export async function deletePost(postId: string) {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };
