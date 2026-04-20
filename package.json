@@ -41,6 +41,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.12.0",
+    "sanitize-html": "^2.17.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -50,6 +51,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.16.1",
     "@vitest/ui": "^4.1.4",
     "dotenv": "^17.4.2",
     "supabase": "^2.92.0",

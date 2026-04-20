@@ -34,6 +34,12 @@ async function renderTiptapHtml(content: JSONContent): Promise<string> {
   // Dynamic imports — evaluated only when we reach here (i.e. non-empty
   // content). Happy-dom's side-effects stay out of the module graph
   // until the first page actually needs them.
+  //
+  // We use `sanitize-html` (pure JS) instead of `isomorphic-dompurify`
+  // because the latter pulls in jsdom, and jsdom's transitive dep
+  // `html-encoding-sniffer` tries to `require()` `@exodus/bytes` which
+  // is ESM-only on current Vercel runtimes — throws ERR_REQUIRE_ESM at
+  // load. `sanitize-html` has no DOM dep and is built for exactly this.
   const [
     { generateHTML },
     { default: StarterKit },
@@ -44,7 +50,7 @@ async function renderTiptapHtml(content: JSONContent): Promise<string> {
     { TableRow },
     { TableHeader },
     { TableCell },
-    { default: DOMPurify },
+    { default: sanitizeHtml },
   ] = await Promise.all([
     import("@tiptap/html"),
     import("@tiptap/starter-kit"),
@@ -55,7 +61,7 @@ async function renderTiptapHtml(content: JSONContent): Promise<string> {
     import("@tiptap/extension-table-row"),
     import("@tiptap/extension-table-header"),
     import("@tiptap/extension-table-cell"),
-    import("isomorphic-dompurify"),
+    import("sanitize-html"),
   ]);
 
   const rawHtml = generateHTML(content, [
@@ -85,8 +91,8 @@ async function renderTiptapHtml(content: JSONContent): Promise<string> {
     }),
   ]);
 
-  return DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: [
+  return sanitizeHtml(rawHtml, {
+    allowedTags: [
       "h2",
       "h3",
       "h4",
@@ -117,27 +123,37 @@ async function renderTiptapHtml(content: JSONContent): Promise<string> {
       "div",
       "span",
     ],
-    ALLOWED_ATTR: [
-      "href",
-      "target",
-      "rel",
-      "src",
-      "alt",
-      "title",
-      "class",
-      "loading",
-      "allow",
-      "allowfullscreen",
-      "frameborder",
-      "width",
-      "height",
-      "colspan",
-      "rowspan",
-      "data-tone",
+    allowedAttributes: {
+      a: ["href", "target", "rel", "class"],
+      img: ["src", "alt", "title", "class", "loading", "width", "height"],
+      iframe: [
+        "src",
+        "allow",
+        "allowfullscreen",
+        "frameborder",
+        "class",
+        "width",
+        "height",
+        "title",
+      ],
+      table: ["class"],
+      thead: ["class"],
+      tbody: ["class"],
+      tr: ["class"],
+      th: ["class", "colspan", "rowspan"],
+      td: ["class", "colspan", "rowspan"],
+      "*": ["class", "data-tone"],
+    },
+    allowedSchemes: ["http", "https", "mailto", "tel"],
+    // Keep YouTube / Vimeo / Loom iframes — the author's video_url has
+    // already been passed through the provider-aware resolver.
+    allowedIframeHostnames: [
+      "www.youtube.com",
+      "youtube.com",
+      "player.vimeo.com",
+      "www.loom.com",
+      "loom.com",
     ],
-    ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.\-:]|$))/i,
-    ADD_TAGS: ["iframe"],
-    ADD_ATTR: ["allow", "allowfullscreen", "frameborder", "data-tone"],
   });
 }
 
