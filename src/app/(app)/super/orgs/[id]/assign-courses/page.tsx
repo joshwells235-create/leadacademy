@@ -22,7 +22,9 @@ export default async function AssignCoursesPage({ params }: Props) {
     supabase.from("organizations").select("name").eq("id", orgId).maybeSingle(),
     supabase.from("cohorts").select("id, name").eq("org_id", orgId),
     supabase.from("courses").select("id, title, status").eq("status", "published").order("order"),
-    supabase.from("cohort_courses").select("cohort_id, course_id, available_from, available_until"),
+    supabase
+      .from("cohort_courses")
+      .select("cohort_id, course_id, available_from, available_until, due_at"),
   ]);
 
   // Pass full assignment rows (incl. schedule) so the assigner can render
@@ -32,6 +34,7 @@ export default async function AssignCoursesPage({ params }: Props) {
     course_id: string;
     available_from: string | null;
     available_until: string | null;
+    due_at: string | null;
   };
   const assignmentRows = (assignmentsRes.data ?? []) as AssignmentRow[];
 

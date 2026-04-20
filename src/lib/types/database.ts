@@ -793,6 +793,7 @@ export type Database = {
           cohort_id: string
           course_id: string
           created_at: string
+          due_at: string | null
           id: string
         }
         Insert: {
@@ -801,6 +802,7 @@ export type Database = {
           cohort_id: string
           course_id: string
           created_at?: string
+          due_at?: string | null
           id?: string
         }
         Update: {
@@ -809,6 +811,7 @@ export type Database = {
           cohort_id?: string
           course_id?: string
           created_at?: string
+          due_at?: string | null
           id?: string
         }
         Relationships: [

@@ -96,7 +96,7 @@ export default async function AdminDashboardPage() {
   const cohortVit = await Promise.all(
     cohorts.map(async (c) => {
       const ids = learnersByCohort.get(c.id) ?? [];
-      const vit = await getCohortVitality(supabase, ids);
+      const vit = await getCohortVitality(supabase, ids, c.id);
       return { ...c, vit };
     }),
   );
@@ -181,6 +181,7 @@ export default async function AdminDashboardPage() {
                 <th className="px-3 py-2 text-center font-medium">Active 14d</th>
                 <th className="px-3 py-2 text-center font-medium">Active sprint</th>
                 <th className="px-3 py-2 text-center font-medium">No coach</th>
+                <th className="px-3 py-2 text-center font-medium">Overdue</th>
                 <th className="px-3 py-2 text-center font-medium">Capstone shared</th>
               </tr>
             </thead>
@@ -216,6 +217,14 @@ export default async function AdminDashboardPage() {
                       value={c.vit.withoutCoach}
                       total={c.vit.learnerCount}
                       tone={c.vit.withoutCoach > 0 ? "warn" : "good"}
+                      invertPct
+                    />
+                  </td>
+                  <td className="px-3 py-2.5 text-center">
+                    <CellValue
+                      value={c.vit.learnersOverdue}
+                      total={c.vit.learnerCount}
+                      tone={c.vit.learnersOverdue > 0 ? "warn" : "good"}
                       invertPct
                     />
                   </td>

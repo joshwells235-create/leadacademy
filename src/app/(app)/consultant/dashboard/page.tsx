@@ -100,7 +100,7 @@ export default async function ConsultantDashboardPage() {
     await Promise.all(
       cohorts.map(async (c) => {
         const learnerIds = myLearnersByCohort.get(c.id) ?? [];
-        const vit = await getCohortVitality(supabase, learnerIds);
+        const vit = await getCohortVitality(supabase, learnerIds, c.id);
         return [c.id, vit] as const;
       }),
     ),
@@ -206,6 +206,11 @@ export default async function ConsultantDashboardPage() {
                           label="No coach"
                           value={vit.withoutCoach}
                           tone={vit.withoutCoach > 0 ? "warn" : "neutral"}
+                        />
+                        <Stat
+                          label="Overdue"
+                          value={vit.learnersOverdue}
+                          tone={vit.learnersOverdue > 0 ? "warn" : "neutral"}
                         />
                       </div>
                     )}

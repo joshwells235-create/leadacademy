@@ -20,6 +20,12 @@ export type CohortVitality = {
   reflectionsLast30d: number;
   /** Top 8 reflection themes across the cohort in last 30 days with counts. */
   topThemes: { theme: string; count: number }[];
+  /**
+   * Learners with ≥1 cohort-course assignment where the due date has
+   * passed and they haven't completed every lesson. Only meaningful when
+   * `cohortId` is passed to `getCohortVitality`. Defaults to 0.
+   */
+  learnersOverdue: number;
 };
 
 const ACTIVE_DAYS = 14;
@@ -35,6 +41,7 @@ const THEMES_DAYS = 30;
 export async function getCohortVitality(
   supabase: SupabaseClient<Database>,
   learnerIds: string[],
+  cohortId?: string,
 ): Promise<CohortVitality> {
   if (learnerIds.length === 0) {
     return {
@@ -47,6 +54,7 @@ export async function getCohortVitality(
       withoutCoach: 0,
       reflectionsLast30d: 0,
       topThemes: [],
+      learnersOverdue: 0,
     };
   }
 
@@ -133,6 +141,83 @@ export async function getCohortVitality(
     .slice(0, 8)
     .map(([theme, count]) => ({ theme, count }));
 
+  // Overdue: count learners with ≥1 cohort-course assignment past due_at
+  // where they haven't completed every lesson in the course. Only computed
+  // when cohortId is provided (otherwise we can't scope assignments).
+  let learnersOverdue = 0;
+  if (cohortId) {
+    const today = now.toISOString().slice(0, 10);
+    const { data: dueAssignments } = await supabase
+      .from("cohort_courses")
+      .select("course_id")
+      .eq("cohort_id", cohortId)
+      .not("due_at", "is", null)
+      .lt("due_at", today);
+    const overdueCourseIds = (dueAssignments ?? []).map((a) => a.course_id);
+    if (overdueCourseIds.length > 0) {
+      // Total lessons per overdue course.
+      const { data: mods } = await supabase
+        .from("modules")
+        .select("id, course_id")
+        .in("course_id", overdueCourseIds);
+      const moduleToCourse = new Map<string, string>(
+        (mods ?? []).map((m) => [m.id as string, m.course_id as string]),
+      );
+      const moduleIds = Array.from(moduleToCourse.keys());
+      const lessonsPerCourse = new Map<string, number>();
+      const allLessonIds: string[] = [];
+      const lessonToCourse = new Map<string, string>();
+      if (moduleIds.length > 0) {
+        const { data: lessons } = await supabase
+          .from("lessons")
+          .select("id, module_id")
+          .in("module_id", moduleIds);
+        for (const l of lessons ?? []) {
+          const cid = moduleToCourse.get(l.module_id as string);
+          if (!cid) continue;
+          allLessonIds.push(l.id);
+          lessonToCourse.set(l.id, cid);
+          lessonsPerCourse.set(cid, (lessonsPerCourse.get(cid) ?? 0) + 1);
+        }
+      }
+
+      // Per-learner completion across all overdue-course lessons.
+      const completedCountByLearnerCourse = new Map<string, number>();
+      if (allLessonIds.length > 0) {
+        const { data: progress } = await supabase
+          .from("lesson_progress")
+          .select("user_id, lesson_id")
+          .in("user_id", learnerIds)
+          .in("lesson_id", allLessonIds)
+          .eq("completed", true);
+        for (const p of progress ?? []) {
+          const cid = lessonToCourse.get(p.lesson_id);
+          if (!cid) continue;
+          const k = `${p.user_id}::${cid}`;
+          completedCountByLearnerCourse.set(k, (completedCountByLearnerCourse.get(k) ?? 0) + 1);
+        }
+      }
+
+      const overdueSet = new Set<string>();
+      for (const learnerId of learnerIds) {
+        for (const cid of overdueCourseIds) {
+          const total = lessonsPerCourse.get(cid) ?? 0;
+          if (total === 0) {
+            // Empty course past due → counts as overdue (author intent).
+            overdueSet.add(learnerId);
+            break;
+          }
+          const done = completedCountByLearnerCourse.get(`${learnerId}::${cid}`) ?? 0;
+          if (done < total) {
+            overdueSet.add(learnerId);
+            break;
+          }
+        }
+      }
+      learnersOverdue = overdueSet.size;
+    }
+  }
+
   return {
     learnerCount: learnerIds.length,
     activeLast14d: activeSet.size,
@@ -143,5 +228,6 @@ export async function getCohortVitality(
     withoutCoach,
     reflectionsLast30d,
     topThemes,
+    learnersOverdue,
   };
 }

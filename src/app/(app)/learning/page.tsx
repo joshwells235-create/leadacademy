@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { computeCourseGates } from "@/lib/learning/access-gate";
+import { computeDueStatus, dueStatusChipClass, dueStatusLabel } from "@/lib/learning/due-status";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Learning — Leadership Academy" };
 
@@ -30,22 +31,28 @@ export default async function LearningPage() {
     status: string;
     available_from: string | null;
     available_until: string | null;
+    due_at: string | null;
   };
   let courses: ListedCourse[] = [];
 
   if (membership?.cohort_id) {
     const { data: assigned } = await supabase
       .from("cohort_courses")
-      .select("available_from, available_until, courses(id, title, description, status)")
+      .select("available_from, available_until, due_at, courses(id, title, description, status)")
       .eq("cohort_id", membership.cohort_id);
     courses = (assigned ?? [])
       .map((a) => {
         const c = a.courses as unknown as Omit<
           ListedCourse,
-          "available_from" | "available_until"
+          "available_from" | "available_until" | "due_at"
         > | null;
         return c
-          ? { ...c, available_from: a.available_from, available_until: a.available_until }
+          ? {
+              ...c,
+              available_from: a.available_from,
+              available_until: a.available_until,
+              due_at: a.due_at,
+            }
           : null;
       })
       .filter((c): c is ListedCourse => c !== null);
@@ -62,6 +69,7 @@ export default async function LearningPage() {
       ...c,
       available_from: null,
       available_until: null,
+      due_at: null,
     }));
   }
 
@@ -157,6 +165,7 @@ export default async function LearningPage() {
             const isComplete = p.completed === p.total && p.total > 0;
             const gate = courseGates.get(c.id);
             const isLocked = gate ? !gate.unlocked : false;
+            const due = computeDueStatus(c.due_at, isComplete);
             const lockReason =
               gate && !gate.unlocked
                 ? `Finish ${gate.blockedBy.map((b) => b.title).join(", ")} first`
@@ -176,17 +185,26 @@ export default async function LearningPage() {
                       <p className="mt-1 text-xs text-amber-700">{lockReason}</p>
                     )}
                   </div>
-                  <span
-                    className={`text-sm font-bold ${
-                      isLocked
-                        ? "text-neutral-400"
-                        : isComplete
-                          ? "text-emerald-600"
-                          : "text-brand-blue"
-                    }`}
-                  >
-                    {isLocked ? "Locked" : isComplete ? "✓" : `${pct}%`}
-                  </span>
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`text-sm font-bold ${
+                        isLocked
+                          ? "text-neutral-400"
+                          : isComplete
+                            ? "text-emerald-600"
+                            : "text-brand-blue"
+                      }`}
+                    >
+                      {isLocked ? "Locked" : isComplete ? "✓" : `${pct}%`}
+                    </span>
+                    {!isLocked && due.status !== "none" && due.status !== "complete" && (
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${dueStatusChipClass(due)}`}
+                      >
+                        {dueStatusLabel(due)}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {!isLocked && p.total > 0 && (
                   <div className="mt-3 h-1.5 rounded-full bg-neutral-200">

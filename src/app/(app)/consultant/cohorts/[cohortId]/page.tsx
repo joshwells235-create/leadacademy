@@ -92,7 +92,7 @@ export default async function ConsultantCohortPage({ params }: Props) {
           .in("learner_user_id", learnerIds)
           .is("active_to", null)
       : { data: [] as unknown[] },
-    getCohortVitality(supabase, learnerIds),
+    getCohortVitality(supabase, learnerIds, cohortId),
   ]);
 
   const activeSprintByUser = new Map<string, number>();

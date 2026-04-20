@@ -15,6 +15,7 @@ type Assignment = {
   course_id: string;
   available_from: string | null;
   available_until: string | null;
+  due_at: string | null;
 };
 
 const keyFor = (cohortId: string, courseId: string) => `${cohortId}::${courseId}`;
@@ -92,6 +93,7 @@ export function CourseAssigner({
                           courseId={course.id}
                           initialFrom={assignment?.available_from ?? null}
                           initialUntil={assignment?.available_until ?? null}
+                          initialDue={assignment?.due_at ?? null}
                         />
                       )}
                     </div>
@@ -103,9 +105,10 @@ export function CourseAssigner({
         </tbody>
       </table>
       <p className="border-t border-neutral-100 bg-neutral-50 px-4 py-2 text-[11px] text-neutral-500">
-        Set <strong>Available from</strong> to schedule a future unlock; leave blank to make the
-        course available immediately. <strong>Available until</strong> hides the course after the
-        date passes.
+        Set <strong>Available from</strong> to schedule a future unlock; leave blank for immediate
+        availability. <strong>Available until</strong> hides the course after the date.{" "}
+        <strong>Due</strong> is a soft deadline — surfaced to learners and dashboards but never
+        blocks completion.
       </p>
     </div>
   );
@@ -116,14 +119,17 @@ function SchedulePicker({
   courseId,
   initialFrom,
   initialUntil,
+  initialDue,
 }: {
   cohortId: string;
   courseId: string;
   initialFrom: string | null;
   initialUntil: string | null;
+  initialDue: string | null;
 }) {
   const [from, setFrom] = useState(initialFrom ?? "");
   const [until, setUntil] = useState(initialUntil ?? "");
+  const [due, setDue] = useState(initialDue ?? "");
   const [pending, start] = useTransition();
   const [state, setState] = useState<"idle" | "saved" | "error">("idle");
   const [errMsg, setErrMsg] = useState<string | null>(null);
@@ -134,9 +140,11 @@ function SchedulePicker({
   useEffect(() => {
     setFrom(initialFrom ?? "");
     setUntil(initialUntil ?? "");
-  }, [initialFrom, initialUntil]);
+    setDue(initialDue ?? "");
+  }, [initialFrom, initialUntil, initialDue]);
 
-  const dirty = from !== (initialFrom ?? "") || until !== (initialUntil ?? "");
+  const dirty =
+    from !== (initialFrom ?? "") || until !== (initialUntil ?? "") || due !== (initialDue ?? "");
 
   const save = () => {
     setErrMsg(null);
@@ -144,6 +152,7 @@ function SchedulePicker({
       const res = await updateCohortCourseSchedule(cohortId, courseId, {
         available_from: from,
         available_until: until,
+        due_at: due,
       });
       if ("error" in res) {
         setState("error");
@@ -176,6 +185,18 @@ function SchedulePicker({
           value={until}
           onChange={(e) => {
             setUntil(e.target.value);
+            setState("idle");
+          }}
+          className="w-[110px] rounded border border-neutral-300 px-1 py-0.5 text-[11px] focus:border-brand-blue focus:outline-none"
+        />
+      </label>
+      <label className="flex items-center justify-between gap-1">
+        <span className="text-neutral-500">Due</span>
+        <input
+          type="date"
+          value={due}
+          onChange={(e) => {
+            setDue(e.target.value);
             setState("idle");
           }}
           className="w-[110px] rounded border border-neutral-300 px-1 py-0.5 text-[11px] focus:border-brand-blue focus:outline-none"

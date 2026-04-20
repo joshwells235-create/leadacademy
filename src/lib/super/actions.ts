@@ -163,7 +163,11 @@ export async function removeCourseFromCohort(cohortId: string, courseId: string)
 export async function updateCohortCourseSchedule(
   cohortId: string,
   courseId: string,
-  schedule: { available_from?: string | null; available_until?: string | null },
+  schedule: {
+    available_from?: string | null;
+    available_until?: string | null;
+    due_at?: string | null;
+  },
 ): Promise<{ ok: true } | { error: string }> {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };
@@ -173,15 +177,25 @@ export async function updateCohortCourseSchedule(
     v === undefined ? undefined : v === "" ? null : v;
   const from = normalize(schedule.available_from);
   const until = normalize(schedule.available_until);
+  const due = normalize(schedule.due_at);
 
   // Reject obvious nonsense before round-tripping the DB.
   if (from && until && until < from)
     return { error: "Available-until can't be before available-from." };
+  if (from && due && due < from)
+    return { error: "Due date can't be before the available-from date." };
+  if (until && due && due > until)
+    return { error: "Due date can't be after the available-until date." };
 
   const admin = createAdminClient();
-  const update: { available_from?: string | null; available_until?: string | null } = {};
+  const update: {
+    available_from?: string | null;
+    available_until?: string | null;
+    due_at?: string | null;
+  } = {};
   if (from !== undefined) update.available_from = from;
   if (until !== undefined) update.available_until = until;
+  if (due !== undefined) update.due_at = due;
   if (Object.keys(update).length === 0) return { ok: true };
 
   const { error } = await admin
