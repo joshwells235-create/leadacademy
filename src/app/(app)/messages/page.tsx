@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Messages — Leadership Academy" };
 
@@ -10,6 +11,9 @@ export default async function MessagesPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  const isCoachViewer = roleCtx.coachPrimary;
 
   // Get all threads the user participates in.
   const { data: participations } = await supabase
@@ -27,20 +31,27 @@ export default async function MessagesPage() {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
         <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
-        <p className="mt-1 text-sm text-neutral-600">Direct messages with your executive coach.</p>
+        <p className="mt-1 text-sm text-neutral-600">
+          {isCoachViewer
+            ? "Direct messages with your coachees."
+            : "Direct messages with your executive coach."}
+        </p>
         <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
           <h2 className="font-semibold text-brand-navy">No messages yet</h2>
           <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-600">
-            Your coach usually kicks off the first thread before your opening session. If you
-            expected a message and don't see one, it's worth checking in with your program admin.
+            {isCoachViewer
+              ? "Once you exchange messages with a coachee, the thread lands here. Your Thought Partner can draft a check-in if you want to kick one off."
+              : "Your coach usually kicks off the first thread before your opening session. If you expected a message and don't see one, it's worth checking in with your program admin."}
           </p>
-          <p className="mx-auto mt-3 max-w-sm text-xs text-neutral-500">
-            Looking for the AI? That's your{" "}
-            <Link href="/coach-chat" className="text-brand-blue hover:underline">
-              thought partner
-            </Link>{" "}
-            — this page is for your human executive coach.
-          </p>
+          {!isCoachViewer && (
+            <p className="mx-auto mt-3 max-w-sm text-xs text-neutral-500">
+              Looking for the AI? That's your{" "}
+              <Link href="/coach-chat" className="text-brand-blue hover:underline">
+                thought partner
+              </Link>{" "}
+              — this page is for your human executive coach.
+            </p>
+          )}
         </div>
       </div>
     );
@@ -97,11 +108,17 @@ export default async function MessagesPage() {
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
       <p className="mt-1 mb-6 text-sm text-neutral-600">
-        Direct messages with your executive coach (not the thought partner — that's at{" "}
-        <Link href="/coach-chat" className="text-brand-blue hover:underline">
-          /coach-chat
-        </Link>
-        ).
+        {isCoachViewer ? (
+          "Direct messages with your coachees. Threads with unread replies float to the top."
+        ) : (
+          <>
+            Direct messages with your executive coach (not the thought partner — that's at{" "}
+            <Link href="/coach-chat" className="text-brand-blue hover:underline">
+              /coach-chat
+            </Link>
+            ).
+          </>
+        )}
       </p>
 
       <ul className="space-y-2">

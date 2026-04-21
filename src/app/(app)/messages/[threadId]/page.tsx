@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
+import { CheckInDraftButton } from "./check-in-draft-button";
 import { MessageThread } from "./message-thread";
 
 type Props = { params: Promise<{ threadId: string }> };
@@ -37,6 +39,23 @@ export default async function ThreadPage({ params }: Props) {
         .maybeSingle()
     : { data: null };
   const otherName = otherProfile?.display_name ?? "Unknown";
+  const otherUserId = otherParticipant?.user_id ?? null;
+
+  // If the viewer is a coach-primary user and the other participant is a
+  // coachee they coach, surface a deep-link to the learner detail page + a
+  // Thought-Partner-drafted check-in button.
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  let coachViewingCoachee = false;
+  if (roleCtx.coachPrimary && otherUserId) {
+    const { data: assignment } = await supabase
+      .from("coach_assignments")
+      .select("id")
+      .eq("coach_user_id", user.id)
+      .eq("learner_user_id", otherUserId)
+      .is("active_to", null)
+      .maybeSingle();
+    coachViewingCoachee = !!assignment;
+  }
 
   // Load messages.
   const { data: messages } = await supabase
@@ -54,7 +73,7 @@ export default async function ThreadPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
           <Link href="/messages" className="text-xs text-neutral-500 hover:text-brand-blue">
             ← Messages
@@ -63,9 +82,21 @@ export default async function ThreadPage({ params }: Props) {
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-navy text-sm font-bold text-white">
               {otherName.charAt(0).toUpperCase()}
             </div>
-            <h1 className="text-lg font-bold text-brand-navy">{otherName}</h1>
+            {coachViewingCoachee && otherUserId ? (
+              <Link
+                href={`/coach/learners/${otherUserId}`}
+                className="text-lg font-bold text-brand-navy hover:text-brand-blue"
+              >
+                {otherName} <span className="text-xs font-normal text-neutral-500">↗</span>
+              </Link>
+            ) : (
+              <h1 className="text-lg font-bold text-brand-navy">{otherName}</h1>
+            )}
           </div>
         </div>
+        {coachViewingCoachee && otherUserId && (
+          <CheckInDraftButton learnerId={otherUserId} threadId={threadId} />
+        )}
       </div>
 
       <MessageThread
