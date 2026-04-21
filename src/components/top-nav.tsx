@@ -16,6 +16,7 @@ export function TopNav({
   unreadNotifications,
   capstoneAvailable = false,
   isConsultant = false,
+  coachPrimary = false,
   memberships,
 }: {
   userId: string;
@@ -25,6 +26,7 @@ export function TopNav({
   unreadNotifications: number;
   capstoneAvailable?: boolean;
   isConsultant?: boolean;
+  coachPrimary?: boolean;
   memberships: Membership[];
 }) {
   const primary = memberships[0]?.org;
@@ -34,11 +36,16 @@ export function TopNav({
   const showConsultantPortal = superAdmin || isConsultant;
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Coach-primary users (pure coaches, not learners, not super-admins) get
+  // a coach-shaped nav. The Thought Partner link is intentionally absent —
+  // Phase 2 builds the coach-partner mode and wires it in then.
+  const homeHref = coachPrimary ? "/coach/dashboard" : "/dashboard";
+
   return (
     <header className="bg-brand-navy text-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         {/* Logo */}
-        <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+        <Link href={homeHref} className="flex items-center gap-2 shrink-0">
           {primary?.logo_url ? (
             <img src={primary.logo_url} alt={primary.name} className="h-7 rounded" />
           ) : (
@@ -48,14 +55,26 @@ export function TopNav({
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-1 text-sm">
-          <NavLink href="/dashboard">Dashboard</NavLink>
-          <GrowthDropdown capstoneAvailable={capstoneAvailable} />
-          <NavLink href="/learning">Learning</NavLink>
-          <NavLink href="/community">Community</NavLink>
-          <NavLink href="/messages">Messages</NavLink>
-          <NavLink href="/coach-chat" accent>
-            Thought Partner
-          </NavLink>
+          {coachPrimary ? (
+            <>
+              <NavLink href="/coach/dashboard">Coaching Home</NavLink>
+              <NavLink href="/learning">Learning</NavLink>
+              <NavLink href="/community">Community</NavLink>
+              <NavLink href="/resources">Resources</NavLink>
+              <NavLink href="/messages">Messages</NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink href="/dashboard">Dashboard</NavLink>
+              <GrowthDropdown capstoneAvailable={capstoneAvailable} />
+              <NavLink href="/learning">Learning</NavLink>
+              <NavLink href="/community">Community</NavLink>
+              <NavLink href="/messages">Messages</NavLink>
+              <NavLink href="/coach-chat" accent>
+                Thought Partner
+              </NavLink>
+            </>
+          )}
         </nav>
 
         {/* Right: bell + user (desktop) + hamburger (mobile) */}
@@ -69,6 +88,7 @@ export function TopNav({
               isCoach={isCoach}
               isOrgAdmin={isOrgAdmin}
               isConsultant={showConsultantPortal}
+              coachPrimary={coachPrimary}
               role={memberships[0]?.role}
             />
           </div>
@@ -104,50 +124,75 @@ export function TopNav({
       {/* Mobile nav drawer */}
       {mobileOpen && (
         <div className="lg:hidden border-t border-white/10 px-4 pb-4 pt-2 space-y-1 animate-in slide-in-from-top-2">
-          <MobileLink href="/dashboard" onClick={() => setMobileOpen(false)}>
-            Dashboard
-          </MobileLink>
-          <MobileLink href="/goals" onClick={() => setMobileOpen(false)}>
-            Goals
-          </MobileLink>
-          <MobileLink href="/action-log" onClick={() => setMobileOpen(false)}>
-            Action Log
-          </MobileLink>
-          <MobileLink href="/reflections" onClick={() => setMobileOpen(false)}>
-            Reflections
-          </MobileLink>
-          <MobileLink href="/assessments" onClick={() => setMobileOpen(false)}>
-            Assessments
-          </MobileLink>
-          <MobileLink href="/resources" onClick={() => setMobileOpen(false)}>
-            Resources
-          </MobileLink>
-          <MobileLink href="/certificates" onClick={() => setMobileOpen(false)}>
-            Certificates
-          </MobileLink>
-          {capstoneAvailable && (
-            <MobileLink href="/capstone" onClick={() => setMobileOpen(false)}>
-              Capstone
-            </MobileLink>
+          {coachPrimary ? (
+            <>
+              <MobileLink href="/coach/dashboard" onClick={() => setMobileOpen(false)}>
+                Coaching Home
+              </MobileLink>
+              <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>
+                Learning
+              </MobileLink>
+              <MobileLink href="/community" onClick={() => setMobileOpen(false)}>
+                Community
+              </MobileLink>
+              <MobileLink href="/resources" onClick={() => setMobileOpen(false)}>
+                Resources
+              </MobileLink>
+              <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>
+                Messages
+              </MobileLink>
+              <MobileLink href="/profile" onClick={() => setMobileOpen(false)}>
+                Your profile
+              </MobileLink>
+            </>
+          ) : (
+            <>
+              <MobileLink href="/dashboard" onClick={() => setMobileOpen(false)}>
+                Dashboard
+              </MobileLink>
+              <MobileLink href="/goals" onClick={() => setMobileOpen(false)}>
+                Goals
+              </MobileLink>
+              <MobileLink href="/action-log" onClick={() => setMobileOpen(false)}>
+                Action Log
+              </MobileLink>
+              <MobileLink href="/reflections" onClick={() => setMobileOpen(false)}>
+                Reflections
+              </MobileLink>
+              <MobileLink href="/assessments" onClick={() => setMobileOpen(false)}>
+                Assessments
+              </MobileLink>
+              <MobileLink href="/resources" onClick={() => setMobileOpen(false)}>
+                Resources
+              </MobileLink>
+              <MobileLink href="/certificates" onClick={() => setMobileOpen(false)}>
+                Certificates
+              </MobileLink>
+              {capstoneAvailable && (
+                <MobileLink href="/capstone" onClick={() => setMobileOpen(false)}>
+                  Capstone
+                </MobileLink>
+              )}
+              <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>
+                Learning
+              </MobileLink>
+              <MobileLink href="/community" onClick={() => setMobileOpen(false)}>
+                Community
+              </MobileLink>
+              <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>
+                Messages
+              </MobileLink>
+              <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>
+                Thought Partner
+              </MobileLink>
+              <MobileLink href="/profile" onClick={() => setMobileOpen(false)}>
+                Your profile
+              </MobileLink>
+              <MobileLink href="/pre-session" onClick={() => setMobileOpen(false)}>
+                Pre-session Prep
+              </MobileLink>
+            </>
           )}
-          <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>
-            Learning
-          </MobileLink>
-          <MobileLink href="/community" onClick={() => setMobileOpen(false)}>
-            Community
-          </MobileLink>
-          <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>
-            Messages
-          </MobileLink>
-          <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>
-            Thought Partner
-          </MobileLink>
-          <MobileLink href="/profile" onClick={() => setMobileOpen(false)}>
-            Your profile
-          </MobileLink>
-          <MobileLink href="/pre-session" onClick={() => setMobileOpen(false)}>
-            Pre-session Prep
-          </MobileLink>
           {(isOrgAdmin || superAdmin || isCoach || showConsultantPortal) && (
             <MobileSection>Portals</MobileSection>
           )}
@@ -288,6 +333,7 @@ function UserMenu({
   isCoach,
   isOrgAdmin,
   isConsultant,
+  coachPrimary,
   role,
 }: {
   displayName: string | null;
@@ -296,6 +342,7 @@ function UserMenu({
   isCoach: boolean;
   isOrgAdmin: boolean;
   isConsultant: boolean;
+  coachPrimary: boolean;
   role?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -348,12 +395,16 @@ function UserMenu({
             <DropdownLink href="/profile" onClick={() => setOpen(false)}>
               Your profile
             </DropdownLink>
-            <DropdownLink href="/memory" onClick={() => setOpen(false)}>
-              What your thought partner remembers
-            </DropdownLink>
-            <DropdownLink href="/pre-session" onClick={() => setOpen(false)}>
-              Pre-session Prep
-            </DropdownLink>
+            {!coachPrimary && (
+              <>
+                <DropdownLink href="/memory" onClick={() => setOpen(false)}>
+                  What your thought partner remembers
+                </DropdownLink>
+                <DropdownLink href="/pre-session" onClick={() => setOpen(false)}>
+                  Pre-session Prep
+                </DropdownLink>
+              </>
+            )}
             {(isCoach || isOrgAdmin || superAdmin || isConsultant) && (
               <>
                 <DropdownSection>Portals</DropdownSection>

@@ -8,6 +8,7 @@ import { CoachNudgeCard } from "@/components/dashboard/coach-nudge-card";
 import { IntakeCtaButton } from "@/components/intake/intake-cta-button";
 import { detectAndFireNudge } from "@/lib/ai/nudges/detect";
 import { getVisibleAnnouncements } from "@/lib/announcements/get-visible";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Dashboard — Leadership Academy" };
 
@@ -17,6 +18,11 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  // Coach-primary users land on their coaching home, not the learner
+  // dashboard. Super-admins and hybrid users fall through.
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  if (roleCtx.coachPrimary) redirect("/coach/dashboard");
 
   const [
     profileRes,

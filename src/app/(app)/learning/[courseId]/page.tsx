@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { computeCourseGates, computeCourseLessonGates } from "@/lib/learning/access-gate";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,13 +27,16 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
   // Schedule gate: if the learner's cohort assignment for this course has a
   // future `available_from` or a past `available_until`, redirect to the
-  // learning index. Super-admins bypass for preview.
+  // learning index. Super-admins AND coach-primary viewers bypass — coaches
+  // browse the catalog for reference, not as enrolled learners.
   const { data: viewerProfile } = await supabase
     .from("profiles")
     .select("super_admin")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!viewerProfile?.super_admin) {
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  const isPreviewViewer = !!viewerProfile?.super_admin || roleCtx.coachPrimary;
+  if (!isPreviewViewer) {
     const { data: membership } = await supabase
       .from("memberships")
       .select("cohort_id")
@@ -83,10 +87,9 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
 
   // Per-lesson + course-level gates. Course-level gate (this course requires
   // another course to be done) blocks the entire lesson list. Super-admins
-  // bypass for preview — render fully unlocked so the visual state matches
-  // their actual access.
-  const isSuper = !!viewerProfile?.super_admin;
-  const [lessonGates, courseGates] = isSuper
+  // and coach-primary viewers bypass for preview — render fully unlocked so
+  // the visual state matches their actual access.
+  const [lessonGates, courseGates] = isPreviewViewer
     ? [new Map<string, never>(), new Map<string, never>()]
     : await Promise.all([
         computeCourseLessonGates(supabase, user.id, courseId),

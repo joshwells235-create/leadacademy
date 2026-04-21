@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { computeCourseGates } from "@/lib/learning/access-gate";
 import { computeDueStatus, dueStatusChipClass, dueStatusLabel } from "@/lib/learning/due-status";
 import { createClient } from "@/lib/supabase/server";
+import { CoachLearningView } from "./coach-learning-view";
 export const metadata: Metadata = { title: "Learning — Leadership Academy" };
 
 export default async function LearningPage() {
@@ -12,6 +14,11 @@ export default async function LearningPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
+
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  if (roleCtx.coachPrimary) {
+    return <CoachLearningView userId={user.id} />;
+  }
 
   const { data: membership } = await supabase
     .from("memberships")

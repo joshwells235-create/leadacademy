@@ -1,27 +1,66 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
 import { CommunityFeed } from "./community-feed";
 export const metadata: Metadata = { title: "Community — Leadership Academy" };
 
-export default async function CommunityPage() {
+type SearchParams = Promise<{ cohort?: string }>;
+
+export default async function CommunityPage({ searchParams }: { searchParams: SearchParams }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: membership } = await supabase
-    .from("memberships")
-    .select("org_id, cohort_id, cohorts(name)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .limit(1)
-    .maybeSingle();
+  const params = await searchParams;
+  const roleCtx = await getUserRoleContext(supabase, user.id);
 
-  const orgId = membership?.org_id ?? null;
-  const cohortId = membership?.cohort_id ?? null;
-  const cohortName = membership?.cohorts?.name ?? null;
+  // For coach-primary users, scope the feed to cohorts they coach in. A coach
+  // may have multiple coached cohorts, so we render a picker and default to
+  // whichever the URL selects (or the first one).
+  type CoachedCohort = { id: string; name: string; org_id: string };
+  let coachedCohorts: CoachedCohort[] = [];
+  if (roleCtx.coachPrimary) {
+    const { data: assignments } = await supabase
+      .from("coach_assignments")
+      .select("cohort_id, cohorts(id, name, org_id)")
+      .eq("coach_user_id", user.id)
+      .is("active_to", null);
+    const seen = new Set<string>();
+    for (const a of assignments ?? []) {
+      const c = a.cohorts as unknown as CoachedCohort | null;
+      if (c && !seen.has(c.id)) {
+        seen.add(c.id);
+        coachedCohorts.push(c);
+      }
+    }
+  }
+
+  let orgId: string | null;
+  let cohortId: string | null;
+  let cohortName: string | null;
+
+  if (roleCtx.coachPrimary) {
+    const selected =
+      coachedCohorts.find((c) => c.id === params.cohort) ?? coachedCohorts[0] ?? null;
+    orgId = selected?.org_id ?? null;
+    cohortId = selected?.id ?? null;
+    cohortName = selected?.name ?? null;
+  } else {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("org_id, cohort_id, cohorts(name)")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    orgId = membership?.org_id ?? null;
+    cohortId = membership?.cohort_id ?? null;
+    cohortName = membership?.cohorts?.name ?? null;
+  }
 
   // Load cohort posts (if user has a cohort).
   let cohortPosts: PostWithAuthor[] = [];
@@ -83,20 +122,55 @@ export default async function CommunityPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-navy">Community</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          Share what you're learning, celebrate wins, ask for help. Your cohort is here with you.
+          {roleCtx.coachPrimary
+            ? "See what your coachees are sharing, and contribute where it'll land."
+            : "Share what you're learning, celebrate wins, ask for help. Your cohort is here with you."}
         </p>
       </div>
 
-      <CommunityFeed
-        userId={user.id}
-        orgId={orgId}
-        cohortId={cohortId}
-        cohortName={cohortName}
-        cohortPosts={cohortPosts}
-        alumniPosts={alumniPosts}
-        commentsByPost={commentsByPost}
-        likedPostIds={likedPostIdArray}
-      />
+      {roleCtx.coachPrimary && coachedCohorts.length > 1 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+            Cohort
+          </span>
+          {coachedCohorts.map((c) => {
+            const selected = c.id === cohortId;
+            return (
+              <Link
+                key={c.id}
+                href={`/community?cohort=${c.id}`}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  selected
+                    ? "bg-brand-navy text-white"
+                    : "bg-neutral-100 text-brand-navy hover:bg-neutral-200"
+                }`}
+              >
+                {c.name}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {roleCtx.coachPrimary && coachedCohorts.length === 0 ? (
+        <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-sm text-neutral-600">
+            No coachees assigned to you yet. Once an admin assigns you learners, you'll see their
+            cohort community here.
+          </p>
+        </div>
+      ) : (
+        <CommunityFeed
+          userId={user.id}
+          orgId={orgId}
+          cohortId={cohortId}
+          cohortName={cohortName}
+          cohortPosts={cohortPosts}
+          alumniPosts={alumniPosts}
+          commentsByPost={commentsByPost}
+          likedPostIds={likedPostIdArray}
+        />
+      )}
     </div>
   );
 }

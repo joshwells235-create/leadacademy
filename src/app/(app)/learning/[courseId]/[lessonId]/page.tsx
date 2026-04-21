@@ -7,6 +7,7 @@ import { LessonQuestions, type PriorQuestion } from "@/components/learning/lesso
 import { ScrollResume } from "@/components/learning/scroll-resume";
 import { type PlayerQuestion, QuizPlayer } from "@/components/quiz/quiz-player";
 import { stampLessonStarted } from "@/lib/analytics/stamp-started";
+import { getUserRoleContext } from "@/lib/auth/role-context";
 import { computeSingleLessonGate } from "@/lib/learning/access-gate";
 import { resolveVideoEmbed } from "@/lib/learning/video-embed";
 import { createClient } from "@/lib/supabase/server";
@@ -37,12 +38,16 @@ export default async function LessonViewerPage({ params }: Props) {
   // Prereq gate + schedule gate. If blocked, redirect to course overview with
   // a flash so the learner sees *why* and which lessons/courses they need to
   // complete first. Super-admins bypass — they need to preview locked content.
+  // Coach-primary users also bypass — they browse the catalog for reference,
+  // not as enrolled learners.
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
     .eq("user_id", user.id)
     .maybeSingle();
-  if (!profile?.super_admin) {
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  const isPreviewViewer = !!profile?.super_admin || roleCtx.coachPrimary;
+  if (!isPreviewViewer) {
     // Schedule check first — if the course isn't available right now, bounce
     // to /learning rather than the course detail page (which would itself
     // bounce on the same rule).
@@ -83,9 +88,9 @@ export default async function LessonViewerPage({ params }: Props) {
   const isQuiz = lesson.type === "quiz";
 
   // Fire-and-forget: stamp started_at so drop-off + time-to-complete
-  // analytics have a signal. Skipped for super-admins so preview views
-  // don't muddy the metrics with author activity.
-  if (!profile?.super_admin) {
+  // analytics have a signal. Skipped for super-admins AND coach-primary
+  // viewers so preview/browse views don't muddy learner metrics.
+  if (!isPreviewViewer) {
     void stampLessonStarted({ userId: user.id, lessonId });
   }
 

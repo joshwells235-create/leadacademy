@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSinceLastSessionStats } from "@/lib/coach/since-last-session";
 import { createClient } from "@/lib/supabase/server";
@@ -21,16 +20,10 @@ export default async function CoachDashboardPage() {
   if (!assignments || assignments.length === 0) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8">
-        <h1 className="text-2xl font-bold text-brand-navy">Your learners</h1>
+        <h1 className="text-2xl font-bold text-brand-navy">Coaching Home</h1>
         <p className="mt-2 text-sm text-neutral-600">
-          No learners assigned to you yet. Ask an admin to set up coach assignments.
+          No coachees assigned to you yet. Ask an admin to set up coach assignments.
         </p>
-        <Link
-          href="/dashboard"
-          className="mt-4 inline-block text-sm text-brand-blue hover:underline"
-        >
-          Back to your own dashboard
-        </Link>
       </div>
     );
   }
@@ -129,17 +122,12 @@ export default async function CoachDashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Your learners</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            {assignments.length} learner{assignments.length === 1 ? "" : "s"} assigned. Chips show
-            what's new since your last recap.
-          </p>
-        </div>
-        <Link href="/dashboard" className="text-sm text-neutral-600 hover:text-brand-blue">
-          ← Your own dashboard
-        </Link>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-brand-navy">Coaching Home</h1>
+        <p className="mt-1 text-sm text-neutral-600">
+          {assignments.length} coachee{assignments.length === 1 ? "" : "s"} assigned. Chips show
+          what's new since your last recap.
+        </p>
       </div>
 
       <LearnersGrid learners={learnerCards} />
