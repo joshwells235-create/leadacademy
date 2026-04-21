@@ -14,6 +14,22 @@ import { createSeededCoachPartnerConversation } from "./start-session";
  * caseload-level conversation.
  */
 export async function startCoachPartnerSessionAction(learnerId?: string): Promise<void> {
+  await startCoachPartnerInternal({ learnerId });
+}
+
+/**
+ * Server action bound to the "Start weekly review" CTA on Coaching Home.
+ * Creates a coach-partner conversation tagged as a weekly review — the
+ * opener frames the three-beat Sunday-thinking ritual.
+ */
+export async function startWeeklyReviewAction(): Promise<void> {
+  await startCoachPartnerInternal({ kind: "weekly_review" });
+}
+
+async function startCoachPartnerInternal(opts: {
+  learnerId?: string;
+  kind?: "weekly_review";
+}): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -31,12 +47,12 @@ export async function startCoachPartnerSessionAction(learnerId?: string): Promis
   if (!anyAssignment) redirect("/coach/dashboard");
 
   // If learner-scoped, caller must coach that specific learner.
-  if (learnerId) {
+  if (opts.learnerId) {
     const { data: assignment } = await supabase
       .from("coach_assignments")
       .select("id")
       .eq("coach_user_id", user.id)
-      .eq("learner_user_id", learnerId)
+      .eq("learner_user_id", opts.learnerId)
       .is("active_to", null)
       .maybeSingle();
     if (!assignment) redirect("/coach/dashboard");
@@ -55,7 +71,8 @@ export async function startCoachPartnerSessionAction(learnerId?: string): Promis
     supabase,
     coachUserId: user.id,
     orgId: membership.org_id,
-    learnerId,
+    learnerId: opts.learnerId,
+    kind: opts.kind,
   });
 
   if (!conversationId) redirect("/coach/dashboard");

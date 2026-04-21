@@ -11,6 +11,8 @@ type Args = {
   orgId: string;
   /** Optional — scopes the conversation to a single coachee. */
   learnerId?: string;
+  /** Optional — framing kind ("weekly_review" for the Sunday-thinking ritual). */
+  kind?: "weekly_review";
 };
 
 /**
@@ -27,10 +29,11 @@ type Args = {
 export async function createSeededCoachPartnerConversation(
   args: Args,
 ): Promise<string | null> {
-  const { supabase, coachUserId, orgId, learnerId } = args;
+  const { supabase, coachUserId, orgId, learnerId, kind } = args;
 
   const contextRef: Record<string, string> = {};
   if (learnerId) contextRef.learnerId = learnerId;
+  if (kind) contextRef.kind = kind;
 
   const { data: convo, error } = await supabase
     .from("ai_conversations")
@@ -48,6 +51,7 @@ export async function createSeededCoachPartnerConversation(
     supabase,
     coachUserId,
     learnerUserId: learnerId,
+    kind,
   });
 
   const assistantContent = {

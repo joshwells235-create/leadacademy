@@ -779,6 +779,47 @@ export type Database = {
           },
         ]
       }
+      coach_journal_entries: {
+        Row: {
+          coach_user_id: string
+          content: string
+          created_at: string
+          entry_date: string
+          id: string
+          org_id: string
+          themes: string[]
+          updated_at: string
+        }
+        Insert: {
+          coach_user_id: string
+          content: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          org_id: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Update: {
+          coach_user_id?: string
+          content?: string
+          created_at?: string
+          entry_date?: string
+          id?: string
+          org_id?: string
+          themes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_journal_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coach_notes: {
         Row: {
           coach_user_id: string

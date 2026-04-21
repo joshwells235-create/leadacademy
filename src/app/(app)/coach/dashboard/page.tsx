@@ -144,23 +144,18 @@ export default async function CoachDashboardPage() {
 
       <PriorityQueue items={caseloadPulse.priorityItems} />
 
-      <section className="mb-8 rounded-xl border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span
-                aria-hidden
-                className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink"
-              />
-              <h2 className="text-sm font-bold text-brand-navy">
-                Plan your week with your Thought Partner
-              </h2>
-            </div>
-            <p className="mt-1 text-sm text-neutral-700">
-              Scan your caseload together — what's alive, what's underserved, who to prep for
-              next. Your Thought Partner already sees the data you see here.
-            </p>
+      <div className="mb-8 grid gap-4 md:grid-cols-2">
+        <section className="rounded-xl border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink" />
+            <h2 className="text-sm font-bold text-brand-navy">
+              Plan your week with your Thought Partner
+            </h2>
           </div>
+          <p className="mt-1 text-sm text-neutral-700">
+            Scan your caseload together — what's alive, what's underserved, who to prep for next.
+            Your Thought Partner already sees the data you see here.
+          </p>
           <form
             action={async () => {
               "use server";
@@ -169,6 +164,7 @@ export default async function CoachDashboardPage() {
               );
               await startCoachPartnerSessionAction();
             }}
+            className="mt-4"
           >
             <button
               type="submit"
@@ -177,8 +173,36 @@ export default async function CoachDashboardPage() {
               Open Thought Partner →
             </button>
           </form>
-        </div>
-      </section>
+        </section>
+
+        <section className="rounded-xl border border-brand-navy/15 bg-white p-5 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-brand-navy" />
+            <h2 className="text-sm font-bold text-brand-navy">Weekly review</h2>
+          </div>
+          <p className="mt-1 text-sm text-neutral-700">
+            Sunday thinking, in three beats: what happened across the week, who or what's been
+            underserved, and what matters for the week ahead.
+          </p>
+          <form
+            action={async () => {
+              "use server";
+              const { startWeeklyReviewAction } = await import(
+                "@/lib/coach-partner/start-session-action"
+              );
+              await startWeeklyReviewAction();
+            }}
+            className="mt-4"
+          >
+            <button
+              type="submit"
+              className="rounded-md border border-brand-navy/20 bg-white px-4 py-2 text-sm font-medium text-brand-navy transition hover:bg-brand-navy hover:text-white"
+            >
+              Start weekly review →
+            </button>
+          </form>
+        </section>
+      </div>
 
       <div className="mb-3 border-t border-neutral-200 pt-6">
         <h2 className="text-sm font-bold text-brand-navy">Full caseload</h2>

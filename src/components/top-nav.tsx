@@ -58,6 +58,7 @@ export function TopNav({
           {coachPrimary ? (
             <>
               <NavLink href="/coach/dashboard">Coaching Home</NavLink>
+              <NavLink href="/coach/journal">Journal</NavLink>
               <NavLink href="/learning">Learning</NavLink>
               <NavLink href="/community">Community</NavLink>
               <NavLink href="/resources">Resources</NavLink>
@@ -131,6 +132,9 @@ export function TopNav({
             <>
               <MobileLink href="/coach/dashboard" onClick={() => setMobileOpen(false)}>
                 Coaching Home
+              </MobileLink>
+              <MobileLink href="/coach/journal" onClick={() => setMobileOpen(false)}>
+                Journal
               </MobileLink>
               <MobileLink href="/learning" onClick={() => setMobileOpen(false)}>
                 Learning

@@ -19,6 +19,7 @@ const RECENT_ACTIONS_LIMIT = 8;
 const RECENT_REFLECTIONS_LIMIT = 5;
 const COACH_NOTES_LIMIT = 5;
 const COACH_MEMORY_LIMIT = 10;
+const COACH_JOURNAL_LIMIT = 10;
 
 /**
  * Builds the Coach context block injected into every turn of a
@@ -66,6 +67,29 @@ export async function buildCoachContext(args: Args): Promise<string> {
     lines.push("## About this coach's practice");
     for (const m of coachMemory) {
       lines.push(`- [${m.type}] ${m.content}`);
+    }
+  }
+
+  // Coach's own journal — their voice between sessions. Top N most recent,
+  // each clipped so a single long entry doesn't blow the context budget.
+  // Reading these lets the Thought Partner pick up a thread the coach
+  // flagged last week ("wanted to sit with silence with Chen") without
+  // the coach re-explaining.
+  const { data: coachJournal } = await supabase
+    .from("coach_journal_entries")
+    .select("content, themes, entry_date")
+    .eq("coach_user_id", coachUserId)
+    .order("entry_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(COACH_JOURNAL_LIMIT);
+  if (coachJournal && coachJournal.length > 0) {
+    lines.push("");
+    lines.push("## Coach's recent journal entries (private to the coach)");
+    for (const j of coachJournal) {
+      const content = j.content.length > 400 ? `${j.content.slice(0, 400)}…` : j.content;
+      const themes =
+        Array.isArray(j.themes) && j.themes.length > 0 ? ` [themes: ${j.themes.join(", ")}]` : "";
+      lines.push(`- ${j.entry_date}: ${content}${themes}`);
     }
   }
 
