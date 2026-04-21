@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ActionItemsPanel } from "./action-items-panel";
 import { CoachNoteEditor } from "./coach-note-editor";
 import { LearnerNav } from "./learner-nav";
+import { PrepDraftPanel } from "./prep-draft-panel";
 import { RecapForm } from "./recap-form";
 import { SinceStrip } from "./since-strip";
 import { ThoughtPartnerActivity } from "./thought-partner-activity";
@@ -232,6 +233,10 @@ export default async function CoachLearnerPage({ params }: Props) {
             Think this through with Thought Partner →
           </button>
         </form>
+      </div>
+
+      <div className="mb-4">
+        <PrepDraftPanel learnerId={learnerId} />
       </div>
 
       <div className="mb-6">

@@ -30,6 +30,10 @@ export default async function ProfilePage() {
           or{" "}
           <IntakeCtaButton variant="inline">walk through it conversationally</IntakeCtaButton>.
         </p>
+        <p className="mt-2 text-xs text-neutral-500">
+          What you add here is visible to your human coach — that's what lets them show up
+          knowing you. Your back-and-forth chats with the thought partner stay between you and it.
+        </p>
       </header>
 
       <ProfileForm
