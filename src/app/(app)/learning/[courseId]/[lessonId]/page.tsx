@@ -22,7 +22,7 @@ export default async function LessonViewerPage({ params }: Props) {
   } = await supabase.auth.getUser();
   // Defense in depth: the (app) layout redirects unauth users, but under
   // Next 16 RSC streaming the page body can still start rendering. Without
-  // this guard `user!.id` crashes with "Cannot read properties of null".
+  // this guard `user.id` crashes with "Cannot read properties of null".
   if (!user) redirect("/login");
 
   const { data: lesson } = await supabase
@@ -40,7 +40,7 @@ export default async function LessonViewerPage({ params }: Props) {
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!profile?.super_admin) {
     // Schedule check first — if the course isn't available right now, bounce
@@ -49,7 +49,7 @@ export default async function LessonViewerPage({ params }: Props) {
     const { data: membership } = await supabase
       .from("memberships")
       .select("cohort_id")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
@@ -71,7 +71,7 @@ export default async function LessonViewerPage({ params }: Props) {
       }
     }
 
-    const gate = await computeSingleLessonGate(supabase, user!.id, lessonId);
+    const gate = await computeSingleLessonGate(supabase, user.id, lessonId);
     if (!gate.unlocked) {
       const blocker = gate.blockedBy[0]?.title ?? "another lesson";
       redirect(
@@ -95,7 +95,7 @@ export default async function LessonViewerPage({ params }: Props) {
       supabase
         .from("lesson_progress")
         .select("completed, last_scroll_pct")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("lesson_id", lessonId)
         .maybeSingle(),
       supabase
@@ -112,7 +112,7 @@ export default async function LessonViewerPage({ params }: Props) {
       supabase
         .from("lesson_notes")
         .select("content")
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("lesson_id", lessonId)
         .maybeSingle(),
       supabase
@@ -120,7 +120,7 @@ export default async function LessonViewerPage({ params }: Props) {
         .select(
           "id, question, ai_answer, asked_at, flagged_to_coach_at, coach_response, coach_responded_at, resolved_at",
         )
-        .eq("user_id", user!.id)
+        .eq("user_id", user.id)
         .eq("lesson_id", lessonId)
         .order("asked_at", { ascending: false })
         .limit(20),
@@ -145,13 +145,13 @@ export default async function LessonViewerPage({ params }: Props) {
           .from("quiz_attempts")
           .select("id", { count: "exact", head: true })
           .eq("lesson_id", lessonId)
-          .eq("user_id", user!.id)
+          .eq("user_id", user.id)
           .not("completed_at", "is", null),
         supabase
           .from("quiz_attempts")
           .select("score_percent, passed, attempt_number, completed_at, answers")
           .eq("lesson_id", lessonId)
-          .eq("user_id", user!.id)
+          .eq("user_id", user.id)
           .order("attempt_number", { ascending: false })
           .limit(1)
           .maybeSingle(),
@@ -214,7 +214,7 @@ export default async function LessonViewerPage({ params }: Props) {
           <h1 className="text-2xl font-bold text-brand-navy">
             {lesson.title}
             {isQuiz && (
-              <span className="ml-2 rounded-full bg-brand-pink/10 px-2 py-0.5 text-xs font-medium text-brand-pink align-middle">
+              <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 align-middle">
                 Quiz
               </span>
             )}

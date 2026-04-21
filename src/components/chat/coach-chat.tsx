@@ -79,8 +79,26 @@ export function CoachChat({
     <div className="flex h-full min-h-[60vh] flex-col rounded-lg border border-neutral-200 bg-white shadow-sm">
       <div className="flex-1 overflow-y-auto p-4">
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-center text-sm text-neutral-500">
-            {emptyHint ?? "Say hello — your thought partner is ready."}
+          <div className="flex h-full flex-col items-center justify-center px-8 text-center">
+            {emptyHint ? (
+              <p className="font-serif text-base italic leading-relaxed text-brand-navy/60">
+                {emptyHint}
+              </p>
+            ) : (
+              <>
+                <figure className="max-w-md">
+                  <blockquote className="font-serif text-[17px] italic leading-[1.6] text-brand-navy/70">
+                    "How do I know what I think until I see what I say?"
+                  </blockquote>
+                  <figcaption className="mt-2 text-[11px] uppercase tracking-[0.18em] text-brand-navy/45">
+                    — E. M. Forster
+                  </figcaption>
+                </figure>
+                <p className="mt-5 max-w-md text-sm leading-relaxed text-brand-navy/60">
+                  Tell it what's on your mind. It already has the context.
+                </p>
+              </>
+            )}
           </div>
         ) : (
           <ul className="space-y-4">
@@ -89,11 +107,16 @@ export function CoachChat({
                 key={m.id}
                 className={m.role === "user" ? "flex justify-end" : "flex justify-start"}
               >
+                {/* The signature commitment: the Thought Partner's messages are
+                    typeset in the editorial serif and bordered with pink — the
+                    sole place pink appears in the product. User messages stay
+                    in the UI sans + brand-blue. The contrast is deliberate:
+                    you type, the AI writes. */}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+                  className={`max-w-[82%] rounded-2xl px-4 py-3 text-[15px] leading-relaxed ${
                     m.role === "user"
                       ? "bg-brand-blue text-white"
-                      : "bg-brand-light text-brand-navy"
+                      : "border-l-[3px] border-brand-pink bg-brand-pink-light/50 pl-5 font-serif text-brand-navy"
                   }`}
                 >
                   <MessageContent
@@ -106,13 +129,13 @@ export function CoachChat({
             ))}
             {isStreaming && messages[messages.length - 1]?.role === "user" && (
               <li className="flex justify-start" aria-live="polite">
-                <div className="flex max-w-[80%] items-center gap-2 rounded-2xl bg-brand-light px-4 py-3 text-sm text-brand-navy">
+                <div className="flex max-w-[80%] items-center gap-2 rounded-2xl border-l-[3px] border-brand-pink bg-brand-pink-light/50 px-4 py-3 pl-5 font-serif text-sm italic text-brand-navy/70">
                   <span className="flex gap-1" aria-hidden>
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue [animation-delay:-0.3s]" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue [animation-delay:-0.15s]" />
-                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-blue" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-pink [animation-delay:-0.3s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-pink [animation-delay:-0.15s]" />
+                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-pink" />
                   </span>
-                  <span className="text-neutral-600">Thinking…</span>
+                  <span>thinking</span>
                 </div>
               </li>
             )}

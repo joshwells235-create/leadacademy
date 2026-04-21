@@ -219,7 +219,7 @@ export default async function ConsultantDashboardPage() {
                       {c.starts_at && <span>Starts {c.starts_at}</span>}
                       {c.ends_at && <span>Ends {c.ends_at}</span>}
                       {c.capstone_unlocks_at && (
-                        <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 font-medium text-brand-pink">
+                        <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 font-medium text-brand-navy">
                           Capstone unlocks {c.capstone_unlocks_at}
                         </span>
                       )}

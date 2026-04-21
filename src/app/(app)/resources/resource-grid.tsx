@@ -94,7 +94,7 @@ export function ResourceGrid({
                 setActiveType(null);
                 setSearch("");
               }}
-              className="rounded-full px-3 py-1 text-xs text-neutral-500 hover:text-brand-pink transition"
+              className="rounded-full px-3 py-1 text-xs text-neutral-500 hover:text-brand-blue transition"
             >
               Clear filters
             </button>

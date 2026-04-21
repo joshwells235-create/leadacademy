@@ -3,8 +3,14 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* Editorial serif — used explicitly via `font-serif` on long-form, reflective
+     surfaces (reflection entries, capstone prose, lesson bodies, coach notes).
+     Never applied to UI chrome. */
+  --font-serif: var(--font-source-serif);
 
-  /* LeadShift brand palette */
+  /* LeadShift brand palette. Pink is a single-purpose signature: the voice of
+     the Thought Partner. It appears in the AI chat surface and nowhere else.
+     Destructive actions use `danger` red, not pink. */
   --color-brand-navy: #101d51;
   --color-brand-navy-light: #1a2d6b;
   --color-brand-light: #f3f3f3;
@@ -13,6 +19,15 @@
   --color-brand-blue: #007efa;
   --color-brand-blue-light: #e6f3ff;
   --color-brand-blue-dark: #0066cc;
+
+  /* Destructive / caution. Separated from brand-pink so pink stays
+     reserved for the Thought Partner voice. */
+  --color-danger: #c81e3a;
+  --color-danger-light: #fdecef;
+
+  /* A considered ease curve — slight deceleration, never bouncy. Applied
+     globally via the element transitions below. */
+  --ease-considered: cubic-bezier(0.2, 0, 0.2, 1);
 }
 
 html,
@@ -26,25 +41,26 @@ body {
   outline-offset: 2px;
 }
 
-/* Global micro-transitions for interactive elements */
+/* Global micro-transitions for interactive elements. Uses the considered ease
+   so motion feels deliberate rather than snappy-default. */
 button,
 a,
 input,
 select,
 textarea {
   transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-  transition-duration: 150ms;
-  transition-timing-function: ease;
+  transition-duration: 180ms;
+  transition-timing-function: var(--ease-considered);
 }
 
 /* Cards get a subtle lift on hover */
 [class*="shadow-sm"]:hover {
-  transition: box-shadow 200ms ease, border-color 200ms ease;
+  transition: box-shadow 220ms var(--ease-considered), border-color 220ms var(--ease-considered);
 }
 
 /* Smooth page content fade-in */
 main {
-  animation: fadeIn 200ms ease-out;
+  animation: fadeIn 220ms var(--ease-considered);
 }
 
 @keyframes fadeIn {
@@ -60,4 +76,48 @@ main {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* ─── Signature visual gesture ──────────────────────────────────────────────
+   A thin navy rule set before a label acts as a typographic colophon —
+   restrained, recurring, and quietly distinctive. Apply as `.section-mark`
+   on eyebrow labels or section openers. */
+.section-mark {
+  position: relative;
+  padding-left: 2.25rem;
+}
+.section-mark::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 1.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* ─── Editorial long-form surfaces ─────────────────────────────────────────
+   `.prose-editorial` sets a reading-optimized rhythm on serif-typeset
+   long-form content. Use on reflection entry bodies, capstone sections,
+   lesson body text, and coach notes. Never on UI chrome. */
+.prose-editorial {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 1rem;
+  line-height: 1.7;
+  letter-spacing: -0.005em;
+  color: color-mix(in srgb, var(--color-brand-navy) 92%, black);
+}
+.prose-editorial p + p {
+  margin-top: 0.75rem;
+}
+
+/* ─── Thought Partner accent ───────────────────────────────────────────────
+   Pink is reserved for the Thought Partner voice. `.tp-accent` is the
+   canonical way to apply it — a left-rule or underline that signals
+   "the AI is speaking here." Never apply pink inline as a standalone
+   color elsewhere. */
+.tp-accent {
+  border-left: 2px solid var(--color-brand-pink);
+  padding-left: 0.875rem;
 }

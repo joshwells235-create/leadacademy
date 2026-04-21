@@ -44,9 +44,12 @@ export function MemoryList({ initialFacts }: Props) {
       </div>
 
       {initialFacts.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-6 text-center text-sm text-neutral-500">
-          Nothing remembered yet. As you talk with your thought partner, things worth remembering
-          long-term will land here.
+        <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
+          <p className="font-serif text-base leading-[1.65] text-brand-navy/75">
+            Nothing remembered yet. As you talk, the durable things — patterns, commitments, the
+            way you actually like to be coached — will land here. You can always edit or remove
+            anything you don't want carried forward.
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -153,7 +156,7 @@ function FactRow({ fact }: { fact: MemoryFact }) {
             type="button"
             onClick={() => setConfirmingDelete(true)}
             disabled={pending}
-            className="rounded px-2 py-1 text-xs text-brand-pink hover:bg-brand-light"
+            className="rounded px-2 py-1 text-xs text-danger hover:bg-danger-light/60"
           >
             Delete
           </button>
@@ -163,7 +166,7 @@ function FactRow({ fact }: { fact: MemoryFact }) {
         <div
           role="alertdialog"
           aria-label="Delete memory"
-          className="mt-3 rounded-md border border-brand-pink/30 bg-brand-pink/5 p-2 text-xs"
+          className="mt-3 rounded-md border border-danger/30 bg-danger-light/60 p-2 text-xs"
         >
           <p className="text-brand-navy">
             Delete this memory? Your thought partner won't see it on future turns.
@@ -174,7 +177,7 @@ function FactRow({ fact }: { fact: MemoryFact }) {
               type="button"
               onClick={handleDelete}
               disabled={pending}
-              className="rounded bg-brand-pink px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded bg-danger px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
               {pending ? "Deleting…" : "Delete"}
             </button>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { startAssessmentDebrief } from "@/lib/assessments/actions";
 import { createClient } from "@/lib/supabase/server";
 import { AssessmentUploader } from "./assessment-uploader";
@@ -19,11 +20,12 @@ export default async function AssessmentsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: assessment } = await supabase
     .from("assessments")
     .select("id, ai_summary")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   const { data: docs } = assessment
@@ -52,12 +54,17 @@ export default async function AssessmentsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6 flex items-start justify-between gap-3">
+      <div className="mb-8 flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Assessments</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Upload your PI, EQ-i, and 360 reports. Your thought partner will extract key findings
-            and use them to ground your conversations.
+          <p className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            What's been measured
+          </p>
+          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-brand-navy">
+            Assessments
+          </h1>
+          <p className="mt-3 max-w-2xl font-serif text-[15px] leading-[1.65] text-brand-navy/75">
+            Upload PI, EQ-i, and 360 reports. Your thought partner reads them, then carries the
+            findings into every conversation — so you stop having to re-explain who you are.
           </p>
         </div>
       </div>
@@ -66,7 +73,7 @@ export default async function AssessmentsPage() {
         <div
           className={`mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 shadow-sm ${
             hasCombinedThemes
-              ? "border-brand-pink/30 bg-brand-pink/5"
+              ? "border-brand-navy/20 bg-brand-navy/[0.03]"
               : "border-brand-blue/30 bg-brand-blue/5"
           }`}
         >
@@ -78,7 +85,7 @@ export default async function AssessmentsPage() {
                   : `${readyCount} reports ready to debrief`}
               </h2>
               {hasCombinedThemes && (
-                <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+                <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy">
                   Combined themes
                 </span>
               )}

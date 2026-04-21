@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getCohortVitality } from "@/lib/consultant/cohort-vitality";
 import { createClient } from "@/lib/supabase/server";
 
@@ -7,11 +8,12 @@ export default async function AdminDashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: mem } = await supabase
     .from("memberships")
     .select("org_id")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("status", "active")
     .limit(1)
     .maybeSingle();

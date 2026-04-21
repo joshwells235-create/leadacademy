@@ -167,7 +167,7 @@ export function CourseEditor({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-500 hover:text-brand-pink hover:border-brand-pink"
+              className="rounded-md border border-neutral-300 px-3 py-1.5 text-sm text-neutral-500 hover:text-danger hover:border-danger"
             >
               Delete
             </button>
@@ -534,7 +534,7 @@ function ModuleCard({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
               >
                 Delete
               </button>
@@ -686,7 +686,7 @@ function LessonRow({
         <span
           className={`rounded px-1.5 py-0.5 text-xs font-medium ${
             l.type === "quiz"
-              ? "bg-brand-pink-light text-brand-pink"
+              ? "bg-amber-50 text-amber-800"
               : "bg-brand-blue-light text-brand-blue"
           }`}
         >

@@ -99,7 +99,7 @@ export function CapstoneReadonly({
         }
         return (
           <div key={kind} className="rounded-md border border-neutral-200 bg-white p-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy/70">
               {SECTION_LABEL[kind]}
             </p>
             <p className="mt-0.5 text-sm font-semibold text-brand-navy">{s.heading}</p>

@@ -30,13 +30,13 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const { data: viewerProfile } = await supabase
     .from("profiles")
     .select("super_admin")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!viewerProfile?.super_admin) {
     const { data: membership } = await supabase
       .from("memberships")
       .select("cohort_id")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
@@ -77,7 +77,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const { data: progress } = await supabase
     .from("lesson_progress")
     .select("lesson_id, completed")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("completed", true);
   const completedIds = new Set((progress ?? []).map((p) => p.lesson_id));
 
@@ -89,8 +89,8 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
   const [lessonGates, courseGates] = isSuper
     ? [new Map<string, never>(), new Map<string, never>()]
     : await Promise.all([
-        computeCourseLessonGates(supabase, user!.id, courseId),
-        computeCourseGates(supabase, user!.id, [courseId]),
+        computeCourseLessonGates(supabase, user.id, courseId),
+        computeCourseGates(supabase, user.id, [courseId]),
       ]);
   const courseGate = courseGates.get(courseId);
   const courseLocked = courseGate && !courseGate.unlocked ? courseGate : null;
@@ -344,7 +344,7 @@ export default async function CourseDetailPage({ params, searchParams }: Props) 
                           </span>
                         ) : null}
                         <span
-                          className={`ml-2 rounded px-1.5 py-0.5 text-xs shrink-0 ${l.type === "quiz" ? "bg-brand-pink-light text-brand-pink" : "bg-brand-blue-light text-brand-blue"}`}
+                          className={`ml-2 rounded px-1.5 py-0.5 text-xs shrink-0 ${l.type === "quiz" ? "bg-amber-50 text-amber-800" : "bg-brand-blue-light text-brand-blue"}`}
                         >
                           {l.type === "quiz" ? "Quiz" : "Lesson"}
                         </span>

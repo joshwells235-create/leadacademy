@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PreSessionForm } from "./pre-session-form";
 export const metadata: Metadata = { title: "Pre-session Prep — Leadership Academy" };
@@ -8,11 +9,12 @@ export default async function PreSessionPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: notes } = await supabase
     .from("pre_session_notes")
     .select("id, want_to_discuss, whats_been_hard, whats_going_well, session_date, created_at")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(10);
 

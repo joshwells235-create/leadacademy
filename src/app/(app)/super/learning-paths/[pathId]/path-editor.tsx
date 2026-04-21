@@ -208,7 +208,7 @@ export function PathEditor({
         <div className="mt-3 flex items-center justify-between">
           <div className="text-xs">
             {metaState === "saved" && <span className="text-emerald-600">Saved.</span>}
-            {metaState === "error" && metaErr && <span className="text-brand-pink">{metaErr}</span>}
+            {metaState === "error" && metaErr && <span className="text-danger">{metaErr}</span>}
           </div>
           <button
             type="button"
@@ -270,7 +270,7 @@ export function PathEditor({
                   <button
                     type="button"
                     onClick={() => removeCourse(cid)}
-                    className="rounded p-1 text-xs text-brand-pink hover:bg-white"
+                    className="rounded p-1 text-xs text-danger hover:bg-white"
                     aria-label="Remove"
                   >
                     ×
@@ -310,7 +310,7 @@ export function PathEditor({
           <div className="text-xs">
             {coursesState === "saved" && <span className="text-emerald-600">Saved.</span>}
             {coursesState === "error" && coursesErr && (
-              <span className="text-brand-pink">{coursesErr}</span>
+              <span className="text-danger">{coursesErr}</span>
             )}
           </div>
           <button
@@ -355,7 +355,7 @@ export function PathEditor({
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
-              className="rounded-md border border-brand-pink/30 bg-white px-3 py-1.5 text-xs font-medium text-brand-pink hover:bg-brand-pink/5"
+              className="rounded-md border border-danger/30 bg-white px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-light/60"
             >
               Delete path
             </button>
@@ -456,7 +456,7 @@ function CohortAssignmentPanel({
                 type="button"
                 onClick={() => unassign(a.cohort_id)}
                 disabled={pending}
-                className="rounded p-1 text-xs text-brand-pink hover:bg-white disabled:opacity-50"
+                className="rounded p-1 text-xs text-danger hover:bg-white disabled:opacity-50"
                 aria-label="Unassign"
               >
                 ×
@@ -508,7 +508,7 @@ function CohortAssignmentPanel({
         </div>
       )}
 
-      {err && <p className="mt-2 text-xs text-brand-pink">{err}</p>}
+      {err && <p className="mt-2 text-xs text-danger">{err}</p>}
       {success && <p className="mt-2 text-xs text-emerald-600">{success}</p>}
     </section>
   );

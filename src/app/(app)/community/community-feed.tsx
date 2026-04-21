@@ -76,14 +76,14 @@ export function CommunityFeed({
       {/* New post — audience banner makes it impossible to miss who sees this. */}
       <div
         className={`overflow-hidden rounded-lg border shadow-sm mb-6 ${
-          tab === "cohort" ? "border-brand-blue/30" : "border-brand-pink/30"
+          tab === "cohort" ? "border-brand-blue/30" : "border-amber-300"
         }`}
       >
         <div
           className={`px-4 py-2 text-xs font-semibold ${
             tab === "cohort"
               ? "bg-brand-blue/10 text-brand-blue"
-              : "bg-brand-pink/10 text-brand-pink"
+              : "bg-amber-50 text-amber-800"
           }`}
         >
           {tab === "cohort" ? (
@@ -116,7 +116,7 @@ export function CommunityFeed({
             <span
               className={`text-xs tabular-nums ${
                 newPost.length > 4500
-                  ? "text-brand-pink font-medium"
+                  ? "text-danger font-medium"
                   : newPost.length > 4000
                     ? "text-amber-700"
                     : "text-neutral-500"
@@ -228,7 +228,7 @@ function PostCard({
             aria-label={liked ? "Unlike this post" : "Like this post"}
             aria-pressed={liked}
             className={`flex items-center gap-1 transition ${
-              liked ? "text-brand-pink font-medium" : "text-neutral-500 hover:text-brand-pink"
+              liked ? "text-amber-700 font-medium" : "text-neutral-500 hover:text-amber-700"
             }`}
           >
             <span aria-hidden>{liked ? "♥" : "♡"}</span>

@@ -213,7 +213,7 @@ export function LessonEditorWrapper({
                 }}
                 className={`px-3 py-1 border-l border-neutral-300 ${
                   lessonType === "quiz"
-                    ? "bg-brand-pink text-white"
+                    ? "bg-brand-blue text-white"
                     : "bg-white text-neutral-600 hover:bg-brand-light"
                 }`}
               >
@@ -237,7 +237,7 @@ export function LessonEditorWrapper({
                   : saveState === "unsaved"
                     ? "text-amber-500"
                     : saveState === "error"
-                      ? "text-brand-pink"
+                      ? "text-danger"
                       : "text-neutral-400"
             }`}
             title={saveState === "error" ? (saveError ?? undefined) : undefined}
@@ -261,7 +261,7 @@ export function LessonEditorWrapper({
           </button>
           <button
             onClick={() => setConfirmingDelete(true)}
-            className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:text-brand-pink hover:border-brand-pink"
+            className="rounded-md border border-neutral-300 px-3 py-2 text-sm text-neutral-500 hover:text-danger hover:border-danger"
           >
             Delete
           </button>
@@ -378,7 +378,7 @@ export function LessonEditorWrapper({
                 setVideoUrl("");
                 handleChange();
               }}
-              className="text-xs text-neutral-400 hover:text-brand-pink"
+              className="text-xs text-neutral-400 hover:text-danger"
             >
               Clear
             </button>
@@ -433,7 +433,7 @@ export function LessonEditorWrapper({
                 </div>
                 <button
                   onClick={() => removeMaterial(i)}
-                  className="text-xs text-neutral-400 hover:text-brand-pink"
+                  className="text-xs text-neutral-400 hover:text-danger"
                 >
                   Remove
                 </button>
@@ -559,7 +559,7 @@ function LinkedResourcesPanel({
                 type="button"
                 onClick={() => removeResource(r.id)}
                 disabled={pending}
-                className="text-xs text-neutral-400 hover:text-brand-pink disabled:opacity-60"
+                className="text-xs text-neutral-400 hover:text-danger disabled:opacity-60"
               >
                 Remove
               </button>

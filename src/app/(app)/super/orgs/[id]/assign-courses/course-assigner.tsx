@@ -216,7 +216,7 @@ function SchedulePicker({
         <span className="self-end text-[10px] text-emerald-600">Saved</span>
       )}
       {state === "error" && errMsg && (
-        <span className="self-end text-[10px] text-brand-pink">{errMsg}</span>
+        <span className="self-end text-[10px] text-danger">{errMsg}</span>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ActionItemToggle } from "@/components/action-item-toggle";
 import { AnnouncementBanner } from "@/components/announcements/announcement-banner";
 import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
@@ -15,6 +16,7 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const [
     profileRes,
@@ -30,50 +32,51 @@ export default async function DashboardPage() {
     supabase
       .from("profiles")
       .select("display_name, super_admin, intake_completed_at")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .maybeSingle(),
     supabase
       .from("memberships")
       .select("role, organizations(name), cohorts(name)")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("status", "active")
       .limit(1)
       .maybeSingle(),
     supabase
       .from("goals")
-      .select("id, title, status")
-      .eq("user_id", user!.id)
-      .neq("status", "archived"),
+      .select("id, title, status, created_at")
+      .eq("user_id", user.id)
+      .neq("status", "archived")
+      .order("created_at", { ascending: false }),
     supabase
       .from("action_logs")
       .select("id, description, occurred_on")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .order("occurred_on", { ascending: false })
       .limit(3),
     supabase
       .from("ai_conversations")
       .select("id, mode, last_message_at")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .order("last_message_at", { ascending: false, nullsFirst: false })
       .limit(1)
       .maybeSingle(),
-    supabase.from("reflections").select("id").eq("user_id", user!.id),
+    supabase.from("reflections").select("id").eq("user_id", user.id),
     supabase
       .from("assessments")
       .select("id, assessment_documents(type, status)")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .maybeSingle(),
     supabase
       .from("action_items")
       .select("id, title, due_date, completed")
-      .eq("learner_user_id", user!.id)
+      .eq("learner_user_id", user.id)
       .eq("completed", false)
       .order("due_date", { ascending: true, nullsFirst: false })
       .limit(5),
     supabase
       .from("pre_session_notes")
       .select("id, created_at")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(),
@@ -83,10 +86,18 @@ export default async function DashboardPage() {
   const membership = membershipRes.data;
   const goals = goalsRes.data ?? [];
   const actions = actionsRes.data ?? [];
-  const firstName = profile?.display_name?.split(" ")[0] ?? user!.email?.split("@")[0] ?? "there";
+  const firstName = profile?.display_name?.split(" ")[0] ?? user.email?.split("@")[0] ?? "there";
   const totalGoals = goals.length;
   const inProgress = goals.filter((g) => g.status === "in_progress").length;
   const completed = goals.filter((g) => g.status === "completed").length;
+
+  // The dashboard opens with the learner's current practice, not a greeting.
+  // Most-recent in-progress goal wins; else most-recent not-started. If
+  // neither, we fall through to the first-time welcome framing below.
+  const primaryGoal =
+    goals.find((g) => g.status === "in_progress") ??
+    goals.find((g) => g.status === "not_started") ??
+    null;
   const assessmentDocs = (assessmentDocsRes.data?.assessment_documents ?? []) as Array<{
     type: string;
     status: string;
@@ -105,14 +116,14 @@ export default async function DashboardPage() {
   // signal to nudge on). Respects `proactivity_enabled` and rate limits
   // inside the detector itself.
   if (!isFirstTime) {
-    await detectAndFireNudge(supabase, user!.id);
+    await detectAndFireNudge(supabase, user.id);
   }
 
   // Load the most recent pending nudge (un-acted, un-dismissed) to render.
   const { data: pendingNudge } = await supabase
     .from("coach_nudges")
     .select("id, notification_id, notifications(title, body, link, read_at)")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .is("acted_at", null)
     .is("dismissed_at", null)
     .order("created_at", { ascending: false })
@@ -137,7 +148,7 @@ export default async function DashboardPage() {
 
   // System announcements for this user — global, org-scoped, cohort-scoped,
   // or role-targeted. Dismissed ones are filtered out server-side.
-  const announcements = await getVisibleAnnouncements(supabase, user!.id);
+  const announcements = await getVisibleAnnouncements(supabase, user.id);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -149,39 +160,90 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Header — warmer for first time */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-brand-navy">
-          {isFirstTime ? `Welcome, ${firstName}` : `Hi, ${firstName}`}
-        </h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          {isFirstTime ? (
-            "You're in the right place. Let's get your leadership academy set up."
-          ) : membership ? (
-            <>
-              {membership.organizations?.name}
-              {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
-            </>
-          ) : profile?.super_admin ? (
-            "LeadShift super-admin"
-          ) : (
-            ""
+      {/* Header — when the learner has a live goal, *that* leads. Their own
+          words, set in serif, unornamented. Greeting + membership demote to
+          a small line above. The move: your current practice is more
+          important than your name. First-time learners fall back to the
+          greeting framing — they don't have a goal yet. */}
+      {primaryGoal && !isFirstTime ? (
+        <div className="mb-10">
+          <p className="text-xs text-neutral-500">
+            <span className="text-brand-navy">Hi, {firstName}.</span>{" "}
+            {membership ? (
+              <>
+                {membership.organizations?.name}
+                {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
+              </>
+            ) : profile?.super_admin ? (
+              "LeadShift super-admin"
+            ) : null}
+          </p>
+          <p className="section-mark mt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+            What you're working on
+          </p>
+          <Link
+            href={`/goals/${primaryGoal.id}`}
+            className="mt-3 block font-serif text-[32px] font-medium leading-[1.2] tracking-tight text-brand-navy transition hover:text-brand-blue sm:text-[38px]"
+          >
+            {primaryGoal.title}
+          </Link>
+          {inProgress + completed > 1 && (
+            <p className="mt-3 text-xs text-neutral-500">
+              {inProgress > 1 && (
+                <>
+                  <Link href="/goals" className="hover:text-brand-blue">
+                    {inProgress - 1} other active{" "}
+                    {inProgress - 1 === 1 ? "goal" : "goals"}
+                  </Link>
+                  {completed > 0 && " · "}
+                </>
+              )}
+              {completed > 0 && (
+                <Link href="/goals?status=completed" className="hover:text-brand-blue">
+                  {completed} completed
+                </Link>
+              )}
+            </p>
           )}
-        </p>
-      </div>
+        </div>
+      ) : (
+        <div className="mb-8">
+          <h1 className="font-serif text-3xl font-semibold tracking-tight text-brand-navy">
+            {isFirstTime ? `Welcome, ${firstName}.` : `Hi, ${firstName}.`}
+          </h1>
+          <p className="mt-2 text-sm text-neutral-600">
+            {isFirstTime ? (
+              "You're in the right place. Let's get your leadership academy set up."
+            ) : membership ? (
+              <>
+                {membership.organizations?.name}
+                {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
+              </>
+            ) : profile?.super_admin ? (
+              "LeadShift super-admin"
+            ) : (
+              ""
+            )}
+          </p>
+        </div>
+      )}
 
       {/* ── FIRST TIME: One-sentence "what is this" explainer so jargon like
            "thought partner" doesn't land cold. Suppressed once the learner
            has any real artifacts — they've lived it, they don't need the pitch. ── */}
       {isFirstTime && (
-        <div className="mb-6 rounded-xl border border-brand-navy/10 bg-white p-5 shadow-sm">
-          <p className="text-sm leading-relaxed text-neutral-700">
-            <span className="font-semibold text-brand-navy">How this works.</span> Leadership
-            Academy pairs structured learning — goals, sprints, reflections, courses — with your own{" "}
-            <span className="font-semibold text-brand-pink">Thought Partner</span>: an always-on AI
+        <div className="mb-6 rounded-xl border border-brand-navy/10 bg-white p-7 shadow-sm">
+          <p className="font-serif text-[17px] leading-[1.65] text-brand-navy/90">
+            <span className="font-semibold text-brand-navy">How this works.</span> Goals, sprints,
+            reflections, and courses — paired with your own Thought Partner. That's an always-on AI
             guide that knows your context and helps you think out loud between coaching sessions.
-            It's different from your human executive coach — think of it as the friend you'd text at
-            9pm when something at work is nagging at you.
+            Different from your human executive coach: think of it as the friend you'd text at 9pm
+            when something at work is nagging at you.
+          </p>
+          <p className="mt-4 border-t border-neutral-100 pt-4 font-serif text-sm leading-[1.65] text-brand-navy/65">
+            <span className="font-semibold text-brand-navy/80">What you won't find here.</span> No
+            streaks, no badges, no "you're on fire!" notifications. Leadership isn't a game.
+            You'll see your own thinking, reflected back to you — that's the whole point.
           </p>
         </div>
       )}
@@ -190,7 +252,7 @@ export default async function DashboardPage() {
            intake is the very first thing a new learner should do, and the steps card
            overlaps with it (both pitch "start a conversation"). ── */}
       {isFirstTime && !intakePending && (
-        <div className="mb-10 rounded-2xl border border-brand-blue/20 bg-gradient-to-br from-white to-brand-blue-light/30 p-8 shadow-sm">
+        <div className="mb-10 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
           <h2 className="text-lg font-bold text-brand-navy mb-1">Your first steps</h2>
           <p className="text-sm text-neutral-600 mb-6">
             Do these in any order — most take about 5 minutes. Uploading assessments takes longer
@@ -232,7 +294,7 @@ export default async function DashboardPage() {
       {/* ── Intake CTA — surfaces any time intake is pending (first-time or returning),
            so a freshly-reset learner or a new invitee always sees it. ── */}
       {intakePending && (
-        <div className="mb-6 rounded-2xl border-2 border-brand-blue/30 bg-gradient-to-br from-brand-blue-light/30 to-white p-5 shadow-sm">
+        <div className="mb-6 rounded-2xl border-2 border-brand-blue/30 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 flex-1">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-blue">
@@ -257,7 +319,7 @@ export default async function DashboardPage() {
       {/* ── SECTION 1: What to do today (only after first time) ── */}
       {!isFirstTime && (
         <div className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
+          <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500 mb-4">
             Today
           </h2>
           <div className="grid gap-4 md:grid-cols-2">
@@ -335,69 +397,41 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── SECTION 3: Quick access ── */}
-      <div className="mb-8">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
-          Quick access
-        </h2>
-        <div className="grid gap-3 md:grid-cols-3">
-          {/* Recent actions */}
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-brand-navy">Actions</h3>
-              <Link href="/action-log" className="text-xs text-brand-blue hover:underline">
-                Log →
-              </Link>
-            </div>
-            {actions.length === 0 ? (
-              <p className="text-xs text-neutral-500">No actions logged yet.</p>
-            ) : (
-              <ul className="space-y-1 text-xs text-neutral-700">
-                {actions.map((a) => (
-                  <li key={a.id} className="flex gap-1.5 truncate">
-                    <span className="text-neutral-400 shrink-0">{a.occurred_on.slice(5)}</span>
-                    <span className="truncate">{a.description}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+      {/* ── Recent actions — thin, typographic. We used to have a three-card
+           "Elsewhere" grid (Actions / Reflections / Learning) but two of
+           those duplicated nav links. Only the action list has substance;
+           the rest belong in the nav where they already live. ── */}
+      {actions.length > 0 && (
+        <div className="mb-8">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+              Recent actions
+            </h2>
+            <Link
+              href="/action-log"
+              className="text-xs text-neutral-500 hover:text-brand-blue"
+            >
+              Open log →
+            </Link>
           </div>
-
-          {/* Reflections */}
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-brand-navy">Reflections</h3>
-              <Link href="/reflections" className="text-xs text-brand-blue hover:underline">
-                Journal →
-              </Link>
-            </div>
-            <p className="text-xs text-neutral-600">
-              {(reflectionsRes.data?.length ?? 0) === 0
-                ? "Start journaling — even one sentence counts."
-                : `${reflectionsRes.data!.length} reflection${reflectionsRes.data!.length !== 1 ? "s" : ""} so far.`}
-            </p>
-          </div>
-
-          {/* Learning */}
-          <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-brand-navy">Learning</h3>
-              <Link href="/learning" className="text-xs text-brand-blue hover:underline">
-                Courses →
-              </Link>
-            </div>
-            <p className="text-xs text-neutral-600">
-              Continue your assigned courses and track your progress.
-            </p>
-          </div>
+          <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white shadow-sm">
+            {actions.map((a) => (
+              <li key={a.id} className="flex gap-3 px-4 py-2.5 text-sm">
+                <span className="shrink-0 text-[11px] tabular-nums text-neutral-400 pt-0.5">
+                  {a.occurred_on.slice(5)}
+                </span>
+                <span className="truncate text-brand-navy/85">{a.description}</span>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
+      )}
 
       {/* ── SECTION 4: Setup tasks (contextual — only after first-time onboarding) ── */}
       {!isFirstTime && (assessmentsReady < 3 || !preSessionRes.data) && (
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 mb-3">
-            Setup
+          <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500 mb-4">
+            Worth finishing
           </h2>
           <div className="grid gap-3 md:grid-cols-2">
             {assessmentsReady < 3 && (

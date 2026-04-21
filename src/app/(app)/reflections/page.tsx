@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteReflectionButton } from "./delete-reflection-button";
 import { ReflectionForm } from "./reflection-form";
@@ -10,11 +11,12 @@ export default async function ReflectionsPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: reflections } = await supabase
     .from("reflections")
     .select("id, content, ai_insights, themes, reflected_on, created_at")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("reflected_on", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(50);
@@ -43,9 +45,14 @@ export default async function ReflectionsPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-navy">Reflection journal</h1>
-        <p className="mt-1 text-sm text-neutral-600">
+      <div className="mb-8">
+        <p className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+          Your journal
+        </p>
+        <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-brand-navy">
+          Reflections
+        </h1>
+        <p className="mt-3 max-w-2xl font-serif text-[17px] leading-[1.65] text-brand-navy/80">
           Write about what happened, what you noticed, what's sitting with you. Your thought partner
           will reflect back patterns and connections to your goals.
         </p>
@@ -56,11 +63,21 @@ export default async function ReflectionsPage() {
           <ReflectionForm expandedByDefault={dates.length === 0} />
 
           {dates.length === 0 ? (
-            <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
-              <h2 className="font-semibold text-brand-navy">Your journal is empty — for now.</h2>
-              <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-                Start above. One sentence about what you noticed today counts. You can also ask your
-                thought partner to help you reflect out loud and save it for you.
+            <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
+              <h2 className="font-serif text-xl font-semibold text-brand-navy">
+                Nothing here yet.
+              </h2>
+              <figure className="mx-auto mt-5 max-w-md">
+                <blockquote className="font-serif text-[17px] italic leading-[1.65] text-brand-navy/80">
+                  "We do not learn from experience… we learn from reflecting on experience."
+                </blockquote>
+                <figcaption className="mt-2 text-[11px] uppercase tracking-[0.18em] text-brand-navy/50">
+                  — John Dewey
+                </figcaption>
+              </figure>
+              <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-brand-navy/65">
+                Start above. If you'd rather think out loud first, your thought partner can help
+                you get it on the page.
               </p>
             </div>
           ) : (
@@ -74,10 +91,10 @@ export default async function ReflectionsPage() {
                     {byDate[date].map((r) => (
                       <li
                         key={r.id}
-                        className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
+                        className="rounded-lg border border-neutral-200 bg-white p-6 shadow-sm"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="whitespace-pre-wrap text-sm text-neutral-900 flex-1">
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="prose-editorial flex-1 whitespace-pre-wrap">
                             {r.content}
                           </p>
                           <DeleteReflectionButton id={r.id} />

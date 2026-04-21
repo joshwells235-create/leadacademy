@@ -158,7 +158,7 @@ export default async function CourseAnalyticsPage({ params, searchParams }: Prop
           the learning via an AI debrief" + "how many asked questions
           mid-lesson and got grounded answers." */}
       <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="rounded-lg border border-brand-pink/20 bg-gradient-to-br from-brand-pink/5 to-white px-5 py-4 shadow-sm">
+        <div className="rounded-lg border-l-[3px] border-brand-pink bg-brand-pink-light/40 px-5 py-4 shadow-sm">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
             Completers who debriefed
           </p>
@@ -180,7 +180,7 @@ export default async function CourseAnalyticsPage({ params, searchParams }: Prop
           </p>
         </div>
 
-        <div className="rounded-lg border border-brand-pink/20 bg-gradient-to-br from-brand-pink/5 to-white px-5 py-4 shadow-sm">
+        <div className="rounded-lg border-l-[3px] border-brand-pink bg-brand-pink-light/40 px-5 py-4 shadow-sm">
           <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
             Questions asked mid-lesson
           </p>
@@ -259,7 +259,7 @@ export default async function CourseAnalyticsPage({ params, searchParams }: Prop
                         <span className="truncate text-brand-navy">
                           {s.title}
                           {s.kind === "quiz" && (
-                            <span className="ml-2 rounded bg-brand-pink/10 px-1.5 py-0.5 text-[10px] text-brand-pink">
+                            <span className="ml-2 rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800">
                               Quiz
                             </span>
                           )}
@@ -329,7 +329,7 @@ function Kpi({
 }) {
   const valueClass = {
     good: "text-emerald-600",
-    warn: "text-brand-pink",
+    warn: "text-danger",
     neutral: "text-brand-navy",
   }[tone];
   return (

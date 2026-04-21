@@ -100,7 +100,7 @@ export default async function AdminCohortDetailPage({ params }: Props) {
           {cohort.starts_at && <span>Starts {cohort.starts_at}</span>}
           {cohort.ends_at && <span>Ends {cohort.ends_at}</span>}
           {cohort.capstone_unlocks_at && (
-            <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 font-medium text-brand-pink">
+            <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 font-medium text-brand-navy">
               Capstone unlocks {cohort.capstone_unlocks_at}
             </span>
           )}

@@ -28,7 +28,7 @@ export const ROLE_DESCRIPTION: Record<MemberRole, string> = {
 export const ROLE_BADGE_CLASS: Record<MemberRole, string> = {
   learner: "bg-neutral-100 text-neutral-700",
   coach: "bg-brand-blue/10 text-brand-blue",
-  org_admin: "bg-brand-pink/10 text-brand-pink",
+  org_admin: "bg-brand-navy/10 text-brand-navy",
   consultant: "bg-amber-50 text-amber-800",
 };
 

@@ -260,7 +260,7 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
                 setMenuOpen(false);
                 setConfirmingDelete(true);
               }}
-              className="block w-full px-3 py-2 text-left text-brand-pink hover:bg-brand-light"
+              className="block w-full px-3 py-2 text-left text-danger hover:bg-danger-light/40"
             >
               Delete
             </button>
@@ -271,7 +271,7 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
         <div
           role="alertdialog"
           aria-label="Delete conversation"
-          className="mt-1 rounded-md border border-brand-pink/30 bg-brand-pink/5 p-2 text-xs"
+          className="mt-1 rounded-md border border-danger/30 bg-danger-light/60 p-2 text-xs"
         >
           <p className="text-brand-navy">Delete this conversation? This can't be undone.</p>
           {actionError && <p className="mt-1 text-red-700">{actionError}</p>}
@@ -280,7 +280,7 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
               type="button"
               onClick={handleDelete}
               disabled={pending}
-              className="rounded bg-brand-pink px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded bg-danger px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
             >
               {pending ? "Deleting…" : "Delete"}
             </button>
@@ -308,7 +308,7 @@ const MODE_BADGE_STYLES: Record<string, string> = {
   reflection: "bg-amber-50 text-amber-800",
   assessment: "bg-purple-50 text-purple-800",
   capstone: "bg-emerald-50 text-emerald-800",
-  intake: "bg-brand-pink/10 text-brand-pink",
+  intake: "bg-brand-blue-light text-brand-blue",
 };
 
 function ModeBadge({ mode }: { mode: string }) {

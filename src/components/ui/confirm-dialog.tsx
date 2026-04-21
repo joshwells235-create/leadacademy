@@ -6,8 +6,9 @@ import type { ReactNode } from "react";
  * In-UI confirmation block — drop-in replacement for browser `confirm()`
  * for destructive or high-impact admin actions. Inline rather than modal
  * so the admin can see the row/item they're confirming against. Uses
- * tone tokens (amber for cautionary, pink for destructive, emerald for
- * restorative) to match surrounding iconography.
+ * tone tokens (amber for cautionary, danger red for destructive, emerald
+ * for restorative) to match surrounding iconography. Destructive is NOT
+ * pink — pink is reserved exclusively for the Thought Partner voice.
  */
 type Tone = "destructive" | "caution" | "restorative";
 
@@ -34,9 +35,9 @@ export function ConfirmBlock({
 }) {
   const toneClasses = {
     destructive: {
-      container: "border-brand-pink/30 bg-brand-pink/5",
+      container: "border-danger/30 bg-danger-light/60",
       title: "text-brand-navy",
-      confirmBtn: "bg-brand-pink text-white hover:opacity-90",
+      confirmBtn: "bg-danger text-white hover:opacity-90",
     },
     caution: {
       container: "border-amber-300 bg-amber-50",

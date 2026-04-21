@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { getSinceLastSessionStats } from "@/lib/coach/since-last-session";
 import { createClient } from "@/lib/supabase/server";
 import { type LearnerCardData, LearnersGrid } from "./learners-grid";
@@ -8,12 +9,13 @@ export default async function CoachDashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   // Get all active learner assignments for this coach.
   const { data: assignments } = await supabase
     .from("coach_assignments")
     .select("learner_user_id, cohort_id, active_from, cohorts(name)")
-    .eq("coach_user_id", user!.id)
+    .eq("coach_user_id", user.id)
     .is("active_to", null);
 
   if (!assignments || assignments.length === 0) {
@@ -64,7 +66,7 @@ export default async function CoachDashboardPage() {
         .order("created_at", { ascending: false }),
       Promise.all(
         assignments.map((a) =>
-          getSinceLastSessionStats(supabase, user!.id, a.learner_user_id).then((stats) => ({
+          getSinceLastSessionStats(supabase, user.id, a.learner_user_id).then((stats) => ({
             learnerId: a.learner_user_id,
             stats,
           })),

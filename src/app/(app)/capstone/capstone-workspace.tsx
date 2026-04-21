@@ -328,7 +328,7 @@ function SectionCard({
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-pink">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-brand-navy/70">
               {SECTION_LABEL[kind]}
             </h3>
             {!filled && <span className="text-xs text-neutral-400">— not yet refined</span>}

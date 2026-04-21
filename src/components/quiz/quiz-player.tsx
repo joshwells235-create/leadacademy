@@ -144,7 +144,7 @@ export function QuizPlayer({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-brand-pink/30 bg-brand-pink/5 px-4 py-3">
+      <div className="rounded-lg border border-brand-blue/30 bg-brand-blue-light/40 px-4 py-3">
         <h2 className="text-sm font-semibold text-brand-navy">Quiz</h2>
         <p className="mt-1 text-xs text-neutral-600">
           {questions.length} question{questions.length === 1 ? "" : "s"} · Pass at{" "}

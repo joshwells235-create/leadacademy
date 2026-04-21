@@ -55,7 +55,7 @@ export function DeleteConversationButton({
     <button
       type="button"
       onClick={() => setConfirming(true)}
-      className="text-xs text-brand-pink hover:underline"
+      className="text-xs text-danger hover:underline"
     >
       Delete conversation
     </button>

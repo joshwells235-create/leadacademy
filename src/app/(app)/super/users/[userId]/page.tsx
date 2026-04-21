@@ -71,7 +71,7 @@ export default async function SuperUserDetailPage({ params }: Props) {
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-bold text-brand-navy">{name}</h1>
           {profile?.super_admin && (
-            <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+            <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy">
               super admin
             </span>
           )}

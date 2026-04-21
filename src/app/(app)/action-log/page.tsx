@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ActionLogForm } from "./action-log-form";
 export const metadata: Metadata = { title: "Action Log — Leadership Academy" };
@@ -12,12 +13,13 @@ export default async function ActionLogPage({ searchParams }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const [goalsRes, actionsRes] = await Promise.all([
     supabase
       .from("goals")
       .select("id, title, primary_lens, status")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .in("status", ["not_started", "in_progress"])
       .order("created_at", { ascending: false }),
     supabase
@@ -25,7 +27,7 @@ export default async function ActionLogPage({ searchParams }: Props) {
       .select(
         "id, description, reflection, impact_area, occurred_on, goal_id, sprint_id, goals(title, primary_lens), goal_sprints(sprint_number, title, status)",
       )
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .order("occurred_on", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(50),
@@ -57,10 +59,20 @@ export default async function ActionLogPage({ searchParams }: Props) {
         <div>
           {dates.length === 0 ? (
             <div className="rounded-lg border border-neutral-200 bg-white p-10 text-center shadow-sm">
-              <h2 className="font-semibold text-brand-navy">No actions logged yet</h2>
-              <p className="mt-1 text-sm text-neutral-600 max-w-sm mx-auto">
-                The small moves count. Log what you actually did — the hard conversation you had,
-                the thing you didn't redo, the draft you let ship. Use the form on the right.
+              <h2 className="font-serif text-xl font-semibold text-brand-navy">
+                Nothing logged yet.
+              </h2>
+              <figure className="mx-auto mt-5 max-w-md">
+                <blockquote className="font-serif text-[17px] italic leading-[1.6] text-brand-navy/80">
+                  "How we spend our days is, of course, how we spend our lives."
+                </blockquote>
+                <figcaption className="mt-2 text-[11px] uppercase tracking-[0.18em] text-brand-navy/50">
+                  — Annie Dillard
+                </figcaption>
+              </figure>
+              <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-brand-navy/65">
+                The hard conversation you actually had. The thing you didn't redo for them. The
+                draft you let ship. Worth writing down.
               </p>
             </div>
           ) : (

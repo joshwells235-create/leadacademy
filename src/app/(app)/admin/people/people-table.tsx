@@ -481,7 +481,7 @@ function MemberRow({
                 <button
                   type="button"
                   onClick={() => setArchivingConfirm("archive")}
-                  className="rounded border border-brand-pink/30 bg-white px-2 py-0.5 text-brand-pink hover:bg-brand-pink/10"
+                  className="rounded border border-danger/30 bg-white px-2 py-0.5 text-danger hover:bg-danger-light/60"
                 >
                   Archive
                 </button>
@@ -532,7 +532,7 @@ function MemberRow({
                     >
                       <p>{ROLE_DESCRIPTION[roleConfirm as MemberRole]}</p>
                       {roleConfirm === "org_admin" && (
-                        <p className="mt-1 font-medium text-brand-pink">
+                        <p className="mt-1 font-medium text-danger">
                           High-impact change: gives {row.name} full admin access to this org.
                         </p>
                       )}
@@ -812,7 +812,7 @@ function BulkBar({
         <button
           type="button"
           onClick={() => setConfirming("archive")}
-          className="rounded-md border border-brand-pink/30 bg-white px-2 py-1 text-xs text-brand-pink hover:bg-brand-pink/10"
+          className="rounded-md border border-danger/30 bg-white px-2 py-1 text-xs text-danger hover:bg-danger-light/60"
         >
           Archive…
         </button>

@@ -194,7 +194,7 @@ function AnnouncementCard({ row, onEdit }: { row: AnnouncementRow; onEdit: () =>
               type="button"
               onClick={end}
               disabled={pending}
-              className="text-neutral-500 hover:text-brand-pink disabled:opacity-60"
+              className="text-neutral-500 hover:text-danger disabled:opacity-60"
             >
               End now
             </button>
@@ -202,7 +202,7 @@ function AnnouncementCard({ row, onEdit }: { row: AnnouncementRow; onEdit: () =>
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="text-brand-pink hover:underline"
+            className="text-danger hover:underline"
           >
             Delete
           </button>

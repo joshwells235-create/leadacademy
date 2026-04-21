@@ -67,7 +67,7 @@ export function dueStatusLabel(s: DueStatus): string {
 export function dueStatusChipClass(s: DueStatus): string {
   switch (s.status) {
     case "overdue":
-      return "bg-brand-pink/10 text-brand-pink";
+      return "bg-danger-light text-danger";
     case "due_soon":
       return "bg-amber-100 text-amber-800";
     case "on_track":

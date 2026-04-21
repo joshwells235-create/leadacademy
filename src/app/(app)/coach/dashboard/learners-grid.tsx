@@ -204,7 +204,7 @@ function LearnerCard({ learner: l }: { learner: LearnerCardData }) {
           </p>
         </div>
         {isNewAssignment && (
-          <span className="shrink-0 rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+          <span className="shrink-0 rounded-full bg-brand-blue/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-blue">
             New
           </span>
         )}
@@ -252,7 +252,7 @@ function Chip({
 }) {
   const styles = {
     blue: "bg-brand-blue/10 text-brand-blue",
-    pink: "bg-brand-pink/10 text-brand-pink",
+    pink: "bg-danger-light text-danger",
     amber: "bg-amber-50 text-amber-800 ring-1 ring-amber-200",
     emerald: "bg-emerald-50 text-emerald-800",
   };

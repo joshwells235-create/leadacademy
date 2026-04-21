@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Growth Goals — Leadership Academy" };
 
@@ -22,13 +23,14 @@ export default async function GoalsPage({ searchParams }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const goalsQuery = supabase
     .from("goals")
     .select(
       "id, primary_lens, title, status, target_date, smart_criteria, impact_self, impact_others, impact_org, created_at",
     )
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (statusFilter === "active") goalsQuery.in("status", ["not_started", "in_progress"]);
@@ -40,12 +42,12 @@ export default async function GoalsPage({ searchParams }: Props) {
     supabase
       .from("action_logs")
       .select("goal_id, occurred_on")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .not("goal_id", "is", null),
     supabase
       .from("goal_sprints")
       .select("goal_id, title, planned_end_date, action_count, created_at")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("status", "active"),
   ]);
   const goals = goalsRes.data;
@@ -128,13 +130,24 @@ export default async function GoalsPage({ searchParams }: Props) {
         <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-8 text-center text-sm text-neutral-600">
           {statusFilter === "active" ? (
             <>
-              <p className="font-medium text-brand-navy">No active goals right now.</p>
-              <p className="mt-1 text-xs text-neutral-500">
-                Goals are how you commit to changing something real about how you lead.
+              <p className="font-serif text-lg font-semibold text-brand-navy">
+                Nothing live yet.
+              </p>
+              <figure className="mt-4 max-w-md">
+                <blockquote className="font-serif text-[15px] italic leading-[1.6] text-brand-navy/75">
+                  "We are what we repeatedly do. Excellence, then, is not an act, but a habit."
+                </blockquote>
+                <figcaption className="mt-1.5 text-[11px] uppercase tracking-[0.18em] text-brand-navy/45">
+                  — Will Durant, on Aristotle
+                </figcaption>
+              </figure>
+              <p className="mt-4 max-w-md text-sm leading-relaxed text-brand-navy/65">
+                A goal here isn't a quarterly OKR. It's the thing you'd quietly like to be true
+                about you in nine months — something practice gets you to, not a calendar.
               </p>
               <Link
                 href="/coach-chat?mode=goal"
-                className="mt-3 inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark"
+                className="mt-5 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
               >
                 Draft one with your thought partner →
               </Link>

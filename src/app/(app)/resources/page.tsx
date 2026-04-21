@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AddResourceForm } from "./add-resource-form";
 import { ResourceGrid } from "./resource-grid";
@@ -9,10 +10,11 @@ export default async function ResourcesPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   const { data: resources } = await supabase

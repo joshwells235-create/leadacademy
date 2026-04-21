@@ -10,7 +10,7 @@ export default function AppError({ error, reset }: { error: Error & { digest?: s
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 py-16">
       <div className="mx-auto max-w-md text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-pink-light">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-danger-light">
           <span className="text-2xl">!</span>
         </div>
         <h2 className="text-xl font-bold text-brand-navy">Something went wrong</h2>

@@ -294,7 +294,7 @@ export function SuperActivityView({ rows }: { rows: SuperActivityRow[] }) {
                     </td>
                     <td className="px-3 py-2.5">
                       <span
-                        className={`rounded-full px-2 py-0.5 text-[11px] ${isSuper ? "bg-brand-pink/10 text-brand-pink" : "bg-neutral-100 text-neutral-700"}`}
+                        className={`rounded-full px-2 py-0.5 text-[11px] ${isSuper ? "bg-brand-navy/10 text-brand-navy" : "bg-neutral-100 text-neutral-700"}`}
                       >
                         {humanizeAction(r.action)}
                       </span>

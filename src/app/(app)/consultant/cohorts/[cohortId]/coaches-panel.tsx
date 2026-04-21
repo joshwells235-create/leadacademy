@@ -171,7 +171,7 @@ export function CoachesPanel({
                         type="button"
                         onClick={() => handleClear(l.userId)}
                         disabled={pending}
-                        className="text-[11px] text-neutral-500 hover:text-brand-pink disabled:opacity-50"
+                        className="text-[11px] text-neutral-500 hover:text-danger disabled:opacity-50"
                       >
                         Remove
                       </button>

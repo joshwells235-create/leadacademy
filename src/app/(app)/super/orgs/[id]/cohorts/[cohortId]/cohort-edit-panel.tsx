@@ -154,7 +154,7 @@ export function CohortEditPanel({ orgId, cohort, activeMemberCount }: Props) {
           <button
             type="button"
             onClick={() => setConfirmingArchive(true)}
-            className="text-xs text-brand-pink hover:underline"
+            className="text-xs text-danger hover:underline"
           >
             Archive this cohort
           </button>

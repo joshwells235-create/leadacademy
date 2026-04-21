@@ -38,7 +38,7 @@ export function ModerationActions({ type, id }: { type: "post" | "comment"; id: 
     <button
       onClick={() => setConfirming(true)}
       disabled={pending}
-      className="shrink-0 text-xs text-neutral-400 hover:text-brand-pink transition disabled:opacity-50"
+      className="shrink-0 text-xs text-neutral-400 hover:text-danger transition disabled:opacity-50"
     >
       Delete
     </button>

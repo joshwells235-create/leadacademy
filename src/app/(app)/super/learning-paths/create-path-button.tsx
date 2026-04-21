@@ -82,7 +82,7 @@ export function CreatePathButton({ orgs }: { orgs: Org[] }) {
           {pending ? "Creating…" : "Create"}
         </button>
       </div>
-      {err && <span className="text-xs text-brand-pink">{err}</span>}
+      {err && <span className="text-xs text-danger">{err}</span>}
     </div>
   );
 }

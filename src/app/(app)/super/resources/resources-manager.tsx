@@ -171,7 +171,7 @@ function ResourceCard({ row, onEdit }: { row: ResourceRow; onEdit: () => void })
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="text-brand-pink hover:underline"
+            className="text-danger hover:underline"
           >
             Delete
           </button>

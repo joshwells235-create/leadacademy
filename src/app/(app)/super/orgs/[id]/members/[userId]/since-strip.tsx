@@ -77,7 +77,7 @@ function Chip({
 }) {
   const styles = {
     blue: "bg-white text-brand-blue ring-1 ring-brand-blue/20",
-    pink: "bg-white text-brand-pink ring-1 ring-brand-pink/20",
+    pink: "bg-white text-danger ring-1 ring-danger/20",
     emerald: "bg-white text-emerald-700 ring-1 ring-emerald-200",
     amber: "bg-white text-amber-800 ring-1 ring-amber-200",
   };

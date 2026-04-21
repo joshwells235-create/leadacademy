@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { MessageThread } from "./message-thread";
 
@@ -11,13 +11,14 @@ export default async function ThreadPage({ params }: Props) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   // Verify user is a participant.
   const { data: participation } = await supabase
     .from("thread_participants")
     .select("id")
     .eq("thread_id", threadId)
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
   if (!participation) notFound();
 
@@ -26,7 +27,7 @@ export default async function ThreadPage({ params }: Props) {
     .from("thread_participants")
     .select("user_id")
     .eq("thread_id", threadId)
-    .neq("user_id", user!.id)
+    .neq("user_id", user.id)
     .maybeSingle();
   const { data: otherProfile } = otherParticipant
     ? await supabase
@@ -49,7 +50,7 @@ export default async function ThreadPage({ params }: Props) {
     .from("thread_participants")
     .update({ last_read_at: new Date().toISOString() })
     .eq("thread_id", threadId)
-    .eq("user_id", user!.id);
+    .eq("user_id", user.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -69,7 +70,7 @@ export default async function ThreadPage({ params }: Props) {
 
       <MessageThread
         threadId={threadId}
-        currentUserId={user!.id}
+        currentUserId={user.id}
         initialMessages={messages ?? []}
         otherName={otherName}
       />

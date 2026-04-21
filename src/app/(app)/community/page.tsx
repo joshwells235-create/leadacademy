@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { CommunityFeed } from "./community-feed";
 export const metadata: Metadata = { title: "Community — Leadership Academy" };
@@ -8,11 +9,12 @@ export default async function CommunityPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: membership } = await supabase
     .from("memberships")
     .select("org_id, cohort_id, cohorts(name)")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("status", "active")
     .limit(1)
     .maybeSingle();
@@ -65,7 +67,7 @@ export default async function CommunityPage() {
       ? await supabase
           .from("community_likes")
           .select("post_id")
-          .eq("user_id", user!.id)
+          .eq("user_id", user.id)
           .in("post_id", allPostIds)
       : { data: [] };
 
@@ -86,7 +88,7 @@ export default async function CommunityPage() {
       </div>
 
       <CommunityFeed
-        userId={user!.id}
+        userId={user.id}
         orgId={orgId}
         cohortId={cohortId}
         cohortName={cohortName}

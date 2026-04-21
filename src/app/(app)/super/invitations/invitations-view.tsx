@@ -186,7 +186,7 @@ export function InvitationsView({ rows }: { rows: InvitationRow[] }) {
                       <button
                         type="button"
                         onClick={() => setRevoking(r.id)}
-                        className="text-[11px] text-brand-pink hover:underline"
+                        className="text-[11px] text-danger hover:underline"
                       >
                         Revoke
                       </button>

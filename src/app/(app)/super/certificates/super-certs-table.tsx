@@ -102,7 +102,7 @@ export function SuperCertsTable({ rows }: { rows: SuperCertRow[] }) {
                         ? "bg-emerald-100 text-emerald-700"
                         : status === "expired"
                           ? "bg-amber-100 text-amber-800"
-                          : "bg-brand-pink/10 text-brand-pink"
+                          : "bg-danger-light text-danger"
                     }`}
                   >
                     {status}
@@ -142,7 +142,7 @@ export function SuperCertsTable({ rows }: { rows: SuperCertRow[] }) {
                         <button
                           type="button"
                           onClick={() => setConfirming(r.id)}
-                          className="rounded border border-brand-pink/30 bg-white px-2 py-0.5 text-[11px] text-brand-pink hover:bg-brand-pink/5"
+                          className="rounded border border-danger/30 bg-white px-2 py-0.5 text-[11px] text-danger hover:bg-danger-light/60"
                         >
                           Revoke
                         </button>

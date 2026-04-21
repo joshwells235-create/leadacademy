@@ -16,14 +16,14 @@ export default async function LearningPage() {
   const { data: membership } = await supabase
     .from("memberships")
     .select("cohort_id")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .eq("status", "active")
     .limit(1)
     .maybeSingle();
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   type ListedCourse = {
@@ -118,7 +118,7 @@ export default async function LearningPage() {
     const { data: myProgress } = await supabase
       .from("lesson_progress")
       .select("lesson_id")
-      .eq("user_id", user!.id)
+      .eq("user_id", user.id)
       .eq("completed", true);
     const completedIds = new Set((myProgress ?? []).map((p) => p.lesson_id));
 
@@ -141,7 +141,7 @@ export default async function LearningPage() {
     ? new Map<string, never>()
     : await computeCourseGates(
         supabase,
-        user!.id,
+        user.id,
         courses.map((c) => c.id),
       );
 

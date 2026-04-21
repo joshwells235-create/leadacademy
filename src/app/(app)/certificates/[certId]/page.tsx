@@ -73,8 +73,8 @@ export default async function CertificateDetailPage({ params }: Props) {
       </nav>
 
       {cert.revoked_at && (
-        <div className="mb-4 rounded-lg border border-brand-pink/30 bg-brand-pink/5 px-4 py-3">
-          <p className="text-sm font-semibold text-brand-pink">
+        <div className="mb-4 rounded-lg border border-danger/30 bg-danger-light/60 px-4 py-3">
+          <p className="text-sm font-semibold text-danger">
             This certificate has been revoked.
           </p>
           <p className="mt-0.5 text-xs text-neutral-600">
@@ -92,40 +92,45 @@ export default async function CertificateDetailPage({ params }: Props) {
         </div>
       )}
 
-      <div className="rounded-lg border border-neutral-200 bg-gradient-to-br from-brand-blue/5 to-white p-8 shadow-sm">
+      {/* The ceremony moment. This page is often the first thing a learner
+          opens after finishing months of work; it should feel weightier than
+          a dashboard card. Extra whitespace, serif display type on the name,
+          metadata quieted to the edges. */}
+      <div className="rounded-lg border border-neutral-200 bg-white px-10 py-14 shadow-sm sm:px-16 sm:py-20">
         <div className="text-center">
-          <span className="text-[10px] font-semibold uppercase tracking-[3px] text-brand-pink">
+          <p className="section-mark inline-block text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-navy/60">
             Certificate of Completion
-          </span>
-          <p className="mt-2 text-sm text-neutral-500">Leadership Academy</p>
+          </p>
         </div>
 
-        <div className="mt-10 text-center">
-          <p className="text-[11px] uppercase tracking-[2px] text-neutral-500">Awarded to</p>
-          <p className="mt-2 text-3xl font-bold text-brand-navy">
+        <div className="mt-16 text-center">
+          <p className="font-serif text-[13px] italic text-brand-navy/55">Presented to</p>
+          <p className="mt-4 font-serif text-5xl font-medium tracking-tight text-brand-navy sm:text-6xl">
             {profile?.display_name || "Leader"}
           </p>
-          <div className="mx-auto mt-3 h-0.5 w-16 bg-brand-blue" />
-          <p className="mt-5 text-sm text-neutral-600">
-            for successfully completing the {kindLabel.toLowerCase()}
+          <div className="mx-auto mt-8 h-px w-20 bg-brand-navy/30" />
+          <p className="mx-auto mt-8 max-w-md font-serif text-[15px] italic leading-[1.7] text-brand-navy/70">
+            for completing the {kindLabel.toLowerCase()}
           </p>
-          <p className="mt-2 text-xl font-bold text-brand-navy">{subjectTitle}</p>
+          <p className="mx-auto mt-3 max-w-lg font-serif text-2xl font-medium text-brand-navy">
+            {subjectTitle}
+          </p>
         </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-4 border-t border-neutral-200 pt-4 text-[11px]">
+        <div className="mt-16 grid grid-cols-2 gap-4 border-t border-neutral-100 pt-6 text-[10px]">
           <div>
-            <p className="uppercase tracking-wide text-neutral-500">Issued</p>
-            <p className="mt-1 text-sm text-brand-navy">{issuedOn}</p>
+            <p className="uppercase tracking-[0.18em] text-neutral-400">Issued</p>
+            <p className="mt-1 text-[13px] text-brand-navy">{issuedOn}</p>
             {expiresOn && (
               <>
-                <p className="mt-2 uppercase tracking-wide text-neutral-500">Expires</p>
-                <p className="mt-1 text-sm text-brand-navy">{expiresOn}</p>
+                <p className="mt-3 uppercase tracking-[0.18em] text-neutral-400">Expires</p>
+                <p className="mt-1 text-[13px] text-brand-navy">{expiresOn}</p>
               </>
             )}
           </div>
           <div className="text-right">
-            <p className="uppercase tracking-wide text-neutral-500">Verification ID</p>
-            <p className="mt-1 font-mono text-[10px] text-neutral-600">{cert.id}</p>
+            <p className="uppercase tracking-[0.18em] text-neutral-400">Verification ID</p>
+            <p className="mt-1 font-mono text-[10px] text-neutral-500">{cert.id}</p>
           </div>
         </div>
       </div>

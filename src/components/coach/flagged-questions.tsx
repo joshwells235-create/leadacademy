@@ -55,7 +55,7 @@ export function FlaggedQuestions({ rows }: { rows: CoachFlaggedQuestion[] }) {
       <h2 className="text-sm font-semibold">
         Flagged questions
         {waiting.length > 0 && (
-          <span className="ml-2 rounded-full bg-brand-pink/10 px-2 py-0.5 text-[11px] font-medium text-brand-pink">
+          <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-800">
             {waiting.length} waiting
           </span>
         )}
@@ -142,7 +142,7 @@ function FlaggedQuestionRow({ row }: { row: CoachFlaggedQuestion }) {
       )}
 
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy">
           Your response
           {row.coachRespondedAt && (
             <span className="ml-2 font-normal text-neutral-400">
@@ -173,7 +173,7 @@ function FlaggedQuestionRow({ row }: { row: CoachFlaggedQuestion }) {
             {pending ? "Saving…" : row.coachResponse ? "Update response" : "Send response"}
           </button>
         </div>
-        {err && <p className="mt-1 text-[11px] text-brand-pink">{err}</p>}
+        {err && <p className="mt-1 text-[11px] text-danger">{err}</p>}
       </div>
     </div>
   );

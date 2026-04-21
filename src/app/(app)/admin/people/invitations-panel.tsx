@@ -139,7 +139,7 @@ function InvitationRow({ inv }: { inv: InviteRow }) {
                 type="button"
                 onClick={handleRevoke}
                 disabled={pending}
-                className="rounded border border-brand-pink/30 bg-white px-2 py-0.5 text-brand-pink hover:bg-brand-pink/10 disabled:opacity-50"
+                className="rounded border border-danger/30 bg-white px-2 py-0.5 text-danger hover:bg-danger-light/60 disabled:opacity-50"
               >
                 Revoke
               </button>

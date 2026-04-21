@@ -411,7 +411,7 @@ export default async function CoachLearnerPage({ params }: Props) {
               <p className="text-sm text-neutral-500">Learner hasn't submitted prep notes yet.</p>
             ) : (
               (preSessionRes.data ?? []).map((n) => (
-                <div key={n.id} className="border-l-2 border-brand-pink/30 pl-3 py-1 text-sm">
+                <div key={n.id} className="border-l-2 border-brand-navy/30 pl-3 py-1 text-sm">
                   <div className="text-xs text-neutral-500">
                     {n.session_date
                       ? `For session ${n.session_date}`

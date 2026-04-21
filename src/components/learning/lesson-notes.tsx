@@ -101,7 +101,7 @@ export function LessonNotes({ lessonId, initialContent }: Props) {
             <span className="text-emerald-600">✓ Saved</span>
           )}
           {state === "error" && errMsg && (
-            <span className="text-brand-pink" title={errMsg}>
+            <span className="text-danger" title={errMsg}>
               ⚠ Save failed
             </span>
           )}

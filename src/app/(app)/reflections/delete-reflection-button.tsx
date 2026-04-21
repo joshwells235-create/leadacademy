@@ -14,7 +14,7 @@ export function DeleteReflectionButton({ id }: { id: string }) {
         });
       }}
       disabled={pending}
-      className="text-xs text-neutral-400 hover:text-brand-pink transition disabled:opacity-50"
+      className="text-xs text-neutral-400 hover:text-danger transition disabled:opacity-50"
     >
       {pending ? "Deleting..." : "Delete"}
     </button>

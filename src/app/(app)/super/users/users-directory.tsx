@@ -182,7 +182,7 @@ export function UsersDirectory({ rows }: { rows: UserRow[] }) {
                   <td className="px-3 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {r.isSuperAdmin && (
-                        <span className="rounded-full bg-brand-pink/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-pink">
+                        <span className="rounded-full bg-brand-navy/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-navy">
                           super admin
                         </span>
                       )}

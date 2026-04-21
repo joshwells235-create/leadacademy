@@ -109,7 +109,7 @@ export function CohortManager({ cohorts }: { cohorts: CohortListRow[] }) {
                           {c.starts_at && <span>Starts {c.starts_at}</span>}
                           {c.ends_at && <span>Ends {c.ends_at}</span>}
                           {c.capstone_unlocks_at && (
-                            <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 font-medium text-brand-pink">
+                            <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 font-medium text-brand-navy">
                               Capstone unlocks {c.capstone_unlocks_at}
                             </span>
                           )}
@@ -135,7 +135,7 @@ export function CohortManager({ cohorts }: { cohorts: CohortListRow[] }) {
                             setArchivingId(c.id);
                             setArchiveError(null);
                           }}
-                          className="rounded-md px-3 py-1 text-xs text-brand-pink hover:bg-brand-pink/10"
+                          className="rounded-md px-3 py-1 text-xs text-danger hover:bg-danger-light/60"
                         >
                           Archive
                         </button>

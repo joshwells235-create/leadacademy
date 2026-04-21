@@ -455,7 +455,7 @@ function SuperAdminPanel({
       <p className="text-sm">
         {isSuperAdmin ? (
           <>
-            <strong className="text-brand-pink">Super admin</strong> — full platform access.
+            <strong className="text-brand-navy">Super admin</strong> — full platform access.
           </>
         ) : (
           <>Standard user — no cross-org access.</>
@@ -787,7 +787,7 @@ function DangerPanel({
             type="button"
             onClick={() => setConfirming(true)}
             disabled={isSelf}
-            className="mt-3 rounded-md border border-brand-pink/40 bg-white px-3 py-1.5 text-xs font-medium text-brand-pink hover:bg-brand-pink/5 disabled:opacity-60"
+            className="mt-3 rounded-md border border-danger/40 bg-white px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-light/60 disabled:opacity-60"
             title={isSelf ? "You can't soft-delete your own account." : undefined}
           >
             Soft-delete user
@@ -811,11 +811,11 @@ function Card({
   children: React.ReactNode;
   tone?: "default" | "danger";
 }) {
-  const borderClass = tone === "danger" ? "border-brand-pink/30" : "border-neutral-200";
+  const borderClass = tone === "danger" ? "border-danger/30" : "border-neutral-200";
   return (
     <section className={`rounded-lg border ${borderClass} bg-white p-5 shadow-sm`}>
       <h2
-        className={`mb-3 text-sm font-semibold ${tone === "danger" ? "text-brand-pink" : "text-brand-navy"}`}
+        className={`mb-3 text-sm font-semibold ${tone === "danger" ? "text-danger" : "text-brand-navy"}`}
       >
         {title}
       </h2>

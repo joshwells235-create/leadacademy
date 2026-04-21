@@ -113,7 +113,7 @@ export function PrereqPicker({ kind, targetId, initialSelected, options }: Props
         <div className="text-xs">
           {state === "saved" && <span className="text-emerald-600">Saved.</span>}
           {state === "error" && (
-            <span className="text-brand-pink">{errMsg ?? "Couldn't save."}</span>
+            <span className="text-danger">{errMsg ?? "Couldn't save."}</span>
           )}
         </div>
         <button

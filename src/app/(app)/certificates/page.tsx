@@ -132,7 +132,7 @@ function CertCard({ cert, expired = false }: { cert: CertRow; expired?: boolean 
     >
       <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy/70">
             {kindLabel}
           </span>
           <h3 className="mt-0.5 font-semibold text-brand-navy">{subjectTitle}</h3>

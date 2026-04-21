@@ -66,9 +66,9 @@ export function QuizBuilder({
   questions: QuizQuestion[];
 }) {
   return (
-    <div className="rounded-lg border border-brand-pink/30 bg-white p-5 shadow-sm">
+    <div className="rounded-lg border border-brand-blue/30 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
-        <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-xs font-semibold text-brand-pink">
+        <span className="rounded-full bg-brand-blue/10 px-2 py-0.5 text-xs font-semibold text-brand-blue">
           Quiz
         </span>
         <h2 className="text-sm font-semibold text-brand-navy">Questions & settings</h2>
@@ -260,7 +260,7 @@ function QuestionRow({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="text-[10px] font-medium text-neutral-500">Q{index + 1}</span>
-            <span className="rounded-full bg-brand-pink/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-pink">
+            <span className="rounded-full bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-blue">
               {QUESTION_TYPE_LABEL[question.type]}
             </span>
             <span className="text-[10px] text-neutral-500">
@@ -301,7 +301,7 @@ function QuestionRow({
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            className="text-xs text-brand-pink hover:underline"
+            className="text-xs text-danger hover:underline"
           >
             Delete
           </button>
@@ -695,7 +695,7 @@ function SingleChoiceEditor({ config, onChange }: EditorProps) {
               <button
                 type="button"
                 onClick={() => removeOption(o.id)}
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
                 aria-label="Remove option"
               >
                 ✕
@@ -786,7 +786,7 @@ function MultiChoiceEditor({ config, onChange }: EditorProps) {
               <button
                 type="button"
                 onClick={() => removeOption(o.id)}
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
                 aria-label="Remove option"
               >
                 ✕
@@ -889,7 +889,7 @@ function ShortAnswerEditor({ config, onChange }: EditorProps) {
                     acceptable_answers: answers.filter((_, j) => j !== i),
                   })
                 }
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
               >
                 ✕
               </button>
@@ -953,7 +953,7 @@ function MatchingEditor({ config, onChange }: EditorProps) {
               <button
                 type="button"
                 onClick={() => onChange({ ...config, pairs: pairs.filter((pp) => pp.id !== p.id) })}
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
               >
                 ✕
               </button>
@@ -1030,7 +1030,7 @@ function OrderingEditor({ config, onChange }: EditorProps) {
               <button
                 type="button"
                 onClick={() => onChange({ ...config, items: items.filter((x) => x.id !== it.id) })}
-                className="text-xs text-neutral-400 hover:text-brand-pink"
+                className="text-xs text-neutral-400 hover:text-danger"
               >
                 ✕
               </button>

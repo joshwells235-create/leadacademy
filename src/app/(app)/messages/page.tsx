@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 export const metadata: Metadata = { title: "Messages — Leadership Academy" };
 
@@ -8,12 +9,13 @@ export default async function MessagesPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   // Get all threads the user participates in.
   const { data: participations } = await supabase
     .from("thread_participants")
     .select("thread_id, last_read_at")
-    .eq("user_id", user!.id);
+    .eq("user_id", user.id);
 
   const threadIds = (participations ?? []).map((p) => p.thread_id);
   const lastReadMap: Record<string, string> = {};
@@ -57,7 +59,7 @@ export default async function MessagesPage() {
     .select("thread_id, user_id")
     .in("thread_id", threadIds);
   const otherUserIds = [
-    ...new Set((allParticipants ?? []).filter((p) => p.user_id !== user!.id).map((p) => p.user_id)),
+    ...new Set((allParticipants ?? []).filter((p) => p.user_id !== user.id).map((p) => p.user_id)),
   ];
   const { data: profiles } =
     otherUserIds.length > 0
@@ -87,7 +89,7 @@ export default async function MessagesPage() {
       .select("id", { count: "exact", head: true })
       .eq("thread_id", tid)
       .gt("created_at", readAt)
-      .neq("sender_id", user!.id);
+      .neq("sender_id", user.id);
     unreadCounts[tid] = count ?? 0;
   }
 
@@ -105,7 +107,7 @@ export default async function MessagesPage() {
       <ul className="space-y-2">
         {(threads ?? []).map((t) => {
           const otherParticipant = (allParticipants ?? []).find(
-            (p) => p.thread_id === t.id && p.user_id !== user!.id,
+            (p) => p.thread_id === t.id && p.user_id !== user.id,
           );
           const otherName = otherParticipant
             ? (profileMap.get(otherParticipant.user_id) ?? "Unknown")
@@ -139,7 +141,7 @@ export default async function MessagesPage() {
                     <p
                       className={`line-clamp-1 text-sm ${unread > 0 ? "text-brand-navy font-medium" : "text-neutral-500"}`}
                     >
-                      {last.sender_id === user!.id ? "You: " : ""}
+                      {last.sender_id === user.id ? "You: " : ""}
                       {last.body}
                     </p>
                   )}

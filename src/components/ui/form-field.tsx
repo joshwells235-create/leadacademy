@@ -17,7 +17,7 @@ export function FormField({
       <span className="block text-sm font-medium text-brand-navy">{label}</span>
       <div className="mt-1">{children}</div>
       {hint && !errMsg && <span className="mt-1 block text-xs text-neutral-500">{hint}</span>}
-      {errMsg && <span className="mt-1 block text-xs text-brand-pink">{errMsg}</span>}
+      {errMsg && <span className="mt-1 block text-xs text-danger">{errMsg}</span>}
     </label>
   );
 }
@@ -54,7 +54,7 @@ export function SubmitButton({
 export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div className="rounded-md border border-brand-pink/20 bg-brand-pink-light px-3 py-2 text-sm text-brand-pink">
+    <div className="rounded-md border border-danger/20 bg-danger-light px-3 py-2 text-sm text-danger">
       {message}
     </div>
   );

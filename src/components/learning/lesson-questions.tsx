@@ -103,7 +103,7 @@ export function LessonQuestions({ lessonId, initialQuestions }: Props) {
             {pending ? "Thinking…" : "Ask"}
           </button>
         </div>
-        {err && <p className="text-xs text-brand-pink">{err}</p>}
+        {err && <p className="text-xs text-danger">{err}</p>}
       </div>
 
       {questions.length > 0 && (
@@ -185,7 +185,7 @@ function QuestionRow({
             </span>
           )}
           {hasCoachResponse && !isResolved && (
-            <span className="rounded-full bg-brand-pink/10 px-2 py-0.5 text-[10px] text-brand-pink">
+            <span className="rounded-full bg-brand-navy/10 px-2 py-0.5 text-[10px] text-brand-navy">
               Coach replied
             </span>
           )}
@@ -194,8 +194,8 @@ function QuestionRow({
       </div>
 
       {q.aiAnswer && (
-        <div className="rounded-md bg-brand-light px-3 py-2 text-sm text-neutral-800">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-blue">
+        <div className="rounded-md border-l-[3px] border-brand-pink bg-brand-pink-light/50 px-3 py-2 pl-4 font-serif text-sm text-brand-navy">
+          <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-pink">
             Thought partner
           </p>
           <p className="whitespace-pre-wrap leading-relaxed">{q.aiAnswer}</p>
@@ -203,8 +203,8 @@ function QuestionRow({
       )}
 
       {q.coachResponse && (
-        <div className="rounded-md border border-brand-pink/30 bg-brand-pink/5 px-3 py-2 text-sm text-neutral-800">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-pink">
+        <div className="rounded-md border border-brand-navy/20 bg-brand-navy/[0.03] px-3 py-2 text-sm text-neutral-800">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-navy">
             Your coach
             {q.coachRespondedAt && (
               <span className="ml-2 font-normal text-neutral-400">
@@ -241,7 +241,7 @@ function QuestionRow({
           </button>
         </div>
       )}
-      {err && <p className="text-right text-[11px] text-brand-pink">{err}</p>}
+      {err && <p className="text-right text-[11px] text-danger">{err}</p>}
     </div>
   );
 }
