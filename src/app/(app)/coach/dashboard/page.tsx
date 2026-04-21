@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
+import { getCaseloadPulse } from "@/lib/coach/caseload-pulse";
 import { getSinceLastSessionStats } from "@/lib/coach/since-last-session";
 import { createClient } from "@/lib/supabase/server";
+import { CaseloadPulseStrip } from "./caseload-pulse";
 import { type LearnerCardData, LearnersGrid } from "./learners-grid";
+import { PriorityQueue } from "./priority-queue";
 
 export default async function CoachDashboardPage() {
   const supabase = await createClient();
@@ -33,9 +36,16 @@ export default async function CoachDashboardPage() {
 
   // Parallel: profile lookups, goal counts, active sprints, pending/overdue
   // action items, latest prep per learner, plus per-learner "since last
-  // session" stats.
-  const [profilesRes, goalsRes, sprintsRes, itemsRes, preSessionRes, sinceStats] =
-    await Promise.all([
+  // session" stats, plus caseload-level pulse (metrics + priority queue).
+  const [
+    profilesRes,
+    goalsRes,
+    sprintsRes,
+    itemsRes,
+    preSessionRes,
+    sinceStats,
+    caseloadPulse,
+  ] = await Promise.all([
       supabase.from("profiles").select("user_id, display_name").in("user_id", learnerIds),
       supabase
         .from("goals")
@@ -65,6 +75,7 @@ export default async function CoachDashboardPage() {
           })),
         ),
       ),
+      getCaseloadPulse(supabase, user.id),
     ]);
 
   const profileMap = new Map((profilesRes.data ?? []).map((p) => [p.user_id, p]));
@@ -125,12 +136,15 @@ export default async function CoachDashboardPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-brand-navy">Coaching Home</h1>
         <p className="mt-1 text-sm text-neutral-600">
-          {assignments.length} coachee{assignments.length === 1 ? "" : "s"} assigned. Chips show
-          what's new since your last recap.
+          {assignments.length} coachee{assignments.length === 1 ? "" : "s"} assigned.
         </p>
       </div>
 
-      <section className="mb-6 rounded-xl border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm">
+      <CaseloadPulseStrip pulse={caseloadPulse} />
+
+      <PriorityQueue items={caseloadPulse.priorityItems} />
+
+      <section className="mb-8 rounded-xl border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
@@ -138,7 +152,9 @@ export default async function CoachDashboardPage() {
                 aria-hidden
                 className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink"
               />
-              <h2 className="text-sm font-bold text-brand-navy">Plan your week with your Thought Partner</h2>
+              <h2 className="text-sm font-bold text-brand-navy">
+                Plan your week with your Thought Partner
+              </h2>
             </div>
             <p className="mt-1 text-sm text-neutral-700">
               Scan your caseload together — what's alive, what's underserved, who to prep for
@@ -164,6 +180,12 @@ export default async function CoachDashboardPage() {
         </div>
       </section>
 
+      <div className="mb-3 border-t border-neutral-200 pt-6">
+        <h2 className="text-sm font-bold text-brand-navy">Full caseload</h2>
+        <p className="mt-0.5 text-xs text-neutral-500">
+          Chips show what's new since your last recap.
+        </p>
+      </div>
       <LearnersGrid learners={learnerCards} />
     </div>
   );
