@@ -359,11 +359,18 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* ── SECTION 2: Your growth ── */}
-      {totalGoals === 0 && !isFirstTime ? (
+      {/* Set-first-goal CTA for learners without one. Goal-holders already
+          see their current practice as the page hero plus an inline "N other
+          active · N completed" meta line — a three-card `In Progress /
+          Completed / Total` stat grid under that read as a scoreboard and
+          contradicted the "leadership isn't a game" refusal on the login
+          panel. Removed. */}
+      {totalGoals === 0 && !isFirstTime && (
         <div className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-bold text-brand-navy">Set your first growth goal</h2>
-          <p className="mt-1 text-sm text-neutral-600">
+          <h2 className="font-serif text-xl font-semibold text-brand-navy">
+            Set your first growth goal.
+          </h2>
+          <p className="mt-2 max-w-2xl font-serif text-[15px] leading-[1.65] text-brand-navy/75">
             Chat with your thought partner to draft an integrative SMART goal — one that changes
             you, the people around you, and the work at the organizational level.
           </p>
@@ -373,27 +380,6 @@ export default async function DashboardPage() {
           >
             Draft a goal with your thought partner →
           </Link>
-        </div>
-      ) : (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-400">
-              Your growth
-            </h2>
-            <Link href="/goals" className="text-xs text-brand-blue hover:underline">
-              View all goals →
-            </Link>
-          </div>
-          <div className="grid gap-3 grid-cols-3">
-            <StatCard label="In progress" value={inProgress} color="blue" href="/goals" />
-            <StatCard
-              label="Completed"
-              value={completed}
-              color="green"
-              href="/goals?status=completed"
-            />
-            <StatCard label="Total" value={totalGoals} color="neutral" href="/goals?status=all" />
-          </div>
         </div>
       )}
 
@@ -469,33 +455,6 @@ export default async function DashboardPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  color,
-  href,
-}: {
-  label: string;
-  value: number;
-  color: "blue" | "green" | "neutral";
-  href: string;
-}) {
-  const colors = {
-    blue: "border-brand-blue/20 text-brand-blue",
-    green: "border-emerald-200 text-emerald-600",
-    neutral: "border-neutral-200 text-brand-navy",
-  };
-  return (
-    <Link
-      href={href}
-      className={`block rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md hover:border-brand-blue/40 focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 ${colors[color]}`}
-    >
-      <div className="text-xs font-medium uppercase tracking-wide text-neutral-500">{label}</div>
-      <div className={`mt-1 text-2xl font-bold ${colors[color].split(" ").pop()}`}>{value}</div>
-    </Link>
   );
 }
 

@@ -454,16 +454,23 @@ function NavLink({
 }: {
   href: string;
   children: React.ReactNode;
-  /** `accent` used to paint the Thought Partner link pink. Pink is now
-   * reserved for the voice of the AI itself — inside the chat surface only.
-   * The nav stays monochrome; entering the chat is where the color appears. */
+  /** `accent` marks the Thought Partner link. The brand commitment is that
+   * pink = the AI's voice (used inside the chat surface itself). A tiny
+   * pink dot on this link isn't the AI speaking — it's the doorway to the
+   * room where the AI speaks. Same color, different job, recurring motif. */
   accent?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`rounded-md px-3 py-1.5 transition ${accent ? "font-medium text-white hover:bg-white/10" : "text-white/75 hover:text-white hover:bg-white/10"}`}
+      className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition ${accent ? "font-medium text-white hover:bg-white/10" : "text-white/75 hover:text-white hover:bg-white/10"}`}
     >
+      {accent && (
+        <span
+          aria-hidden
+          className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink"
+        />
+      )}
       {children}
     </Link>
   );
@@ -520,8 +527,14 @@ function MobileLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`block rounded-md px-3 py-2 text-sm transition ${accent ? "font-medium text-white hover:bg-white/10" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
+      className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm transition ${accent ? "font-medium text-white hover:bg-white/10" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
     >
+      {accent && (
+        <span
+          aria-hidden
+          className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink"
+        />
+      )}
       {children}
     </Link>
   );
