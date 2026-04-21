@@ -12,8 +12,16 @@ export default function ResetPasswordPage() {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Set a new password</h2>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          New password
+        </p>
+        <h2
+          className="mt-2 leading-[1.15] text-ink"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 400 }}
+        >
+          Set a new password.
+        </h2>
+        <p className="mt-2 text-sm text-ink-soft">
           You're signed in from the reset link. Choose a new password.
         </p>
       </div>

@@ -44,15 +44,26 @@ export default async function CoachJournalPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6">
-        <p className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+      <div className="mb-8">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
           Private to you
         </p>
-        <h1 className="mt-3 text-2xl font-bold text-brand-navy">Coaching journal</h1>
-        <p className="mt-2 max-w-2xl text-sm text-neutral-600">
-          A place for your own practice — patterns you're noticing across your caseload, style
-          choices you're working on, threads to carry into next week. Your Coach Thought Partner
-          reads the ten most recent entries so your own voice carries between conversations.
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(28px, 4vw, 40px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Your coaching journal.
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+          Patterns you're noticing across your caseload, style choices
+          you're working on, threads to carry into next week. Your Coach
+          Thought Partner reads the ten most recent entries so your own
+          voice carries between conversations.
         </p>
       </div>
 

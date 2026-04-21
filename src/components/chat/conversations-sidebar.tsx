@@ -6,141 +6,169 @@ import { useState, useTransition } from "react";
 import type { ConversationListItem } from "@/lib/ai/conversation/list-conversations";
 import { deleteConversation, renameConversation } from "@/lib/conversations/actions";
 
+// The Thought Partner chat rail. Three sections:
+//
+//   1. THIS THREAD — the active conversation's title, rendered in serif
+//      so it reads as a heading. Rename / delete live on the overflow
+//      menu beside the title.
+//   2. GROUNDED IN — the context sources the current thread is reading
+//      from (sprint actions, reflections, recap, memory facts, etc.),
+//      each marked with a pink dot. Same transparency gesture as the
+//      dashboard TP hero modal, but condensed into a rail.
+//   3. EARLIER THREADS — a scrollable list of priors, grouped
+//      Today / This week / Earlier. Clicking one resumes it. Each row
+//      gets its own overflow menu for rename + delete.
+//
+// Plus: "+ New conversation" button at the top, "/memory" link at the
+// bottom — both retained from the pre-redesign sidebar.
 type Props = {
   conversations: ConversationListItem[];
   activeId: string | null;
+  activeTitle: string | null;
+  activeMode: string | null;
+  groundedIn: string[];
 };
 
-export function ConversationsSidebar({ conversations, activeId }: Props) {
+export function ConversationsSidebar({
+  conversations,
+  activeId,
+  activeTitle,
+  activeMode,
+  groundedIn,
+}: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const earlier = conversations.filter((c) => c.id !== activeId);
 
   return (
     <>
-      {/* Mobile toggle */}
+      {/* Mobile toggle — rail is hidden by default on small screens and
+          expanded only when the learner asks for it. */}
       <div className="mb-3 flex lg:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen((v) => !v)}
-          className="rounded-md border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-brand-navy shadow-sm hover:bg-brand-light"
+          className="rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft transition hover:text-ink"
+          style={{ borderColor: "var(--t-rule)" }}
         >
-          {mobileOpen ? "Hide conversations" : `Conversations (${conversations.length})`}
+          {mobileOpen ? "Hide threads" : `Threads (${conversations.length})`}
         </button>
       </div>
 
-      <aside className={`${mobileOpen ? "block" : "hidden"} lg:block lg:w-72 lg:flex-shrink-0`}>
-        <div className="rounded-lg border border-neutral-200 bg-white shadow-sm">
-          <div className="border-b border-neutral-100 p-3">
-            <Link
-              href="/coach-chat/new"
-              className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-blue px-3 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark"
-            >
-              + New conversation
-            </Link>
-          </div>
+      <aside
+        className={`${mobileOpen ? "block" : "hidden"} lg:block lg:w-[280px] lg:flex-shrink-0`}
+      >
+        <div
+          className="flex h-full flex-col gap-7 pr-0 lg:pr-6"
+          style={{
+            // A rule to the right of the rail on desktop — separates it
+            // from the message column without drawing a full panel around
+            // the sidebar. Matches the editorial "print gutter" feel.
+            borderRight: undefined,
+          }}
+        >
+          {/* New conversation */}
+          <Link
+            href="/coach-chat/new"
+            className="inline-flex w-fit items-center rounded-full px-4 py-2 text-[12px] font-medium text-white transition"
+            style={{
+              background: "var(--t-accent)",
+              boxShadow: "0 4px 20px var(--t-accent-soft)",
+            }}
+          >
+            + New conversation
+          </Link>
 
-          {conversations.length === 0 ? (
-            <div className="p-4 text-center text-xs text-neutral-500">
-              No saved conversations yet — your first one will show up here.
-            </div>
+          {/* THIS THREAD */}
+          {activeId && activeTitle ? (
+            <ThisThreadSection
+              activeId={activeId}
+              title={activeTitle}
+              mode={activeMode}
+            />
           ) : (
-            <ConversationGroups conversations={conversations} activeId={activeId} />
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+                This thread
+              </p>
+              <p className="mt-2.5 text-[13px] leading-[1.55] text-ink-soft">
+                Start a new thread to see it here.
+              </p>
+            </div>
           )}
 
-          <div className="border-t border-neutral-100 p-3">
-            <Link
-              href="/memory"
-              className="flex items-center justify-center gap-1.5 rounded-md py-1.5 text-xs text-neutral-600 hover:bg-brand-light hover:text-brand-navy"
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                aria-hidden
-              >
-                <title>Memory</title>
-                <path d="M8 1.5a4 4 0 0 0-4 4v1a3 3 0 0 0-2 2.83V12a2.5 2.5 0 0 0 2.5 2.5h7A2.5 2.5 0 0 0 14 12V9.33a3 3 0 0 0-2-2.83v-1a4 4 0 0 0-4-4Z" />
-              </svg>
-              What your thought partner remembers
-            </Link>
-          </div>
+          {/* GROUNDED IN */}
+          {groundedIn.length > 0 && (
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+                Grounded in
+              </p>
+              <ul className="mt-2.5 space-y-2">
+                {groundedIn.map((src) => (
+                  <li
+                    key={src}
+                    className="flex items-start gap-2 text-[12.5px] leading-[1.5] text-ink-soft"
+                  >
+                    <span aria-hidden className="shrink-0 text-accent">
+                      ·
+                    </span>
+                    <span>{src}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* EARLIER THREADS */}
+          {earlier.length > 0 && (
+            <div className="min-h-0 flex-1">
+              <p className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+                Earlier threads
+              </p>
+              <EarlierList conversations={earlier} activeId={activeId} />
+            </div>
+          )}
+
+          {/* Memory link — the transparency / privacy shortcut. */}
+          <Link
+            href="/memory"
+            className="mt-auto inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft transition hover:text-ink"
+          >
+            What your TP remembers →
+          </Link>
         </div>
       </aside>
     </>
   );
 }
 
-function ConversationGroups({
-  conversations,
+// ─── THIS THREAD ──────────────────────────────────────────────────────
+function ThisThreadSection({
   activeId,
+  title,
+  mode,
 }: {
-  conversations: ConversationListItem[];
-  activeId: string | null;
+  activeId: string;
+  title: string;
+  mode: string | null;
 }) {
-  const groups = groupConversations(conversations);
-  return (
-    <ul className="max-h-[60vh] overflow-y-auto p-2 lg:max-h-[70vh]">
-      {groups.map((g) => (
-        <li key={g.label} className="mb-2">
-          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-400">
-            {g.label}
-          </div>
-          <ul className="space-y-0.5">
-            {g.items.map((c) => (
-              <ConversationRow key={c.id} item={c} isActive={c.id === activeId} />
-            ))}
-          </ul>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-const TITLE_MAX = 80;
-
-function ConversationRow({ item, isActive }: { item: ConversationListItem; isActive: boolean }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [renaming, setRenaming] = useState(false);
-  const [titleDraft, setTitleDraft] = useState(item.title ?? "");
+  const [titleDraft, setTitleDraft] = useState(title);
   const [renameError, setRenameError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-
-  const displayLabel =
-    item.title && item.title.trim().length > 0
-      ? item.title
-      : item.previewText.slice(0, 40) || "(new conversation)";
-
-  const handleDelete = () => {
-    start(async () => {
-      const res = await deleteConversation(item.id);
-      if ("error" in res && res.error) {
-        setActionError(res.error);
-        return;
-      }
-      if (isActive) router.push("/coach-chat/new");
-      else router.refresh();
-    });
-  };
 
   const handleRenameSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setRenameError(null);
     const next = titleDraft.trim();
     if (!next) {
       setRenameError("Title can't be empty.");
       return;
     }
-    if (next === item.title) {
-      setRenaming(false);
-      return;
-    }
     start(async () => {
-      const res = await renameConversation(item.id, next);
+      const res = await renameConversation(activeId, next);
       if ("error" in res && res.error) {
         setRenameError(res.error);
         return;
@@ -150,171 +178,236 @@ function ConversationRow({ item, isActive }: { item: ConversationListItem; isAct
     });
   };
 
-  if (renaming) {
-    const remaining = TITLE_MAX - titleDraft.length;
-    return (
-      <li>
-        <form onSubmit={handleRenameSubmit} className="px-2 py-1">
-          <div className="flex items-center gap-1">
-            <input
-              // biome-ignore lint/a11y/noAutofocus: inline rename intent
-              autoFocus
-              type="text"
-              value={titleDraft}
-              onChange={(e) => {
-                setTitleDraft(e.target.value);
-                if (renameError) setRenameError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setRenaming(false);
-                  setTitleDraft(item.title ?? "");
-                  setRenameError(null);
-                }
-              }}
-              disabled={pending}
-              maxLength={TITLE_MAX}
-              className="flex-1 rounded border border-brand-blue bg-white px-2 py-1 text-sm focus:outline-none"
-            />
+  const handleDelete = () => {
+    start(async () => {
+      const res = await deleteConversation(activeId);
+      if ("error" in res && res.error) return;
+      router.push("/coach-chat/new");
+    });
+  };
+
+  return (
+    <div className="relative">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+        This thread
+      </p>
+      {renaming ? (
+        <form onSubmit={handleRenameSubmit} className="mt-2.5">
+          <input
+            // biome-ignore lint/a11y/noAutofocus: inline rename intent
+            autoFocus
+            type="text"
+            value={titleDraft}
+            onChange={(e) => {
+              setTitleDraft(e.target.value);
+              if (renameError) setRenameError(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setRenaming(false);
+                setTitleDraft(title);
+                setRenameError(null);
+              }
+            }}
+            disabled={pending}
+            className="w-full rounded-md px-2 py-1.5 text-[14px] text-ink outline-none"
+            style={{
+              background: "var(--t-paper)",
+              border: "1px solid var(--t-accent)",
+            }}
+          />
+          {renameError && (
+            <p className="mt-1 text-[11px] text-accent">{renameError}</p>
+          )}
+          <div className="mt-2 flex gap-2">
             <button
               type="submit"
               disabled={pending}
-              className="rounded bg-brand-blue px-2 py-1 text-xs text-white hover:bg-brand-blue-dark disabled:opacity-50"
+              className="rounded-full px-3 py-1 text-[11px] font-medium text-white disabled:opacity-50"
+              style={{ background: "var(--t-accent)" }}
             >
               Save
             </button>
-          </div>
-          <div className="mt-1 flex items-center justify-between text-[10px]">
-            <span className={renameError ? "text-red-600" : "text-transparent"}>
-              {renameError ?? "placeholder"}
-            </span>
-            <span className={remaining < 10 ? "text-amber-600" : "text-neutral-400"}>
-              {remaining}
-            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setRenaming(false);
+                setTitleDraft(title);
+              }}
+              className="text-[11px] text-ink-soft hover:text-ink"
+            >
+              Cancel
+            </button>
           </div>
         </form>
-      </li>
-    );
-  }
-
-  return (
-    <li className="group relative">
-      <Link
-        href={`/coach-chat?c=${item.id}`}
-        className={`flex flex-col rounded-md px-2 py-2 pr-8 text-sm transition ${
-          isActive ? "bg-brand-blue/10 text-brand-navy" : "text-neutral-700 hover:bg-brand-light"
-        }`}
-      >
-        <span className="line-clamp-1 font-medium">{displayLabel}</span>
-        <span className="mt-0.5 flex items-center gap-1.5 text-[10px] text-neutral-500">
-          <ModeBadge mode={item.mode} />
-          <span>{formatRelativeTime(item.lastMessageAt ?? item.createdAt)}</span>
-        </span>
-      </Link>
-      <button
-        type="button"
-        aria-label="More actions"
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setMenuOpen((v) => !v);
-        }}
-        className="absolute right-1 top-1.5 rounded p-1 text-neutral-400 opacity-0 hover:bg-neutral-100 hover:text-neutral-700 focus:opacity-100 group-hover:opacity-100"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 16 16"
-          fill="currentColor"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <title>More</title>
-          <circle cx="3" cy="8" r="1.5" />
-          <circle cx="8" cy="8" r="1.5" />
-          <circle cx="13" cy="8" r="1.5" />
-        </svg>
-      </button>
-      {menuOpen && (
-        <>
+      ) : (
+        <div className="group relative mt-2.5">
+          <h2
+            className="pr-7 leading-[1.25] text-ink"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 400 }}
+          >
+            {title}
+          </h2>
           <button
             type="button"
-            aria-label="Close menu"
-            onClick={() => setMenuOpen(false)}
-            className="fixed inset-0 z-10 cursor-default bg-transparent"
-          />
-          <div className="absolute right-1 top-8 z-20 w-32 overflow-hidden rounded-md border border-neutral-200 bg-white text-xs shadow-lg">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setRenaming(true);
-              }}
-              className="block w-full px-3 py-2 text-left hover:bg-brand-light"
+            aria-label="Thread actions"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="absolute right-0 top-0 rounded p-1 text-ink-faint transition hover:text-ink focus:text-ink"
+          >
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              aria-hidden="true"
+              focusable="false"
             >
-              Rename
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setConfirmingDelete(true);
-              }}
-              className="block w-full px-3 py-2 text-left text-danger hover:bg-danger-light/40"
-            >
-              Delete
-            </button>
-          </div>
-        </>
+              <title>More</title>
+              <circle cx="3" cy="8" r="1.5" />
+              <circle cx="8" cy="8" r="1.5" />
+              <circle cx="13" cy="8" r="1.5" />
+            </svg>
+          </button>
+          {menuOpen && (
+            <>
+              <button
+                type="button"
+                aria-label="Close menu"
+                onClick={() => setMenuOpen(false)}
+                className="fixed inset-0 z-10 cursor-default bg-transparent"
+              />
+              <div
+                className="absolute right-0 top-6 z-20 w-32 overflow-hidden text-xs"
+                style={{
+                  background: "var(--t-paper)",
+                  border: "1px solid var(--t-rule)",
+                  borderRadius: "var(--t-radius-lg)",
+                  boxShadow: "var(--t-panel-shadow)",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setRenaming(true);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-ink-soft hover:text-ink"
+                >
+                  Rename
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setConfirmingDelete(true);
+                  }}
+                  className="block w-full px-3 py-2 text-left text-accent hover:opacity-80"
+                >
+                  Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      {mode && !renaming && (
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+          Mode · {mode.replace(/_/g, " ")}
+        </p>
       )}
       {confirmingDelete && (
         <div
           role="alertdialog"
           aria-label="Delete conversation"
-          className="mt-1 rounded-md border border-danger/30 bg-danger-light/60 p-2 text-xs"
+          className="mt-3 rounded-md p-2.5 text-[12px]"
+          style={{
+            background: "var(--t-accent-soft)",
+            border: "1px solid var(--t-rule)",
+          }}
         >
-          <p className="text-brand-navy">Delete this conversation? This can't be undone.</p>
-          {actionError && <p className="mt-1 text-red-700">{actionError}</p>}
-          <div className="mt-2 flex gap-1.5">
+          <p className="text-ink">Delete this conversation? This can't be undone.</p>
+          <div className="mt-2 flex gap-2">
             <button
               type="button"
               onClick={handleDelete}
               disabled={pending}
-              className="rounded bg-danger px-2 py-1 text-[11px] font-medium text-white hover:opacity-90 disabled:opacity-50"
+              className="rounded-full px-3 py-1 text-[11px] font-medium text-white disabled:opacity-50"
+              style={{ background: "var(--t-accent)" }}
             >
               {pending ? "Deleting…" : "Delete"}
             </button>
             <button
               type="button"
-              onClick={() => {
-                setConfirmingDelete(false);
-                setActionError(null);
-              }}
+              onClick={() => setConfirmingDelete(false)}
               disabled={pending}
-              className="rounded border border-neutral-300 bg-white px-2 py-1 text-[11px] text-neutral-700 hover:bg-brand-light disabled:opacity-50"
+              className="text-[11px] text-ink-soft hover:text-ink"
             >
               Cancel
             </button>
           </div>
         </div>
       )}
-    </li>
+    </div>
   );
 }
 
-const MODE_BADGE_STYLES: Record<string, string> = {
-  general: "bg-neutral-100 text-neutral-700",
-  goal: "bg-brand-blue/10 text-brand-blue",
-  reflection: "bg-amber-50 text-amber-800",
-  assessment: "bg-purple-50 text-purple-800",
-  capstone: "bg-emerald-50 text-emerald-800",
-  intake: "bg-brand-blue-light text-brand-blue",
-};
-
-function ModeBadge({ mode }: { mode: string }) {
-  const cls = MODE_BADGE_STYLES[mode] ?? MODE_BADGE_STYLES.general;
+// ─── EARLIER THREADS ──────────────────────────────────────────────────
+// Grouped by recency. Each row links to `?c=<id>`; the design calls
+// for a minimal presentation — titles only, no preview body text,
+// subtle mode + timestamp underneath.
+function EarlierList({
+  conversations,
+  activeId,
+}: {
+  conversations: ConversationListItem[];
+  activeId: string | null;
+}) {
+  const groups = groupConversations(conversations);
   return (
-    <span className={`rounded-full px-1.5 py-0.5 uppercase tracking-wide ${cls}`}>{mode}</span>
+    <ul className="max-h-[45vh] space-y-3 overflow-y-auto pr-1 lg:max-h-[50vh]">
+      {groups.map((g) => (
+        <li key={g.label}>
+          <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">
+            {g.label}
+          </div>
+          <ul className="space-y-0.5">
+            {g.items.map((c) => (
+              <EarlierRow key={c.id} item={c} isActive={c.id === activeId} />
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function EarlierRow({
+  item,
+  isActive,
+}: {
+  item: ConversationListItem;
+  isActive: boolean;
+}) {
+  const displayLabel =
+    item.title && item.title.trim().length > 0
+      ? item.title
+      : item.previewText.slice(0, 40) || "(new conversation)";
+
+  return (
+    <li>
+      <Link
+        href={`/coach-chat?c=${item.id}`}
+        className={`block py-1 text-[12.5px] transition ${
+          isActive ? "text-ink" : "text-ink-soft hover:text-ink"
+        }`}
+      >
+        <span className="line-clamp-1">{displayLabel}</span>
+        <span className="mt-0.5 block font-mono text-[9px] uppercase tracking-[0.1em] text-ink-faint">
+          {item.mode.replace(/_/g, " ")} ·{" "}
+          {formatRelativeTime(item.lastMessageAt ?? item.createdAt)}
+        </span>
+      </Link>
+    </li>
   );
 }
 

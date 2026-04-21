@@ -42,3 +42,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# design reference (prototype JSX from the Editorial/Cinematic handoff —
+# not production code, kept locally only for reference)
+.design-handoff/

@@ -78,8 +78,9 @@ export function NotificationBell({ userId, initialCount }: { userId: string; ini
   return (
     <div className="relative">
       <button
+        type="button"
         onClick={handleOpen}
-        className="relative rounded-md p-1.5 text-white/75 hover:text-white transition"
+        className="relative rounded-md p-1.5 text-ink-soft hover:text-ink transition"
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ""}`}
         aria-expanded={open}
         aria-haspopup="true"
@@ -89,7 +90,10 @@ export function NotificationBell({ userId, initialCount }: { userId: string; ini
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-blue text-[10px] font-bold text-white">
+          <span
+            className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            style={{ background: "var(--t-accent)" }}
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -98,37 +102,69 @@ export function NotificationBell({ userId, initialCount }: { userId: string; ini
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-lg border border-neutral-200 bg-white shadow-lg">
-            <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2">
-              <h3 className="text-sm font-semibold text-brand-navy">Notifications</h3>
+          <div
+            className="absolute right-0 top-full z-50 mt-2 w-80"
+            style={{
+              background: "var(--t-paper)",
+              border: "1px solid var(--t-rule)",
+              borderRadius: "var(--t-radius-lg)",
+              boxShadow: "var(--t-panel-shadow)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-4 py-2.5"
+              style={{ borderBottom: "1px solid var(--t-rule)" }}
+            >
+              <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+                Notifications
+              </h3>
               {unreadCount > 0 && (
-                <button onClick={handleMarkAll} disabled={pending} className="text-xs text-brand-blue hover:underline">
+                <button
+                  type="button"
+                  onClick={handleMarkAll}
+                  disabled={pending}
+                  className="text-xs text-ink-soft hover:text-accent transition disabled:opacity-50"
+                >
                   Mark all read
                 </button>
               )}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="px-4 py-6 text-center text-sm text-neutral-500">No notifications yet.</p>
+                <p className="px-4 py-6 text-center text-sm text-ink-faint">
+                  No notifications yet.
+                </p>
               ) : (
                 <ul>
                   {notifications.map((n) => (
-                    <li key={n.id} className={`border-b border-neutral-50 ${!n.read_at ? "bg-brand-blue-light/50" : ""}`}>
+                    <li
+                      key={n.id}
+                      style={{
+                        borderBottom: "1px solid var(--t-rule)",
+                        background: n.read_at ? "transparent" : "var(--t-accent-soft)",
+                      }}
+                    >
                       {n.link ? (
                         <Link
                           href={n.link}
-                          onClick={() => { if (!n.read_at) handleMarkRead(n.id); setOpen(false); }}
-                          className="block px-4 py-3 hover:bg-brand-light transition"
+                          onClick={() => {
+                            if (!n.read_at) handleMarkRead(n.id);
+                            setOpen(false);
+                          }}
+                          className="block px-4 py-3 hover:opacity-90 transition"
                         >
                           <NotificationContent n={n} />
                         </Link>
                       ) : (
-                        <div
-                          className="px-4 py-3 cursor-pointer hover:bg-brand-light transition"
-                          onClick={() => { if (!n.read_at) handleMarkRead(n.id); }}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!n.read_at) handleMarkRead(n.id);
+                          }}
+                          className="w-full text-left px-4 py-3 hover:opacity-90 transition"
                         >
                           <NotificationContent n={n} />
-                        </div>
+                        </button>
                       )}
                     </li>
                   ))}
@@ -146,11 +182,18 @@ function NotificationContent({ n }: { n: Notification }) {
   return (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-medium text-brand-navy">{n.title}</p>
-        {!n.read_at && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-blue" />}
+        <p className="text-sm font-medium text-ink">{n.title}</p>
+        {!n.read_at && (
+          <span
+            className="mt-1 h-2 w-2 shrink-0 rounded-full"
+            style={{ background: "var(--t-accent)" }}
+          />
+        )}
       </div>
-      <p className="mt-0.5 text-xs text-neutral-600 line-clamp-2">{n.body}</p>
-      <p className="mt-1 text-[10px] text-neutral-400">{timeAgo(n.created_at)}</p>
+      <p className="mt-0.5 text-xs text-ink-soft line-clamp-2">{n.body}</p>
+      <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+        {timeAgo(n.created_at)}
+      </p>
     </>
   );
 }

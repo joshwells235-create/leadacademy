@@ -1,6 +1,8 @@
 import type { JSONContent } from "@tiptap/react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { AccentWord } from "@/components/design/accent-word";
+import { Panel } from "@/components/design/panel";
 import { LessonViewer } from "@/components/editor/lesson-viewer";
 import { LessonNotes } from "@/components/learning/lesson-notes";
 import { LessonQuestions, type PriorQuestion } from "@/components/learning/lesson-questions";
@@ -15,15 +17,25 @@ import { MarkCompleteButton } from "./mark-complete-button";
 
 type Props = { params: Promise<{ courseId: string; lessonId: string }> };
 
+// Lesson Viewer — editorial-system shell. Preserves every functional
+// sub-piece (Tiptap lesson viewer, quiz player, linked resources,
+// materials, lesson notes feeding LearnerContext, ask-the-room Q&A,
+// ScrollResume, mark-complete). Hero is the only thing visually
+// rebuilt: breadcrumb mono row, 2px rule progress bar, mono module
+// label, serif 48px h1 with italic-accent tail.
+//
+// The heavy-dep dynamic-import pattern in LessonViewer + the
+// gate-bypass rules for super-admin + coach-primary viewers are both
+// load-bearing and untouched.
 export default async function LessonViewerPage({ params }: Props) {
   const { courseId, lessonId } = await params;
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  // Defense in depth: the (app) layout redirects unauth users, but under
-  // Next 16 RSC streaming the page body can still start rendering. Without
-  // this guard `user.id` crashes with "Cannot read properties of null".
+  // Defense in depth — `(app)/layout.tsx` already redirects unauth
+  // users, but under Next 16 RSC streaming the page body can race the
+  // layout and start rendering before the redirect resolves.
   if (!user) redirect("/login");
 
   const { data: lesson } = await supabase
@@ -35,11 +47,8 @@ export default async function LessonViewerPage({ params }: Props) {
     .maybeSingle();
   if (!lesson) notFound();
 
-  // Prereq gate + schedule gate. If blocked, redirect to course overview with
-  // a flash so the learner sees *why* and which lessons/courses they need to
-  // complete first. Super-admins bypass — they need to preview locked content.
-  // Coach-primary users also bypass — they browse the catalog for reference,
-  // not as enrolled learners.
+  // Prereq + schedule gate. Super-admins and coach-primary viewers
+  // bypass — they're previewing, not enrolled.
   const { data: profile } = await supabase
     .from("profiles")
     .select("super_admin")
@@ -48,9 +57,6 @@ export default async function LessonViewerPage({ params }: Props) {
   const roleCtx = await getUserRoleContext(supabase, user.id);
   const isPreviewViewer = !!profile?.super_admin || roleCtx.coachPrimary;
   if (!isPreviewViewer) {
-    // Schedule check first — if the course isn't available right now, bounce
-    // to /learning rather than the course detail page (which would itself
-    // bounce on the same rule).
     const { data: membership } = await supabase
       .from("memberships")
       .select("cohort_id")
@@ -87,9 +93,8 @@ export default async function LessonViewerPage({ params }: Props) {
 
   const isQuiz = lesson.type === "quiz";
 
-  // Fire-and-forget: stamp started_at so drop-off + time-to-complete
-  // analytics have a signal. Skipped for super-admins AND coach-primary
-  // viewers so preview/browse views don't muddy learner metrics.
+  // Fire-and-forget started-at stamp — skipped for preview viewers
+  // so their browsing doesn't muddy drop-off / time-to-complete.
   if (!isPreviewViewer) {
     void stampLessonStarted({ userId: user.id, lessonId });
   }
@@ -131,7 +136,6 @@ export default async function LessonViewerPage({ params }: Props) {
         .limit(20),
     ]);
 
-  // Quiz-specific load (only if quiz lesson).
   const [quizSettingsRes, quizQuestionsRes, quizAttemptsRes, lastAttemptRes] = isQuiz
     ? await Promise.all([
         supabase
@@ -169,12 +173,12 @@ export default async function LessonViewerPage({ params }: Props) {
   const prevLesson = currentIdx > 0 ? siblings[currentIdx - 1] : null;
   const nextLesson = currentIdx < siblings.length - 1 ? siblings[currentIdx + 1] : null;
 
-  // Lesson X of Y *within this module* — a module-scoped counter is what
-  // the learner actually wants ("where am I in this module?"). The earlier
-  // course-wide counter was disorienting because modules can be very
-  // different sizes.
+  // Lesson X of Y within this module. Module-scoped counter reads
+  // more meaningfully than course-wide when modules are uneven sizes.
   const positionInModule = currentIdx + 1;
   const totalInModule = siblings.length;
+  const modulePct =
+    totalInModule > 0 ? Math.round((positionInModule / totalInModule) * 100) : 0;
 
   const content =
     lesson.content && typeof lesson.content === "object" && "type" in (lesson.content as object)
@@ -194,57 +198,92 @@ export default async function LessonViewerPage({ params }: Props) {
     resolvedAt: q.resolved_at,
   }));
 
+  const { head: titleHead, tail: titleTail } = splitAccent(lesson.title);
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      {/* Breadcrumb — always visible so the learner never loses their place. */}
+    <div className="mx-auto max-w-[860px] px-6 py-9 lg:px-9 lg:py-10">
+      {/* Breadcrumb row — mono labels, left + right. The right side
+          carries lesson position + duration, mirroring the design's
+          "Lesson 3 of 6 · 12 min". */}
       <nav
         aria-label="Breadcrumb"
-        className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-neutral-500"
+        className="mb-5 flex flex-wrap items-center justify-between gap-2 font-mono text-[11px] uppercase tracking-[0.15em]"
       >
-        <Link href="/learning" className="hover:text-brand-blue">
-          Learning
+        <Link
+          href={`/learning/${courseId}`}
+          className="text-ink-soft transition hover:text-ink"
+        >
+          ← {courseRes.data?.title ?? "Course"}
         </Link>
-        <span aria-hidden>/</span>
-        <Link href={`/learning/${courseId}`} className="hover:text-brand-blue">
-          {courseRes.data?.title ?? "Course"}
-        </Link>
-        <span aria-hidden>/</span>
-        <span className="text-neutral-700">{modRes.data?.title ?? "Module"}</span>
+        <span className="text-ink-faint">
+          {isQuiz ? "Quiz" : "Lesson"} {positionInModule} of {totalInModule}
+          {lesson.duration_minutes ? ` · ${lesson.duration_minutes} min` : ""}
+        </span>
       </nav>
+
+      {/* 2px progress rail — rule color with accent fill at module %. */}
+      <div
+        className="mb-10 h-[2px] rounded-[1px]"
+        style={{ background: "var(--t-rule)" }}
+      >
+        <div
+          className="h-[2px] rounded-[1px] transition-[width] duration-500"
+          style={{ width: `${modulePct}%`, background: "var(--t-accent)" }}
+        />
+      </div>
 
       <ScrollResume lessonId={lessonId} initialPct={initialScrollPct} />
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">
-            {lesson.title}
-            {isQuiz && (
-              <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 align-middle">
-                Quiz
-              </span>
-            )}
-          </h1>
-          {lesson.description && (
-            <p className="mt-1 text-sm text-neutral-600">{lesson.description}</p>
-          )}
-          {lesson.duration_minutes && (
-            <p className="mt-1 text-xs text-neutral-500">~{lesson.duration_minutes} min</p>
-          )}
-        </div>
-        {totalInModule > 0 && (
-          <span className="shrink-0 rounded-full bg-brand-light px-2.5 py-0.5 text-[11px] font-medium text-neutral-700">
-            {isQuiz ? "Quiz" : "Lesson"} {positionInModule} of {totalInModule} in{" "}
-            {modRes.data?.title ?? "this module"}
+      {/* Mono module label */}
+      {modRes.data?.title && (
+        <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-faint">
+          {modRes.data.title}
+        </p>
+      )}
+
+      {/* Serif 48 hero with italic-accent tail */}
+      <h1
+        className="mb-8 leading-[1.08] text-ink"
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: "clamp(32px, 5vw, 48px)",
+          fontWeight: 400,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {titleHead} {titleTail && <AccentWord>{titleTail}</AccentWord>}
+        {isQuiz && (
+          <span
+            className="ml-3 align-middle rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.15em]"
+            style={{
+              background: "var(--t-accent-soft)",
+              color: "var(--t-accent)",
+              fontFamily: "var(--font-mono)",
+            }}
+          >
+            Quiz
           </span>
         )}
-      </div>
+      </h1>
+
+      {lesson.description && (
+        <p className="mb-10 max-w-[680px] text-[15px] leading-[1.65] text-ink-soft">
+          {lesson.description}
+        </p>
+      )}
 
       {lesson.video_url &&
         (() => {
           const resolved = resolveVideoEmbed(lesson.video_url);
           if (!resolved) return null;
           return (
-            <div className="mt-4 aspect-video max-w-2xl rounded-lg overflow-hidden border border-neutral-200">
+            <div
+              className="mt-2 mb-8 aspect-video overflow-hidden"
+              style={{
+                border: "1px solid var(--t-rule)",
+                borderRadius: "var(--t-radius-lg)",
+              }}
+            >
               <iframe
                 src={resolved.embedUrl}
                 title="Lesson video"
@@ -256,15 +295,18 @@ export default async function LessonViewerPage({ params }: Props) {
           );
         })()}
 
+      {/* Tiptap body — the LessonViewer owns its own typography via
+          sanitize-html + prose classes, but we wrap it in a themed
+          Panel so the surface matches the rest of the page. */}
       {content && (
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+        <Panel className="mb-8">
           <LessonViewer content={content} />
-        </div>
+        </Panel>
       )}
 
-      {/* Quiz player — only for quiz-type lessons */}
+      {/* Quiz player — unchanged */}
       {isQuiz && (
-        <div className="mt-6">
+        <div className="mb-8">
           {(() => {
             const questions = ((quizQuestionsRes?.data ?? []) as unknown as PlayerQuestion[]).map(
               (q) => ({
@@ -317,10 +359,12 @@ export default async function LessonViewerPage({ params }: Props) {
         </div>
       )}
 
-      {/* Linked resources from the library */}
+      {/* Linked library resources */}
       {(linkedResourcesRes.data ?? []).length > 0 && (
-        <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-brand-navy">Related resources</h2>
+        <Panel className="mb-6">
+          <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+            Related resources
+          </p>
           <ul className="space-y-2">
             {(linkedResourcesRes.data ?? []).map((lr, idx) => {
               const r = lr.resources as unknown as {
@@ -334,108 +378,148 @@ export default async function LessonViewerPage({ params }: Props) {
                 <li
                   // biome-ignore lint/suspicious/noArrayIndexKey: stable ordering
                   key={idx}
-                  className="flex items-center gap-2 rounded-md bg-brand-light px-3 py-2"
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2"
+                  style={{ background: "var(--t-rule)", opacity: 0.9 }}
                 >
-                  <span className="rounded bg-brand-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-blue">
+                  <span
+                    className="rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em]"
+                    style={{
+                      background: "var(--t-accent-soft)",
+                      color: "var(--t-accent)",
+                    }}
+                  >
                     {r.type}
                   </span>
                   <a
                     href={r.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-brand-blue hover:underline"
+                    className="text-[14px] text-ink transition hover:text-accent"
                   >
                     {r.title}
                   </a>
-                  <span className="ml-auto text-xs text-neutral-400">Open ↗</span>
+                  <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+                    Open ↗
+                  </span>
                 </li>
               );
             })}
           </ul>
-        </div>
+        </Panel>
       )}
 
-      {/* Materials / downloads */}
+      {/* Downloadable materials */}
       {lesson.materials &&
         Array.isArray(lesson.materials) &&
         (lesson.materials as Array<{ name: string; url: string }>).length > 0 && (
-          <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold text-brand-navy">Downloadable materials</h2>
+          <Panel className="mb-6">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+              Downloadable materials
+            </p>
             <ul className="space-y-2">
               {(lesson.materials as Array<{ name: string; url: string }>).map((m) => (
                 <li
                   key={m.url}
-                  className="flex items-center gap-2 rounded-md bg-brand-light px-3 py-2"
+                  className="flex items-center gap-2.5 rounded-md px-3 py-2"
+                  style={{ background: "var(--t-rule)", opacity: 0.9 }}
                 >
                   <a
                     href={m.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-brand-blue hover:underline"
+                    className="text-[14px] text-ink transition hover:text-accent"
                   >
                     {m.name}
                   </a>
-                  <span className="ml-auto text-xs text-neutral-400">Download ↗</span>
+                  <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+                    Download ↗
+                  </span>
                 </li>
               ))}
             </ul>
-          </div>
+          </Panel>
         )}
 
-      {/* Private per-lesson notes — also feed LearnerContext so the
-          thought partner knows what this learner has been flagging. */}
-      <div className="mt-6">
+      {/* Lesson notes — private scratchpad that also feeds the TP's
+          context on every chat turn. */}
+      <div className="mb-6">
         <LessonNotes lessonId={lessonId} initialContent={initialNoteContent} />
       </div>
 
-      {/* Ask-the-room Q&A — thought partner answers grounded in lesson +
-          learner context; one-click flag escalates to coach. */}
-      <div className="mt-4">
+      {/* Ask-the-room Q&A */}
+      <div className="mb-10">
         <LessonQuestions lessonId={lessonId} initialQuestions={initialQuestions} />
       </div>
 
-      {/* Completion + navigation */}
-      <div className="mt-6 rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      {/* Footer: Previous + Complete + Next. The Complete button lives
+          centered between the nav links. When the learner finishes the
+          last lesson of the last module, Phase 7 will swap this for the
+          CourseCompleteModal trigger. For now, the existing
+          mark-complete flow handles auto-advance. */}
+      <div
+        className="mt-10 flex items-center justify-between pt-6"
+        style={{ borderTop: "1px solid var(--t-rule)" }}
+      >
+        {prevLesson ? (
+          <Link
+            href={`/learning/${courseId}/${prevLesson.id}`}
+            className="inline-flex items-center rounded-full border px-4.5 py-2.5 text-[13px] font-medium text-ink transition hover:opacity-90"
+            style={{ borderColor: "var(--t-rule)" }}
+          >
+            ← Previous
+          </Link>
+        ) : (
+          <span />
+        )}
+
         {!isQuiz && (
-          <div className="flex items-center justify-center mb-4">
-            <MarkCompleteButton
-              lessonId={lessonId}
-              completed={isCompleted}
-              nextLessonUrl={nextLesson ? `/learning/${courseId}/${nextLesson.id}` : undefined}
-              courseUrl={`/learning/${courseId}`}
-            />
-          </div>
+          <MarkCompleteButton
+            lessonId={lessonId}
+            completed={isCompleted}
+            nextLessonUrl={nextLesson ? `/learning/${courseId}/${nextLesson.id}` : undefined}
+            courseUrl={`/learning/${courseId}`}
+          />
         )}
         {isQuiz && (
-          <p className="text-xs text-neutral-500 text-center mb-3">
-            Quizzes mark this lesson complete automatically when you pass.
+          <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-ink-faint">
+            Passing the quiz marks this complete.
           </p>
         )}
-        <div className="flex items-center justify-between border-t border-neutral-100 pt-3 text-sm">
-          {prevLesson ? (
-            <Link
-              href={`/learning/${courseId}/${prevLesson.id}`}
-              className="text-brand-blue hover:underline"
-            >
-              ← {prevLesson.title}
-            </Link>
-          ) : (
-            <span />
-          )}
-          {nextLesson ? (
-            <Link
-              href={`/learning/${courseId}/${nextLesson.id}`}
-              className="text-brand-blue hover:underline"
-            >
-              {nextLesson.title} →
-            </Link>
-          ) : (
-            <Link href={`/learning/${courseId}`} className="text-brand-blue hover:underline">
-              Back to course overview →
-            </Link>
-          )}
-        </div>
+
+        {nextLesson ? (
+          <Link
+            href={`/learning/${courseId}/${nextLesson.id}`}
+            className="inline-flex items-center rounded-full px-4.5 py-2.5 text-[13px] font-medium text-white transition"
+            style={{
+              background: "var(--t-accent)",
+              boxShadow: "0 4px 20px var(--t-accent-soft)",
+            }}
+          >
+            {nextLesson.title} →
+          </Link>
+        ) : (
+          <Link
+            href={`/learning/${courseId}`}
+            className="inline-flex items-center rounded-full px-4.5 py-2.5 text-[13px] font-medium text-white transition"
+            style={{
+              background: "var(--t-accent)",
+              boxShadow: "0 4px 20px var(--t-accent-soft)",
+            }}
+          >
+            Back to course overview →
+          </Link>
+        )}
       </div>
     </div>
   );
+}
+
+// Split the lesson title's last word for italic-accent rendering.
+// Falls back to no accent when the title is too short to carry it.
+function splitAccent(title: string): { head: string; tail: string } {
+  const parts = title.trim().split(/\s+/);
+  if (parts.length < 3) return { head: title.trim(), tail: "" };
+  const tail = parts[parts.length - 1];
+  const head = parts.slice(0, -1).join(" ");
+  return { head, tail };
 }

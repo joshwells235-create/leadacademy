@@ -2173,6 +2173,7 @@ export type Database = {
           team_size: number | null
           tenure_at_org: string | null
           tenure_in_leadership: string | null
+          theme_mode: string
           timezone: string
           total_org_influence: number | null
           updated_at: string
@@ -2194,6 +2195,7 @@ export type Database = {
           team_size?: number | null
           tenure_at_org?: string | null
           tenure_in_leadership?: string | null
+          theme_mode?: string
           timezone?: string
           total_org_influence?: number | null
           updated_at?: string
@@ -2215,6 +2217,7 @@ export type Database = {
           team_size?: number | null
           tenure_at_org?: string | null
           tenure_in_leadership?: string | null
+          theme_mode?: string
           timezone?: string
           total_org_influence?: number | null
           updated_at?: string

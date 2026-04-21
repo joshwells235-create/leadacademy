@@ -20,15 +20,28 @@ export default async function PreSessionPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-navy">Pre-session prep</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Fill this out before each coaching call so your coach can hit the ground running.
+      <div className="mb-8">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Pre-session prep
         </p>
-        <p className="mt-2 text-xs text-neutral-500">
-          Only you and your coach see these notes — your coach can read them but can't edit them.
-          Save a draft any time by hitting <span className="font-medium">Save</span>; the most
-          recent entry is what your coach sees before your next session.
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(28px, 4vw, 40px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Before your next coaching call.
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+          Fill this out so your coach can hit the ground running.
+        </p>
+        <p className="mt-2 max-w-[680px] text-xs text-ink-faint">
+          Only you and your coach see these notes — your coach can read
+          them but can't edit them. Save a draft any time; the most recent
+          entry is what your coach sees before your next session.
         </p>
       </div>
 

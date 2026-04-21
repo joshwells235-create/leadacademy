@@ -11,13 +11,21 @@ export default async function RegisterPage({ searchParams }: Props) {
   const { token } = await searchParams;
   if (!token) {
     return (
-      <div className="space-y-3 text-sm">
-        <h2 className="text-lg font-semibold">Registration is invite-only</h2>
-        <p className="text-neutral-600">
+      <div className="space-y-4 text-sm">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Invite-only
+        </p>
+        <h2
+          className="leading-[1.15] text-ink"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 400 }}
+        >
+          Registration is invite-only.
+        </h2>
+        <p className="text-ink-soft">
           You need an invitation link from an administrator. If you have one, open it directly.
         </p>
-        <Link href="/login" className="inline-block text-brand-blue underline">
-          Back to sign in
+        <Link href="/login" className="inline-block text-accent hover:opacity-80">
+          ← Back to sign in
         </Link>
       </div>
     );
@@ -31,13 +39,21 @@ export default async function RegisterPage({ searchParams }: Props) {
 
   if (error || !invites || invites.length === 0) {
     return (
-      <div className="space-y-3 text-sm">
-        <h2 className="text-lg font-semibold">This invite link isn't valid</h2>
-        <p className="text-neutral-600">
+      <div className="space-y-4 text-sm">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Invalid invite
+        </p>
+        <h2
+          className="leading-[1.15] text-ink"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 400 }}
+        >
+          This invite link isn't valid.
+        </h2>
+        <p className="text-ink-soft">
           It may have expired or already been used. Ask your admin to send a new one.
         </p>
-        <Link href="/login" className="inline-block text-brand-blue underline">
-          Back to sign in
+        <Link href="/login" className="inline-block text-accent hover:opacity-80">
+          ← Back to sign in
         </Link>
       </div>
     );

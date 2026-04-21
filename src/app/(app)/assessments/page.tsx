@@ -56,15 +56,24 @@ export default async function AssessmentsPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-start justify-between gap-3">
         <div>
-          <p className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
             What's been measured
           </p>
-          <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-brand-navy">
-            Assessments
+          <h1
+            className="mt-2 leading-[1.08] text-ink"
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "clamp(28px, 4vw, 40px)",
+              fontWeight: 400,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Assessments.
           </h1>
-          <p className="mt-3 max-w-2xl font-serif text-[15px] leading-[1.65] text-brand-navy/75">
-            Upload PI, EQ-i, and 360 reports. Your thought partner reads them, then carries the
-            findings into every conversation — so you stop having to re-explain who you are.
+          <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+            Upload PI, EQ-i, and 360 reports. Your thought partner reads
+            them, then carries the findings into every conversation — so
+            you stop having to re-explain who you are.
           </p>
         </div>
       </div>

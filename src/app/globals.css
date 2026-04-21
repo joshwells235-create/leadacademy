@@ -1,61 +1,154 @@
 @import "tailwindcss";
 
+/* ─── Dark variant for Tailwind ────────────────────────────────────────────
+   Opt the `cinematic` theme into Tailwind's `dark:` utility so existing
+   dark-mode variants resolve when the learner toggles cinematic. */
+@custom-variant dark ([data-theme="cinematic"] &);
+
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  /* Editorial serif — used explicitly via `font-serif` on long-form, reflective
-     surfaces (reflection entries, capstone prose, lesson bodies, coach notes).
-     Never applied to UI chrome. */
-  --font-serif: var(--font-source-serif);
+  /* ─── Fonts ─────────────────────────────────────────────────────────────
+     Four-family stack. Fraunces is the display + body-emphasis serif.
+     Instrument Serif is always paired with accent color for italic
+     moments. Inter is UI + body. JetBrains Mono is the mono label /
+     metadata voice. */
+  --font-sans: var(--font-inter), -apple-system, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), "Times New Roman", serif;
+  --font-italic: var(--font-instrument-serif), var(--font-fraunces), serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
-  /* LeadShift brand palette. Pink is a single-purpose signature: the voice of
-     the Thought Partner. It appears in the AI chat surface and nowhere else.
-     Destructive actions use `danger` red, not pink. */
-  --color-brand-navy: #101d51;
-  --color-brand-navy-light: #1a2d6b;
-  --color-brand-light: #f3f3f3;
-  --color-brand-pink: #EA0C67;
-  --color-brand-pink-light: #fce7ef;
-  --color-brand-blue: #007efa;
-  --color-brand-blue-light: #e6f3ff;
-  --color-brand-blue-dark: #0066cc;
+  /* Theme tokens — resolved against the active [data-theme] block. These
+     expose every named design-system color as a Tailwind utility (e.g.
+     `bg-paper`, `text-ink`, `border-rule`). Both the hex-level brand
+     colors and the themed surface colors coexist: brand-* stays put for
+     components that deliberately render the same in both modes (like the
+     account-deactivated banner); the surface tokens swap automatically. */
+  --color-bg: var(--t-bg);
+  --color-paper: var(--t-paper);
+  --color-ink: var(--t-ink);
+  --color-ink-soft: var(--t-ink-soft);
+  --color-ink-faint: var(--t-ink-faint);
+  --color-rule: var(--t-rule);
+  --color-accent: var(--t-accent);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-blue: var(--t-blue);
 
-  /* Destructive / caution. Separated from brand-pink so pink stays
-     reserved for the Thought Partner voice. */
+  /* Legacy brand aliases — now theme-responsive. Pages written against
+     the pre-redesign palette (admin tools, super-admin surfaces, older
+     learner flows) get automatic Editorial/Cinematic swapping because
+     their utility classes (bg-brand-navy, text-brand-navy, bg-brand-light,
+     etc.) now resolve through the active theme's variables. Specific
+     surfaces that need literal hex values should not use these. */
+  --color-brand-navy: var(--t-ink);
+  --color-brand-navy-light: var(--t-ink-soft);
+  --color-brand-light: var(--t-bg);
+  --color-brand-pink: var(--t-accent);
+  --color-brand-pink-light: var(--t-accent-soft);
+  --color-brand-blue: var(--t-blue);
+  --color-brand-blue-light: var(--t-accent-soft);
+  --color-brand-blue-dark: var(--t-blue);
+
+  /* Destructive stays as a distinct color family — it has a job
+     (warn / stop) that shouldn't re-skin based on aesthetic theme. */
   --color-danger: #c81e3a;
   --color-danger-light: #fdecef;
 
-  /* A considered ease curve — slight deceleration, never bouncy. Applied
-     globally via the element transitions below. */
   --ease-considered: cubic-bezier(0.2, 0, 0.2, 1);
 }
 
-html,
-body {
-  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+/* ─── Editorial (default) ──────────────────────────────────────────────────
+   Sunday-paper calm — warm off-white ground, deep navy ink. Applied when
+   no data-theme is set AND explicitly when data-theme="editorial", so a
+   learner's saved preference is authoritative. */
+:root,
+[data-theme="editorial"] {
+  --t-bg: #f3f0e8;
+  --t-paper: #faf7ee;
+  --t-ink: #101d51;
+  --t-ink-soft: rgba(16, 29, 81, 0.65);
+  --t-ink-faint: rgba(16, 29, 81, 0.4);
+  --t-rule: rgba(16, 29, 81, 0.14);
+  --t-accent: #ea0c67;
+  --t-accent-soft: rgba(234, 12, 103, 0.12);
+  --t-blue: #007efa;
+
+  /* Orb gradient — darker shadow for depth on warm paper. */
+  --t-orb: radial-gradient(circle at 30% 30%, #ea0c67, #4a0320 70%);
+  --t-orb-shadow: inset 0 0 8px rgba(255, 255, 255, 0.2);
+
+  /* Panel radius — Editorial feels like print (small radii). */
+  --t-radius: 4px;
+  --t-radius-lg: 6px;
+  --t-panel-shadow: 0 1px 2px rgba(16, 29, 81, 0.03), 0 6px 20px rgba(16, 29, 81, 0.04);
+  --t-chrome-bg: rgba(250, 247, 238, 0.6);
+
+  /* User chat bubble — deep ink background with white text in Editorial,
+     a quiet white-on-glass pill in Cinematic. Keeps the pill legible on
+     both grounds without inverting the brand. */
+  --t-user-bubble: #101d51;
+  --t-user-bubble-text: #ffffff;
 }
 
-/* Smooth focus transitions */
+/* ─── Cinematic ────────────────────────────────────────────────────────────
+   Deep navy ground, ambient pink + blue aurora behind content,
+   glassmorphic panels. Same type system; only surface and depth change. */
+[data-theme="cinematic"] {
+  --t-bg: #070a1c;
+  --t-paper: rgba(255, 255, 255, 0.04);
+  --t-ink: rgba(255, 255, 255, 0.95);
+  --t-ink-soft: rgba(255, 255, 255, 0.65);
+  --t-ink-faint: rgba(255, 255, 255, 0.4);
+  --t-rule: rgba(255, 255, 255, 0.08);
+  --t-accent: #ff4a8d;
+  --t-accent-soft: rgba(234, 12, 103, 0.2);
+  --t-blue: #4da0ff;
+
+  --t-orb: radial-gradient(circle at 30% 30%, #ff4a8d, #5e0835 70%);
+  --t-orb-shadow:
+    0 0 20px rgba(255, 74, 141, 0.5),
+    inset 0 0 10px rgba(255, 255, 255, 0.2);
+
+  --t-radius: 14px;
+  --t-radius-lg: 20px;
+  --t-panel-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 40px rgba(0, 0, 0, 0.35);
+  --t-chrome-bg: rgba(7, 10, 28, 0.6);
+
+  /* Cinematic chat-bubble: translucent white pill on the navy ground. */
+  --t-user-bubble: rgba(255, 255, 255, 0.08);
+  --t-user-bubble-text: rgba(255, 255, 255, 0.95);
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────── */
+html,
+body {
+  font-family: var(--font-sans);
+}
+
+body {
+  background: var(--t-bg);
+  color: var(--t-ink);
+  transition:
+    background 0.6s ease,
+    color 0.6s ease;
+}
+
+/* Smooth focus transitions — accent ring matches the active theme. */
 *:focus-visible {
-  outline: 2px solid var(--color-brand-blue);
+  outline: 2px solid var(--t-accent);
   outline-offset: 2px;
 }
 
-/* Global micro-transitions for interactive elements. Uses the considered ease
-   so motion feels deliberate rather than snappy-default. */
+/* Global micro-transitions for interactive elements. */
 button,
 a,
 input,
 select,
 textarea {
-  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-property:
+    color, background-color, border-color, box-shadow, opacity, transform;
   transition-duration: 180ms;
   transition-timing-function: var(--ease-considered);
-}
-
-/* Cards get a subtle lift on hover */
-[class*="shadow-sm"]:hover {
-  transition: box-shadow 220ms var(--ease-considered), border-color 220ms var(--ease-considered);
 }
 
 /* Smooth page content fade-in */
@@ -63,25 +156,136 @@ main {
   animation: fadeIn 220ms var(--ease-considered);
 }
 
+/* ─── Keyframes ───────────────────────────────────────────────────────────
+   Five purposeful animations. Everything else in the product should use a
+   transition, not a keyframe. */
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-/* Skeleton pulse animation */
+/* Skeleton pulse for loading states. */
 .animate-pulse {
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
-
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
-/* ─── Signature visual gesture ──────────────────────────────────────────────
-   A thin navy rule set before a label acts as a typographic colophon —
-   restrained, recurring, and quietly distinctive. Apply as `.section-mark`
-   on eyebrow labels or section openers. */
+/* Thought-Partner orb breath — applied only on "live" orbs (hero + thinking). */
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+
+/* Signature-moment celebration check. */
+@keyframes pulsePop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Modal entrance. */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Thinking-state dot pulse. */
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Cinematic ambient aurora — two slow drifts, no opacity jitter. */
+@keyframes drift1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -2%) scale(1.08);
+  }
+}
+@keyframes drift2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-3%, 2%) scale(1.06);
+  }
+}
+
+/* Ambient glow — mounted always in authenticated layouts, but only
+   visible in Cinematic. Gated by [data-theme] on <html> so the
+   client-side theme toggle fades it in / out without a reload. */
+[data-theme="cinematic"] .ambient-glow {
+  opacity: 1;
+}
+
+/* ─── Density layout switch ───────────────────────────────────────────────
+   The dashboard renders both Focus and Overview card trees server-side.
+   Class names (not attribute selectors) because Tailwind v4's PostCSS
+   pipeline silently drops bare `[data-*=]` rules that aren't under a
+   `.class`. `html[data-density="…"]` is fine as a scoping ancestor.
+   Defaulting to Overview (no `data-density` on <html>) means SSR paints
+   the dense layout first; the density-toggle client component either
+   confirms Overview (no-op visually) or swaps in Focus without a
+   loading reflow. */
+.density-show-focus {
+  display: none;
+}
+html[data-density="focus"] .density-show-focus {
+  display: block;
+}
+html[data-density="focus"] .density-show-overview {
+  display: none;
+}
+
+/* ─── Signature visual gesture (retained) ─────────────────────────────────
+   A thin rule before a label acts as a typographic colophon. Still valid
+   inside the new system for section openers that don't want a MonoLabel. */
 .section-mark {
   position: relative;
   padding-left: 2.25rem;
@@ -97,27 +301,108 @@ main {
   opacity: 0.4;
 }
 
-/* ─── Editorial long-form surfaces ─────────────────────────────────────────
-   `.prose-editorial` sets a reading-optimized rhythm on serif-typeset
-   long-form content. Use on reflection entry bodies, capstone sections,
-   lesson body text, and coach notes. Never on UI chrome. */
+/* ─── Editorial long-form prose ──────────────────────────────────────────
+   Reading rhythm for reflection entries, capstone prose, lesson bodies,
+   coach notes. Uses the active ink + serif so it reflows on theme swap. */
 .prose-editorial {
-  font-family: var(--font-serif, Georgia, serif);
+  font-family: var(--font-serif);
   font-size: 1rem;
   line-height: 1.7;
   letter-spacing: -0.005em;
-  color: color-mix(in srgb, var(--color-brand-navy) 92%, black);
+  color: var(--t-ink);
 }
 .prose-editorial p + p {
   margin-top: 0.75rem;
 }
 
-/* ─── Thought Partner accent ───────────────────────────────────────────────
-   Pink is reserved for the Thought Partner voice. `.tp-accent` is the
-   canonical way to apply it — a left-rule or underline that signals
-   "the AI is speaking here." Never apply pink inline as a standalone
-   color elsewhere. */
+/* ─── Thought Partner accent (retained) ────────────────────────────────── */
 .tp-accent {
-  border-left: 2px solid var(--color-brand-pink);
+  border-left: 2px solid var(--t-accent);
   padding-left: 0.875rem;
+}
+
+/* ─── Compatibility bridge for pre-redesign pages ─────────────────────────
+   Scoped to <main> so the app's top chrome (nav, dropdowns, modals)
+   stays in control of its own surfaces. Pages written against the
+   pre-redesign palette (bg-white cards, border-neutral-200 rules,
+   text-neutral-500 copy) get cleanly remapped to the active theme so a
+   visitor flipping to Cinematic doesn't see white cards with invisible
+   gray text on a near-black ground.
+
+   Editorial path: bg-white → warm paper, neutral copy → ink-soft.
+   Reads as intentional cohesion rather than an untouched page.
+   Cinematic path: bg-white → glass paper, neutral copy → white-soft.
+   Reads as legible against the aurora ground.
+
+   Specific elements that need literal values (avatars, photos, pure
+   white backgrounds for logo lockups) should use custom CSS variables
+   rather than bg-white / text-neutral classes. */
+main .bg-white {
+  background-color: var(--t-paper);
+}
+main .bg-brand-light {
+  background-color: var(--t-bg);
+}
+main .bg-neutral-50 {
+  background-color: var(--t-paper);
+}
+main .bg-neutral-100 {
+  background-color: var(--t-rule);
+}
+main .border-neutral-100,
+main .border-neutral-200,
+main .border-neutral-300 {
+  border-color: var(--t-rule);
+}
+main .text-neutral-400 {
+  color: var(--t-ink-faint);
+}
+main .text-neutral-500,
+main .text-neutral-600,
+main .text-neutral-700 {
+  color: var(--t-ink-soft);
+}
+main .text-neutral-800,
+main .text-neutral-900 {
+  color: var(--t-ink);
+}
+/* divide-y borders inside lists */
+main .divide-neutral-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--t-rule);
+}
+main .divide-neutral-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--t-rule);
+}
+
+/* Page headings in pre-redesign pages: remap the `text-Nxl font-bold
+   text-brand-navy` pattern to the editorial serif. The size class stays
+   untouched (`text-2xl` etc.) so rhythmic sizes remain; the weight
+   drops from 700 → 400 and the font shifts to Fraunces so the page
+   reads like the rest of the system without needing to touch every
+   file. Applies only inside <main> to leave chrome + modals in control
+   of their own typography. */
+main h1.text-brand-navy,
+main h2.text-brand-navy,
+main h3.text-brand-navy {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+/* Biome/ESLint may move `font-bold` before `text-brand-navy`; handle
+   both orderings by broadening the selector slightly. */
+main h1[class*="font-bold"],
+main h2[class*="font-bold"],
+main h3[class*="font-bold"] {
+  font-weight: 500;
+}
+
+/* ─── Mono label voice ─────────────────────────────────────────────────────
+   Uppercase, wide tracking, mono font, soft ink — the app's voice for
+   metadata ("WK 14 · TUE 21 APR", "GROUNDED IN", "SPRINT 02 · DAY 12"). */
+.mono-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--t-ink-soft);
 }

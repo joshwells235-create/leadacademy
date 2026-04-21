@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+// Shared form primitives — label, text input, submit button, error /
+// success banners. Theme-aware: surfaces resolve through CSS variables
+// so every form across the app (auth, profile, admin forms, etc.) flips
+// with the active Editorial/Cinematic theme without touching each page.
 export function FormField({
   label,
   error,
@@ -14,10 +18,16 @@ export function FormField({
   const errMsg = Array.isArray(error) ? error[0] : error;
   return (
     <label className="block">
-      <span className="block text-sm font-medium text-brand-navy">{label}</span>
-      <div className="mt-1">{children}</div>
-      {hint && !errMsg && <span className="mt-1 block text-xs text-neutral-500">{hint}</span>}
-      {errMsg && <span className="mt-1 block text-xs text-danger">{errMsg}</span>}
+      <span className="block text-sm font-medium text-ink">{label}</span>
+      <div className="mt-1.5">{children}</div>
+      {hint && !errMsg && (
+        <span className="mt-1.5 block text-xs text-ink-soft">{hint}</span>
+      )}
+      {errMsg && (
+        <span className="mt-1.5 block text-xs" style={{ color: "var(--color-danger)" }}>
+          {errMsg}
+        </span>
+      )}
     </label>
   );
 }
@@ -26,7 +36,12 @@ export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-blue focus:outline-none focus:ring-1 focus:ring-brand-blue disabled:bg-brand-light disabled:text-neutral-500 ${props.className ?? ""}`}
+      className={`w-full px-3 py-2.5 text-sm text-ink outline-none disabled:opacity-70 ${props.className ?? ""}`}
+      style={{
+        background: "var(--t-paper)",
+        border: "1px solid var(--t-rule)",
+        borderRadius: 8,
+      }}
     />
   );
 }
@@ -44,9 +59,13 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={pending}
-      className={`w-full rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-blue-dark focus:outline-none focus:ring-2 focus:ring-brand-blue focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      className={`w-full rounded-full px-5 py-3 text-sm font-medium text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+      style={{
+        background: "var(--t-accent)",
+        boxShadow: "0 4px 20px var(--t-accent-soft)",
+      }}
     >
-      {pending ? "Working..." : children}
+      {pending ? "Working…" : children}
     </button>
   );
 }
@@ -54,7 +73,15 @@ export function SubmitButton({
 export function FormError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div className="rounded-md border border-danger/20 bg-danger-light px-3 py-2 text-sm text-danger">
+    <div
+      className="rounded-md px-3 py-2.5 text-sm"
+      style={{
+        color: "var(--color-danger)",
+        background: "var(--color-danger-light)",
+        border: "1px solid var(--color-danger)",
+        borderColor: "color-mix(in srgb, var(--color-danger) 25%, transparent)",
+      }}
+    >
       {message}
     </div>
   );
@@ -63,7 +90,14 @@ export function FormError({ message }: { message?: string }) {
 export function FormSuccess({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+    <div
+      className="rounded-md px-3 py-2.5 text-sm"
+      style={{
+        color: "var(--t-blue)",
+        background: "var(--t-accent-soft)",
+        border: "1px solid var(--t-rule)",
+      }}
+    >
       {message}
     </div>
   );

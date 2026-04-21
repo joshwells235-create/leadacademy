@@ -205,10 +205,24 @@ export default async function LearningPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-navy">Learning</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Courses assigned to your cohort. Work through them at your own pace.
+      <div className="mb-8">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Learn
+        </p>
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(32px, 4.5vw, 44px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          Courses assigned to your cohort.
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+          Work through them at your own pace — your thought partner can
+          debrief any lesson with you.
         </p>
       </div>
 

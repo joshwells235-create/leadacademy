@@ -119,12 +119,25 @@ export default async function CommunityPage({ searchParams }: { searchParams: Se
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-brand-navy">Community</h1>
-        <p className="mt-1 text-sm text-neutral-600">
+      <div className="mb-8">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Community
+        </p>
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(28px, 4vw, 40px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {roleCtx.coachPrimary ? "Your coachees' feeds." : "Your cohort is here with you."}
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
           {roleCtx.coachPrimary
             ? "See what your coachees are sharing, and contribute where it'll land."
-            : "Share what you're learning, celebrate wins, ask for help. Your cohort is here with you."}
+            : "Share what you're learning, celebrate wins, ask for help."}
         </p>
       </div>
 

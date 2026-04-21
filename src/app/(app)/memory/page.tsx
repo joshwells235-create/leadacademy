@@ -26,12 +26,25 @@ export default async function MemoryPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-brand-navy">What your thought partner remembers</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          These are durable things your thought partner has noticed about you, distilled from your
-          conversations over time. Your thought partner sees the most recent of these on every turn.
-          Edit or delete anything that isn't right — your edits are preserved and won't be
-          overwritten.
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Memory
+        </p>
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(28px, 4vw, 40px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          What your thought partner remembers.
+        </h1>
+        <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+          Durable things your thought partner has noticed, distilled from
+          your conversations. It sees the most recent of these on every turn.
+          Edit or delete anything that isn't right — your edits are
+          preserved and won't be overwritten.
         </p>
       </div>
 

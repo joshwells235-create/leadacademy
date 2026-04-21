@@ -30,8 +30,21 @@ export default async function MessagesPage() {
   if (threadIds.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
-        <p className="mt-1 text-sm text-neutral-600">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Messages
+        </p>
+        <h1
+          className="mt-2 leading-[1.08] text-ink"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: "clamp(28px, 4vw, 40px)",
+            fontWeight: 400,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {isCoachViewer ? "Your coachees." : "Your coach."}
+        </h1>
+        <p className="mt-3 text-[15px] leading-[1.6] text-ink-soft">
           {isCoachViewer
             ? "Direct messages with your coachees."
             : "Direct messages with your executive coach."}
@@ -106,8 +119,21 @@ export default async function MessagesPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="text-2xl font-bold text-brand-navy">Messages</h1>
-      <p className="mt-1 mb-6 text-sm text-neutral-600">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+        Messages
+      </p>
+      <h1
+        className="mt-2 leading-[1.08] text-ink"
+        style={{
+          fontFamily: "var(--font-serif)",
+          fontSize: "clamp(28px, 4vw, 40px)",
+          fontWeight: 400,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {isCoachViewer ? "Your coachees." : "Your coach."}
+      </h1>
+      <p className="mt-3 mb-8 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
         {isCoachViewer ? (
           "Direct messages with your coachees. Threads with unread replies float to the top."
         ) : (

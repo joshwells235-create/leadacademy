@@ -19,9 +19,17 @@ export default function ForgotPasswordPage() {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold">Reset your password</h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          We'll email you a link to set a new password.
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Reset
+        </p>
+        <h2
+          className="mt-2 leading-[1.15] text-ink"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 24, fontWeight: 400 }}
+        >
+          Reset your password.
+        </h2>
+        <p className="mt-2 text-sm text-ink-soft">
+          We'll email you a link to set a new one.
         </p>
       </div>
 
@@ -38,8 +46,8 @@ export default function ForgotPasswordPage() {
       <SubmitButton pending={pending}>Send reset link</SubmitButton>
 
       <div className="text-sm">
-        <Link href="/login" className="text-neutral-600 hover:text-brand-blue">
-          Back to sign in
+        <Link href="/login" className="text-ink-soft hover:text-accent transition">
+          ← Back to sign in
         </Link>
       </div>
     </form>

@@ -76,13 +76,26 @@ export default async function GoalsPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-navy">Growth goals</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Every goal here is integrative — it changes you, the people around you, and the work at
-            the organizational level. Click any goal to refine it, or start a new one with your
-            thought partner.
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+            Goals
+          </p>
+          <h1
+            className="mt-2 leading-[1.08] text-ink"
+            style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: "clamp(32px, 4.5vw, 44px)",
+              fontWeight: 400,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            What you're growing into.
+          </h1>
+          <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
+            Every goal here is integrative — it changes you, the people
+            around you, and the work at the organizational level. Click any
+            goal to refine it, or start a new one with your thought partner.
           </p>
         </div>
         <Link

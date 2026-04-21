@@ -1,17 +1,32 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ActionItemToggle } from "@/components/action-item-toggle";
 import { AnnouncementBanner } from "@/components/announcements/announcement-banner";
-import { DailyChallengeWidget } from "@/components/daily-challenge-widget";
-import { CoachNudgeCard } from "@/components/dashboard/coach-nudge-card";
 import { IntakeCtaButton } from "@/components/intake/intake-cta-button";
+import { ArcStrip, type ArcMilestone } from "@/components/dashboard/arc-strip";
+import { ChallengeCard } from "@/components/dashboard/challenge-card";
+import { CoachCard } from "@/components/dashboard/coach-card";
+import { CourseCard } from "@/components/dashboard/course-card";
+import { DensityLayout } from "@/components/dashboard/density-layout";
+import { GreetingBlock } from "@/components/dashboard/greeting-block";
+import { MemoryCard } from "@/components/dashboard/memory-card";
+import { ReflectionCard } from "@/components/dashboard/reflection-card";
+import { SprintCard } from "@/components/dashboard/sprint-card";
+import { TPHero } from "@/components/dashboard/tp-hero";
+import type { TransparencySource } from "@/components/dashboard/tp-transparency-modal";
 import { detectAndFireNudge } from "@/lib/ai/nudges/detect";
 import { getVisibleAnnouncements } from "@/lib/announcements/get-visible";
 import { getUserRoleContext } from "@/lib/auth/role-context";
+import { assembleDashboardData } from "@/lib/dashboard/assemble";
 import { createClient } from "@/lib/supabase/server";
-export const metadata: Metadata = { title: "Dashboard — Leadership Academy" };
+export const metadata: Metadata = { title: "Today — Leadership Academy" };
 
+// The dashboard is the learner's daily return. The new design rebuilds
+// it as two co-equal density modes (Focus / Overview) around a single
+// always-prominent Thought-Partner moment. Cards pull from real data
+// via `assembleDashboardData`; the first-time / intake flows are
+// preserved because they're product-critical onboarding, but their
+// visual language now matches the editorial kit.
 export default async function DashboardPage() {
   const supabase = await createClient();
   const {
@@ -24,111 +39,63 @@ export default async function DashboardPage() {
   const roleCtx = await getUserRoleContext(supabase, user.id);
   if (roleCtx.coachPrimary) redirect("/coach/dashboard");
 
-  const [
-    profileRes,
-    membershipRes,
-    goalsRes,
-    actionsRes,
-    convRes,
-    reflectionsRes,
-    assessmentDocsRes,
-    actionItemsRes,
-    preSessionRes,
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("display_name, super_admin, intake_completed_at")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("memberships")
-      .select("role, organizations(name), cohorts(name)")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("goals")
-      .select("id, title, status, created_at")
-      .eq("user_id", user.id)
-      .neq("status", "archived")
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("action_logs")
-      .select("id, description, occurred_on")
-      .eq("user_id", user.id)
-      .order("occurred_on", { ascending: false })
-      .limit(3),
-    supabase
-      .from("ai_conversations")
-      .select("id, mode, last_message_at")
-      .eq("user_id", user.id)
-      .order("last_message_at", { ascending: false, nullsFirst: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase.from("reflections").select("id").eq("user_id", user.id),
-    supabase
-      .from("assessments")
-      .select("id, assessment_documents(type, status)")
-      .eq("user_id", user.id)
-      .maybeSingle(),
-    supabase
-      .from("action_items")
-      .select("id, title, due_date, completed")
-      .eq("learner_user_id", user.id)
-      .eq("completed", false)
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .limit(5),
-    supabase
-      .from("pre_session_notes")
-      .select("id, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  // Core data assembly — everything the cards need.
+  const data = await assembleDashboardData(supabase, user.id);
+
+  // Side-kick queries that don't belong in the shared assembler (they
+  // only matter for the dashboard's own onboarding flow).
+  const [profileRes, goalsRes, reflectionsRes, convRes, membershipRes] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("intake_completed_at, super_admin")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      supabase
+        .from("goals")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .neq("status", "archived"),
+      supabase.from("reflections").select("id").eq("user_id", user.id),
+      supabase
+        .from("ai_conversations")
+        .select("id, title, last_message_at")
+        .eq("user_id", user.id)
+        .order("last_message_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle(),
+      supabase
+        .from("memberships")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
   const profile = profileRes.data;
-  const membership = membershipRes.data;
-  const goals = goalsRes.data ?? [];
-  const actions = actionsRes.data ?? [];
-  const firstName = profile?.display_name?.split(" ")[0] ?? user.email?.split("@")[0] ?? "there";
-  const totalGoals = goals.length;
-  const inProgress = goals.filter((g) => g.status === "in_progress").length;
-  const completed = goals.filter((g) => g.status === "completed").length;
-
-  // The dashboard opens with the learner's current practice, not a greeting.
-  // Most-recent in-progress goal wins; else most-recent not-started. If
-  // neither, we fall through to the first-time welcome framing below.
-  const primaryGoal =
-    goals.find((g) => g.status === "in_progress") ??
-    goals.find((g) => g.status === "not_started") ??
-    null;
-  const assessmentDocs = (assessmentDocsRes.data?.assessment_documents ?? []) as Array<{
-    type: string;
-    status: string;
-  }>;
-  const assessmentsReady = assessmentDocs.filter((d) => d.status === "ready").length;
-  const hasActionItems = (actionItemsRes.data ?? []).length > 0;
+  const totalGoals = goalsRes.data?.length ?? 0;
+  const totalReflections = reflectionsRes.data?.length ?? 0;
+  const hasMembership = !!membershipRes.data;
+  const recentConversation = convRes.data;
 
   // "First time" = no real practice yet (no goals, no reflections). We
-  // intentionally don't key off conversations — intake creates one, and if
-  // that flipped the learner out of first-time state the next-steps card
-  // would vanish the moment they finished intake, skipping their cue to
-  // set a goal and upload assessments.
-  const isFirstTime = totalGoals === 0 && (reflectionsRes.data?.length ?? 0) === 0;
+  // intentionally don't key off conversations — intake creates one, and
+  // that would flip a learner out of first-time state the moment they
+  // finished intake, skipping their cue to set a goal.
+  const isFirstTime = totalGoals === 0 && totalReflections === 0;
 
-  // Run proactive nudge detection on dashboard visits (skip first-time — no
-  // signal to nudge on). Respects `proactivity_enabled` and rate limits
-  // inside the detector itself.
+  // Run proactive nudge detection on dashboard visits (skip first-time —
+  // no signal to nudge on). Respects `proactivity_enabled` and rate limits
+  // inside the detector.
   if (!isFirstTime) {
     await detectAndFireNudge(supabase, user.id);
   }
 
-  // Load the most recent pending nudge (un-acted, un-dismissed) to render.
+  // Load the most recent pending nudge — drives the TP hero when present.
   const { data: pendingNudge } = await supabase
     .from("coach_nudges")
-    .select("id, notification_id, notifications(title, body, link, read_at)")
+    .select("id, pattern, notification_id, notifications(title, body, link, read_at)")
     .eq("user_id", user.id)
     .is("acted_at", null)
     .is("dismissed_at", null)
@@ -136,28 +103,46 @@ export default async function DashboardPage() {
     .limit(1)
     .maybeSingle();
 
-  const nudgeForCard = pendingNudge?.notifications
-    ? {
-        id: pendingNudge.id,
-        title: (pendingNudge.notifications as unknown as { title: string }).title,
-        body: (pendingNudge.notifications as unknown as { body: string }).body,
-        link:
-          (pendingNudge.notifications as unknown as { link: string | null }).link ??
-          `/coach-chat/from-nudge/${pendingNudge.id}`,
-      }
-    : null;
+  const nudgeNotif = pendingNudge?.notifications as
+    | { title: string; body: string; link: string | null }
+    | null
+    | undefined;
 
-  // Intake is pending when the learner has never completed it. Learners
-  // who're not yet assigned to a real membership (super-admin staff,
-  // unassigned newcomers) don't need it.
-  const intakePending = membership && !profile?.intake_completed_at;
+  // Intake CTA — rendered above the TP hero when pending; the TP hero
+  // itself doesn't belong until intake is done because every chat turn's
+  // context still lacks the "about this leader" block.
+  const intakePending = hasMembership && !profile?.intake_completed_at;
 
-  // System announcements for this user — global, org-scoped, cohort-scoped,
-  // or role-targeted. Dismissed ones are filtered out server-side.
+  // System announcements for this user.
   const announcements = await getVisibleAnnouncements(supabase, user.id);
 
+  // The TP hero's shape — nudge takes priority, recent conversation is
+  // the fallback, otherwise welcome framing.
+  const tpShape: Parameters<typeof TPHero>[0]["shape"] = nudgeNotif
+    ? {
+        kind: "nudge",
+        id: pendingNudge!.id,
+        title: nudgeNotif.title,
+        body: nudgeNotif.body,
+        href: nudgeNotif.link ?? `/coach-chat/from-nudge/${pendingNudge!.id}`,
+        groundedIn: groundedInFor(pendingNudge?.pattern ?? null, data),
+      }
+    : recentConversation
+      ? {
+          kind: "resume",
+          conversationId: recentConversation.id,
+          lastMessageAt: recentConversation.last_message_at,
+          title: recentConversation.title,
+        }
+      : {
+          kind: "welcome",
+          firstName: data?.firstName ?? "there",
+        };
+
+  const milestones = buildMilestones(data);
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="relative mx-auto max-w-[1440px] px-6 py-8 lg:px-12 lg:py-12">
       {announcements.length > 0 && (
         <div className="mb-6 space-y-2">
           {announcements.map((a) => (
@@ -166,119 +151,100 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Header — when the learner has a live goal, *that* leads. Their own
-          words, set in serif, unornamented. Greeting + membership demote to
-          a small line above. The move: your current practice is more
-          important than your name. First-time learners fall back to the
-          greeting framing — they don't have a goal yet. */}
-      {primaryGoal && !isFirstTime ? (
-        <div className="mb-10">
-          <p className="text-xs text-neutral-500">
-            <span className="text-brand-navy">Hi, {firstName}.</span>{" "}
-            {membership ? (
-              <>
-                {membership.organizations?.name}
-                {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
-              </>
-            ) : profile?.super_admin ? (
-              "LeadShift super-admin"
-            ) : null}
-          </p>
-          <p className="section-mark mt-5 text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-            What you're working on
-          </p>
-          <Link
-            href={`/goals/${primaryGoal.id}`}
-            className="mt-3 block font-serif text-[32px] font-medium leading-[1.2] tracking-tight text-brand-navy transition hover:text-brand-blue sm:text-[38px]"
-          >
-            {primaryGoal.title}
-          </Link>
-          {inProgress + completed > 1 && (
-            <p className="mt-3 text-xs text-neutral-500">
-              {inProgress > 1 && (
-                <>
-                  <Link href="/goals" className="hover:text-brand-blue">
-                    {inProgress - 1} other active{" "}
-                    {inProgress - 1 === 1 ? "goal" : "goals"}
-                  </Link>
-                  {completed > 0 && " · "}
-                </>
-              )}
-              {completed > 0 && (
-                <Link href="/goals?status=completed" className="hover:text-brand-blue">
-                  {completed} completed
-                </Link>
-              )}
+      {/* Intake CTA — the only full-width block that ever sits above the
+          greeting. Surfaced whenever intake is pending (first-time or a
+          freshly-reset learner) so the TP always has its "about this
+          leader" block before the dashboard shifts into its normal shape. */}
+      {intakePending && (
+        <div
+          className="mb-6 flex flex-wrap items-start justify-between gap-4 rounded-2xl p-5"
+          style={{
+            border: "1px solid var(--t-rule)",
+            background: "var(--t-paper)",
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-accent">
+              Before we dig in
             </p>
-          )}
-        </div>
-      ) : (
-        <div className="mb-8">
-          <h1 className="font-serif text-3xl font-semibold tracking-tight text-brand-navy">
-            {isFirstTime ? `Welcome, ${firstName}.` : `Hi, ${firstName}.`}
-          </h1>
-          <p className="mt-2 text-sm text-neutral-600">
-            {isFirstTime ? (
-              "You're in the right place. Let's get your leadership academy set up."
-            ) : membership ? (
-              <>
-                {membership.organizations?.name}
-                {membership.cohorts?.name ? <> — {membership.cohorts.name}</> : null}
-              </>
-            ) : profile?.super_admin ? (
-              "LeadShift super-admin"
-            ) : (
-              ""
-            )}
-          </p>
+            <h2
+              className="mt-1 text-ink"
+              style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400 }}
+            >
+              Tell your thought partner about yourself.
+            </h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              A quick conversation so every future exchange feels like it already knows
+              you — your role, team, company, and anything else worth knowing. Takes
+              about five minutes.
+            </p>
+          </div>
+          <IntakeCtaButton>Start intake →</IntakeCtaButton>
         </div>
       )}
 
-      {/* ── FIRST TIME: One-sentence "what is this" explainer so jargon like
-           "thought partner" doesn't land cold. Suppressed once the learner
-           has any real artifacts — they've lived it, they don't need the pitch. ── */}
-      {isFirstTime && (
-        <div className="mb-6 rounded-xl border border-brand-navy/10 bg-white p-7 shadow-sm">
-          <p className="font-serif text-[17px] leading-[1.65] text-brand-navy/90">
-            <span className="font-semibold text-brand-navy">How this works.</span> Goals, sprints,
-            reflections, and courses — paired with your own Thought Partner. That's an always-on AI
-            guide that knows your context and helps you think out loud between coaching sessions.
-            Different from your human executive coach: think of it as the friend you'd text at 9pm
-            when something at work is nagging at you.
-          </p>
-          <p className="mt-4 border-t border-neutral-100 pt-4 font-serif text-sm leading-[1.65] text-brand-navy/65">
-            <span className="font-semibold text-brand-navy/80">What you won't find here.</span> No
-            streaks, no badges, no "you're on fire!" notifications. Leadership isn't a game.
-            You'll see your own thinking, reflected back to you — that's the whole point.
-          </p>
-        </div>
+      {/* Greeting — always visible when we have a first name. For
+          first-time learners, the accent phrase frames the invitation;
+          once they have a live sprint, the phrase switches to reflect
+          the sprint's state. */}
+      <GreetingBlock
+        firstName={data?.firstName ?? "there"}
+        programWeek={data?.program.week ?? null}
+        programTotal={data?.program.total ?? null}
+        sprintNumber={data?.activeSprint?.sprintNumber ?? null}
+        sprintDay={data?.activeSprint?.day ?? null}
+        accentPhrase={derivAccentPhrase(isFirstTime, data?.activeSprint ?? null)}
+        tail={derivAccentTail(isFirstTime, data?.activeSprint ?? null)}
+        density="overview"
+      />
+
+      {/* TP Hero — always prominent. Only suppressed during the intake
+          CTA state, where it would compete for attention with the
+          required first-step action. */}
+      {!intakePending && (
+        <TPHero
+          shape={tpShape}
+          density="overview"
+          transparencySources={buildTransparencySources(data)}
+        />
       )}
 
-      {/* ── FIRST TIME: Getting started steps. Suppressed while intake is pending — the
-           intake is the very first thing a new learner should do, and the steps card
-           overlaps with it (both pitch "start a conversation"). ── */}
+      {/* First-time learners: the three-step "your first steps" card
+          that replaces the dashboard grid until they have real practice
+          to render. Retained verbatim from the pre-redesign flow
+          because it's product-critical onboarding. */}
       {isFirstTime && !intakePending && (
-        <div className="mb-10 rounded-2xl border border-neutral-200 bg-white p-8 shadow-sm">
-          <h2 className="text-lg font-bold text-brand-navy mb-1">Your first steps</h2>
-          <p className="text-sm text-neutral-600 mb-6">
-            Do these in any order — most take about 5 minutes. Uploading assessments takes longer
-            because you'll need to find the PDF reports first, so save that for when you have them
-            handy.
+        <div
+          className="mt-7 rounded-2xl p-7"
+          style={{
+            border: "1px solid var(--t-rule)",
+            background: "var(--t-paper)",
+          }}
+        >
+          <h2
+            className="mb-1 text-ink"
+            style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400 }}
+          >
+            Your first steps.
+          </h2>
+          <p className="mb-6 text-sm text-ink-soft">
+            Do these in any order — most take about 5 minutes. Uploading
+            assessments takes longer because you'll need the PDF reports.
           </p>
           <div className="grid gap-4 md:grid-cols-3">
             <StepCard
               number="1"
               title="Talk with your thought partner"
-              description="Tell it what you're working on as a leader. It already has your profile — no setup."
+              description="Tell it what you're working on. It already has your profile — no setup."
               href="/coach-chat"
               cta="Start a conversation"
-              done={!!convRes.data}
+              done={!!recentConversation}
               estimate="~5 min"
             />
             <StepCard
               number="2"
               title="Set a growth goal"
-              description="Your thought partner drafts it with you — a goal that changes you, your team, and your org."
+              description="Your thought partner drafts it with you — one that changes you, your team, and your org."
               href="/coach-chat?mode=goal"
               cta="Draft a goal"
               done={totalGoals > 0}
@@ -287,181 +253,198 @@ export default async function DashboardPage() {
             <StepCard
               number="3"
               title="Upload your assessments"
-              description="Add your PI, EQ-i, or 360 reports (any you have) so coaching is grounded in real data."
+              description="Add your PI, EQ-i, or 360 reports so coaching is grounded in real data."
               href="/assessments"
               cta="Upload reports"
-              done={assessmentsReady > 0}
+              done={false}
               estimate="when you have the PDFs"
             />
           </div>
         </div>
       )}
 
-      {/* ── Intake CTA — surfaces any time intake is pending (first-time or returning),
-           so a freshly-reset learner or a new invitee always sees it. ── */}
-      {intakePending && (
-        <div className="mb-6 rounded-2xl border-2 border-brand-blue/30 bg-white p-5 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-blue">
-                Before we dig in
-              </p>
-              <h2 className="mt-1 text-base font-bold text-brand-navy">
-                Tell your thought partner about yourself
-              </h2>
-              <p className="mt-1 text-sm text-neutral-700">
-                A quick conversation so every future exchange feels like it already knows you — your
-                role, team, company, and anything else worth knowing. Takes about five minutes.
-              </p>
+      {/* ── Returning-learner layout — Focus + Overview density modes ── */}
+      {!isFirstTime && data && (
+        <DensityLayout
+          focus={
+            <div className="mt-7 grid gap-5 md:grid-cols-2">
+              <SprintCard
+                sprint={data.activeSprint}
+                goal={data.activeSprint?.goal ?? null}
+                actionDays={data.activeSprint?.actionDays ?? []}
+                recentActions={data.activeSprint?.recentActions ?? []}
+                sprintNumber={data.activeSprint?.sprintNumber ?? null}
+                compact
+              />
+              <ChallengeCard compact initialStreak={data.dailyChallengeStreak} />
             </div>
-            <IntakeCtaButton>Start intake →</IntakeCtaButton>
-          </div>
-        </div>
-      )}
-
-      {/* ── Proactive message from the thought partner (when a nudge has fired) ── */}
-      {!isFirstTime && nudgeForCard && <CoachNudgeCard nudge={nudgeForCard} />}
-
-      {/* ── SECTION 1: What to do today (only after first time) ── */}
-      {!isFirstTime && (
-        <div className="mb-8">
-          <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500 mb-4">
-            Today
-          </h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <DailyChallengeWidget />
-
-            {hasActionItems ? (
-              <div className="rounded-xl border-2 border-brand-blue/20 bg-white p-5 shadow-sm">
-                <h3 className="text-sm font-bold text-brand-navy">From your executive coach</h3>
-                <p className="mt-0.5 text-[11px] text-neutral-500">
-                  Action items from your human coach — not the thought partner.
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {(actionItemsRes.data ?? []).map((item) => (
-                    <ActionItemToggle key={item.id} item={item} />
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-neutral-200 bg-white p-5 shadow-sm flex flex-col justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-brand-navy">Thinking out loud?</h3>
-                  <p className="mt-1 text-sm text-neutral-600">
-                    {convRes.data
-                      ? `Last conversation ${new Date(convRes.data.last_message_at ?? "").toLocaleDateString()}. Pick up where you left off, or start fresh.`
-                      : "Your thought partner knows your goals, reflections, and assessments — open it any time."}
-                  </p>
+          }
+          overview={
+            <div className="mt-7 space-y-5">
+              {/* Row 1: Sprint (1.4fr) + [Challenge + Coach] stacked (1fr) */}
+              <div className="grid gap-5 md:grid-cols-[1.4fr_1fr]">
+                <SprintCard
+                  sprint={data.activeSprint}
+                  goal={data.activeSprint?.goal ?? null}
+                  actionDays={data.activeSprint?.actionDays ?? []}
+                  recentActions={data.activeSprint?.recentActions ?? []}
+                  sprintNumber={data.activeSprint?.sprintNumber ?? null}
+                />
+                <div className="grid gap-5">
+                  <ChallengeCard initialStreak={data.dailyChallengeStreak} />
+                  <CoachCard
+                    coachName={data.coachName}
+                    item={data.coachItem}
+                    lastRecapAt={data.lastRecapAt}
+                  />
                 </div>
-                <Link
-                  href="/coach-chat"
-                  className="mt-3 self-start rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition"
-                >
-                  Open thought partner →
-                </Link>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Set-first-goal CTA for learners without one. Goal-holders already
-          see their current practice as the page hero plus an inline "N other
-          active · N completed" meta line — a three-card `In Progress /
-          Completed / Total` stat grid under that read as a scoreboard and
-          contradicted the "leadership isn't a game" refusal on the login
-          panel. Removed. */}
-      {totalGoals === 0 && !isFirstTime && (
-        <div className="mb-8 rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
-          <h2 className="font-serif text-xl font-semibold text-brand-navy">
-            Set your first growth goal.
-          </h2>
-          <p className="mt-2 max-w-2xl font-serif text-[15px] leading-[1.65] text-brand-navy/75">
-            Chat with your thought partner to draft an integrative SMART goal — one that changes
-            you, the people around you, and the work at the organizational level.
-          </p>
-          <Link
-            href="/coach-chat?mode=goal"
-            className="mt-4 inline-flex rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white hover:bg-brand-blue-dark transition"
-          >
-            Draft a goal with your thought partner →
-          </Link>
-        </div>
-      )}
-
-      {/* ── Recent actions — thin, typographic. We used to have a three-card
-           "Elsewhere" grid (Actions / Reflections / Learning) but two of
-           those duplicated nav links. Only the action list has substance;
-           the rest belong in the nav where they already live. ── */}
-      {actions.length > 0 && (
-        <div className="mb-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
-              Recent actions
-            </h2>
-            <Link
-              href="/action-log"
-              className="text-xs text-neutral-500 hover:text-brand-blue"
-            >
-              Open log →
-            </Link>
-          </div>
-          <ul className="divide-y divide-neutral-100 rounded-lg border border-neutral-200 bg-white shadow-sm">
-            {actions.map((a) => (
-              <li key={a.id} className="flex gap-3 px-4 py-2.5 text-sm">
-                <span className="shrink-0 text-[11px] tabular-nums text-neutral-400 pt-0.5">
-                  {a.occurred_on.slice(5)}
-                </span>
-                <span className="truncate text-brand-navy/85">{a.description}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* ── SECTION 4: Setup tasks (contextual — only after first-time onboarding) ── */}
-      {!isFirstTime && (assessmentsReady < 3 || !preSessionRes.data) && (
-        <div>
-          <h2 className="section-mark text-[10px] font-semibold uppercase tracking-[0.18em] text-neutral-500 mb-4">
-            Worth finishing
-          </h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {assessmentsReady < 3 && (
-              <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-brand-navy">Assessments</h3>
-                <p className="mt-1 text-xs text-neutral-600">
-                  {assessmentsReady === 0
-                    ? "Upload your PI, EQ-i, and 360 reports to ground coaching in real data."
-                    : `${assessmentsReady}/3 uploaded. Add the rest for a complete picture.`}
-                </p>
-                <Link
-                  href="/assessments"
-                  className="mt-2 inline-block text-xs text-brand-blue hover:underline"
-                >
-                  {assessmentsReady === 0 ? "Upload assessments →" : "Continue uploading →"}
-                </Link>
+              {/* Row 2: three columns — Reflection, Course, Memory */}
+              <div className="grid gap-5 md:grid-cols-3">
+                <ReflectionCard reflection={data.recentReflection} />
+                <CourseCard course={data.currentCourse} />
+                <MemoryCard facts={data.memoryFacts} />
               </div>
-            )}
-            {!preSessionRes.data && (
-              <div className="rounded-lg border border-dashed border-neutral-300 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-brand-navy">Pre-session prep</h3>
-                <p className="mt-1 text-xs text-neutral-600">
-                  Write prep notes before your next coaching session so your coach can hit the
-                  ground running.
-                </p>
-                <Link
-                  href="/pre-session"
-                  className="mt-2 inline-block text-xs text-brand-blue hover:underline"
-                >
-                  Write prep notes →
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
+              {/* Row 3: full-width arc strip (only when we know program dates) */}
+              {data.program.week !== null && data.program.total !== null && (
+                <ArcStrip
+                  programWeek={data.program.week}
+                  programTotal={data.program.total}
+                  capstoneDate={data.program.capstoneDate}
+                  milestones={milestones}
+                />
+              )}
+            </div>
+          }
+        />
       )}
     </div>
   );
+}
+
+// Greeting accent phrase — swap based on sprint state. Short tails read
+// best here; anything above six words reads like a slogan.
+function derivAccentPhrase(
+  isFirstTime: boolean,
+  sprint: { day: number; totalDays: number; actionCount: number; actionGoal: number } | null,
+): string | undefined {
+  if (isFirstTime) return "Let's set this up together.";
+  if (!sprint) return "Ready when you are.";
+  const midway = sprint.totalDays > 0 && sprint.day >= sprint.totalDays / 2;
+  if (midway) return "The sprint is landing —";
+  return "Pick up where we left off —";
+}
+
+function derivAccentTail(
+  isFirstTime: boolean,
+  sprint: { day: number; totalDays: number } | null,
+): string {
+  if (isFirstTime) return "";
+  if (!sprint) return "what's on your mind?";
+  const midway = sprint.totalDays > 0 && sprint.day >= sprint.totalDays / 2;
+  if (midway) return "let's look at what it's telling us.";
+  return "";
+}
+
+// The TP hero's grounded-in strip. Derived per nudge-pattern so we
+// don't claim context we don't actually have. In a follow-up we can
+// swap this for a real context-ref read.
+function groundedInFor(
+  pattern: string | null,
+  data: Awaited<ReturnType<typeof assembleDashboardData>>,
+): string[] {
+  const out: string[] = [];
+  if (data?.activeSprint) {
+    out.push(`${data.activeSprint.actionCount} sprint actions`);
+  }
+  if (data?.recentReflection) {
+    out.push("last reflection");
+  }
+  if (data?.lastRecapAt) {
+    out.push("last recap");
+  }
+  if (pattern) out.push(pattern.replace(/_/g, " "));
+  return out.slice(0, 5);
+}
+
+// Build the "how it knew" source list for the TP transparency modal.
+// Derived from the same assembled data the hero renders against so the
+// list reflects the actual context the TP is reading from on this turn.
+// Each entry is a (title, short description) pair — the learner sees
+// the pink-dot list + the italic privacy footer in the modal.
+function buildTransparencySources(
+  data: Awaited<ReturnType<typeof assembleDashboardData>>,
+): TransparencySource[] {
+  if (!data) return [];
+  const out: TransparencySource[] = [];
+
+  if (data.activeSprint) {
+    out.push({
+      title: `Last ${data.activeSprint.actionCount} sprint actions`,
+      description:
+        "Every pause moment you've logged this sprint — timestamps, context, tags.",
+    });
+  }
+  if (data.recentReflection) {
+    const snippet = data.recentReflection.content.slice(0, 80).trim();
+    out.push({
+      title: "Your most recent reflection",
+      description: snippet ? `"${snippet}${snippet.length === 80 ? "…" : ""}"` : "Your latest journal entry.",
+    });
+  }
+  if (data.lastRecapAt) {
+    out.push({
+      title: "Last recap with your coach",
+      description: "The patterns your human coach flagged at your last session.",
+    });
+  }
+  if (data.currentCourse) {
+    out.push({
+      title: `Course in progress: ${data.currentCourse.courseTitle}`,
+      description:
+        "Lesson notes and progress from your current module feed the thread.",
+    });
+  }
+  if (data.memoryFacts.length > 0) {
+    out.push({
+      title: `${data.memoryFacts.length} memory ${data.memoryFacts.length === 1 ? "fact" : "facts"} you've confirmed`,
+      description:
+        "Durable things the TP has learned about you across conversations — edit them in /memory.",
+    });
+  }
+  return out;
+}
+
+// Build the arc-strip milestones from cohort metadata. Until we have a
+// real program-dates model, we synthesize a reasonable set: Intake → a
+// sprint marker at each completed sprint → the current sprint (active)
+// → Capstone. Phase 7 replaces this with real program dates.
+function buildMilestones(
+  data: Awaited<ReturnType<typeof assembleDashboardData>>,
+): ArcMilestone[] {
+  const total = data?.program.total ?? 36;
+  const week = data?.program.week ?? 1;
+  const milestones: ArcMilestone[] = [
+    { week: 1, label: "Intake" },
+    { week: Math.round(total * 0.25), label: "Sprint 01" },
+    { week: Math.round(total * 0.5), label: "Assessments" },
+  ];
+  if (data?.activeSprint) {
+    milestones.push({
+      week,
+      label: `Sprint ${String(data.activeSprint.sprintNumber).padStart(2, "0")}`,
+      active: true,
+    });
+  }
+  milestones.push({ week: Math.round(total * 0.85), label: "Integrate" });
+  milestones.push({ week: total, label: "Capstone" });
+  // Dedupe accidental overlaps (e.g. active sprint at week 1).
+  const seen = new Map<number, ArcMilestone>();
+  for (const m of milestones) {
+    const existing = seen.get(m.week);
+    if (!existing || m.active) seen.set(m.week, m);
+  }
+  return Array.from(seen.values()).sort((a, b) => a.week - b.week);
 }
 
 function StepCard({
@@ -483,31 +466,41 @@ function StepCard({
 }) {
   return (
     <div
-      className={`rounded-xl border p-5 transition ${done ? "border-emerald-200 bg-emerald-50/50" : "border-neutral-200 bg-white shadow-sm hover:shadow-md hover:border-brand-blue/30"}`}
+      className="rounded-xl p-5 transition"
+      style={{
+        border: "1px solid var(--t-rule)",
+        background: "var(--t-paper)",
+      }}
     >
-      <div className="flex items-center gap-2 mb-2">
+      <div className="mb-2 flex items-center gap-2">
         <span
-          className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${done ? "bg-emerald-500 text-white" : "bg-brand-navy text-white"}`}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white"
+          style={{ background: done ? "var(--t-blue)" : "var(--t-ink)" }}
         >
           {done ? "✓" : number}
         </span>
-        <h3 className={`text-sm font-bold ${done ? "text-emerald-700" : "text-brand-navy"}`}>
-          {title}
-        </h3>
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
       </div>
-      <p className="text-xs text-neutral-600 mb-3">{description}</p>
+      <p className="mb-3 text-xs text-ink-soft">{description}</p>
       {!done ? (
         <div className="flex items-center gap-2">
           <Link
             href={href}
-            className="inline-flex rounded-md bg-brand-blue px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-blue-dark transition"
+            className="inline-flex rounded-full px-3 py-1.5 text-xs font-medium text-white"
+            style={{ background: "var(--t-accent)" }}
           >
             {cta} →
           </Link>
-          {estimate && <span className="text-[10px] text-neutral-500">{estimate}</span>}
+          {estimate && (
+            <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-ink-faint">
+              {estimate}
+            </span>
+          )}
         </div>
       ) : (
-        <span className="text-xs text-emerald-600 font-medium">Done</span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-blue">
+          Done
+        </span>
       )}
     </div>
   );

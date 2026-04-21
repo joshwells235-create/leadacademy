@@ -30,10 +30,18 @@ function LoginForm({ urlError }: { urlError: string | null }) {
     state.status === "error" ? state.message : urlError ? friendlyAuthError(urlError) : null;
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction} className="space-y-5">
       <div>
-        <h2 className="text-lg font-bold text-brand-navy">Sign in to your account</h2>
-        <p className="mt-1 text-sm text-neutral-500">
+        <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+          Sign in
+        </p>
+        <h2
+          className="mt-2 leading-[1.15] text-ink"
+          style={{ fontFamily: "var(--font-serif)", fontSize: 28, fontWeight: 400, letterSpacing: "-0.01em" }}
+        >
+          Welcome back.
+        </h2>
+        <p className="mt-2 text-sm text-ink-soft">
           Enter the credentials from your invitation email.
         </p>
       </div>
@@ -57,10 +65,10 @@ function LoginForm({ urlError }: { urlError: string | null }) {
       <SubmitButton pending={pending}>Sign in</SubmitButton>
 
       <div className="flex items-center justify-between text-sm">
-        <Link href="/forgot-password" className="text-neutral-600 hover:text-brand-blue">
+        <Link href="/forgot-password" className="text-ink-soft hover:text-accent transition">
           Forgot password?
         </Link>
-        <span className="text-neutral-500">Need an invite? Ask your admin.</span>
+        <span className="text-ink-faint">Need an invite? Ask your admin.</span>
       </div>
     </form>
   );
