@@ -208,10 +208,31 @@ export default async function CoachLearnerPage({ params }: Props) {
           ← All learners
         </Link>
       </div>
-      <h1 className="text-2xl font-semibold">{name}</h1>
-      <p className="mb-4 text-sm text-neutral-500">
-        Everything you need before and after a session.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold">{name}</h1>
+          <p className="mb-4 text-sm text-neutral-500">
+            Everything you need before and after a session.
+          </p>
+        </div>
+        <form
+          action={async () => {
+            "use server";
+            const { startCoachPartnerSessionAction } = await import(
+              "@/lib/coach-partner/start-session-action"
+            );
+            await startCoachPartnerSessionAction(learnerId);
+          }}
+        >
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 rounded-md border border-brand-blue/30 bg-white px-3 py-1.5 text-sm font-medium text-brand-blue transition hover:bg-brand-blue hover:text-white"
+          >
+            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink" />
+            Think this through with Thought Partner →
+          </button>
+        </form>
+      </div>
 
       <div className="mb-6">
         <SinceStrip stats={sinceStats} />

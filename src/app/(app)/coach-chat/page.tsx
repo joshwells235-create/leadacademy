@@ -5,6 +5,8 @@ import { CoachChat } from "@/components/chat/coach-chat";
 import { ConversationsSidebar } from "@/components/chat/conversations-sidebar";
 import { listConversations } from "@/lib/ai/conversation/list-conversations";
 import { loadConversation } from "@/lib/ai/conversation/load-conversation";
+import { getUserRoleContext } from "@/lib/auth/role-context";
+import { createSeededCoachPartnerConversation } from "@/lib/coach-partner/start-session";
 import { createClient } from "@/lib/supabase/server";
 import { createSeededThoughtPartnerConversation } from "@/lib/thought-partner/start-session";
 
@@ -12,7 +14,15 @@ export const metadata: Metadata = { title: "Thought Partner — Leadership Acade
 
 const AUTO_RESUME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-type Mode = "general" | "goal" | "reflection" | "assessment" | "capstone" | "intake" | "debrief";
+type Mode =
+  | "general"
+  | "goal"
+  | "reflection"
+  | "assessment"
+  | "capstone"
+  | "intake"
+  | "debrief"
+  | "coach_partner";
 type Lens = "self" | "others" | "org";
 
 type Props = {
@@ -33,7 +43,15 @@ export default async function CoachChatPage({ searchParams }: Props) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const conversations = await listConversations(supabase, user.id);
+  const roleCtx = await getUserRoleContext(supabase, user.id);
+  const isCoachPrimary = roleCtx.coachPrimary;
+
+  const allConversations = await listConversations(supabase, user.id);
+  // Coach-primary users only see coach_partner conversations in the sidebar.
+  // The learner-facing modes are irrelevant to them.
+  const conversations = isCoachPrimary
+    ? allConversations.filter((c) => c.mode === "coach_partner")
+    : allConversations.filter((c) => c.mode !== "coach_partner");
 
   const requestedMode: Mode =
     sp.mode === "goal" ||
@@ -41,7 +59,8 @@ export default async function CoachChatPage({ searchParams }: Props) {
     sp.mode === "assessment" ||
     sp.mode === "capstone" ||
     sp.mode === "intake" ||
-    sp.mode === "debrief"
+    sp.mode === "debrief" ||
+    sp.mode === "coach_partner"
       ? (sp.mode as Mode)
       : "general";
   const requestedLens: Lens | undefined =
@@ -72,9 +91,11 @@ export default async function CoachChatPage({ searchParams }: Props) {
   // double-seeding.
   let seedMisfire = false;
   if (!target) {
-    const seedableMode =
-      requestedMode === "general" || requestedMode === "goal" || requestedMode === "reflection";
-    if (seedableMode) {
+    // Coach-primary users get a caseload-level coach_partner seed when they
+    // land on /coach-chat without a target. Phase 2: we only seed caseload
+    // here — learner-scoped prep is triggered by the server action from the
+    // learner detail page.
+    if (isCoachPrimary) {
       const { data: membership } = await supabase
         .from("memberships")
         .select("org_id")
@@ -83,21 +104,44 @@ export default async function CoachChatPage({ searchParams }: Props) {
         .limit(1)
         .maybeSingle();
       if (membership?.org_id) {
-        const conversationId = await createSeededThoughtPartnerConversation({
+        const conversationId = await createSeededCoachPartnerConversation({
           supabase,
-          userId: user.id,
+          coachUserId: user.id,
           orgId: membership.org_id,
-          mode: requestedMode,
-          lens: requestedLens,
         });
         if (conversationId) {
           redirect(`/coach-chat?c=${conversationId}`);
         }
-        // Seeding failed (DB error, LLM timeout, etc). Render a visible
-        // notice so the learner isn't left staring at a blank chat
-        // wondering what happened. They can still send a message — the
-        // chat route creates the conversation on demand as a fallback.
         seedMisfire = true;
+      }
+    } else {
+      const seedableMode =
+        requestedMode === "general" || requestedMode === "goal" || requestedMode === "reflection";
+      if (seedableMode) {
+        const { data: membership } = await supabase
+          .from("memberships")
+          .select("org_id")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .limit(1)
+          .maybeSingle();
+        if (membership?.org_id) {
+          const conversationId = await createSeededThoughtPartnerConversation({
+            supabase,
+            userId: user.id,
+            orgId: membership.org_id,
+            mode: requestedMode,
+            lens: requestedLens,
+          });
+          if (conversationId) {
+            redirect(`/coach-chat?c=${conversationId}`);
+          }
+          // Seeding failed (DB error, LLM timeout, etc). Render a visible
+          // notice so the learner isn't left staring at a blank chat
+          // wondering what happened. They can still send a message — the
+          // chat route creates the conversation on demand as a fallback.
+          seedMisfire = true;
+        }
       }
     }
   }
@@ -110,7 +154,8 @@ export default async function CoachChatPage({ searchParams }: Props) {
       target.mode === "assessment" ||
       target.mode === "capstone" ||
       target.mode === "intake" ||
-      target.mode === "debrief"
+      target.mode === "debrief" ||
+      target.mode === "coach_partner"
       ? (target.mode as Mode)
       : "general"
     : requestedMode;
@@ -243,5 +288,6 @@ function headingFor(mode: Mode, lensLabel: string | null, title: string | null):
   if (mode === "assessment") return "Debrief your assessment";
   if (mode === "capstone") return "Shape your capstone story";
   if (mode === "intake") return "Getting to know you";
+  if (mode === "coach_partner") return "Coach Thought Partner";
   return "Thought Partner";
 }

@@ -1,7 +1,14 @@
-import { convertToModelMessages, stepCountIs, streamText, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  type ToolSet,
+  type UIMessage,
+} from "ai";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
+import { buildCoachContext } from "@/lib/ai/context/build-coach-context";
 import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
 import { contentToUIParts } from "@/lib/ai/conversation/content-to-ui-parts";
 import { generateConversationTitle } from "@/lib/ai/conversation/generate-title";
@@ -10,6 +17,7 @@ import { estimateCostCents } from "@/lib/ai/pricing";
 import { PERSONA } from "@/lib/ai/prompts/base/persona";
 import { ASSESSMENT_MODE } from "@/lib/ai/prompts/modes/assessment";
 import { CAPSTONE_MODE } from "@/lib/ai/prompts/modes/capstone";
+import { COACH_PARTNER_PROMPT } from "@/lib/ai/prompts/modes/coach-partner";
 import { DEBRIEF_MODE } from "@/lib/ai/prompts/modes/debrief";
 import { GENERAL_MODE } from "@/lib/ai/prompts/modes/general";
 import { GOAL_MODE } from "@/lib/ai/prompts/modes/goal";
@@ -18,6 +26,7 @@ import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
 import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
 import { buildLogActionTool } from "@/lib/ai/tools/log-action";
+import { buildLogCoachNoteTool } from "@/lib/ai/tools/log-coach-note";
 import { buildRefineCapstoneSectionTool } from "@/lib/ai/tools/refine-capstone-section";
 import { searchLessonsForLearner } from "@/lib/ai/tools/search-lessons";
 import { buildSetDailyChallengeTool } from "@/lib/ai/tools/set-daily-challenge";
@@ -48,7 +57,16 @@ const MODE_PROMPTS: Record<string, string> = {
 const requestSchema = z.object({
   messages: z.array(z.any()), // UIMessage[], validated by AI SDK
   mode: z
-    .enum(["general", "goal", "reflection", "assessment", "capstone", "intake", "debrief"])
+    .enum([
+      "general",
+      "goal",
+      "reflection",
+      "assessment",
+      "capstone",
+      "intake",
+      "debrief",
+      "coach_partner",
+    ])
     .default("general"),
   conversationId: z.string().uuid().optional(),
   goalContext: z
@@ -111,7 +129,8 @@ export async function POST(request: NextRequest) {
       existing.mode === "assessment" ||
       existing.mode === "capstone" ||
       existing.mode === "intake" ||
-      existing.mode === "debrief"
+      existing.mode === "debrief" ||
+      existing.mode === "coach_partner"
     ) {
       mode = existing.mode;
     }
@@ -168,18 +187,54 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Build the learner context — it goes on every turn so the thought partner stays grounded.
-  const learnerContext = await buildLearnerContext(supabase, user.id);
-  const systemPrompt = [
-    PERSONA,
-    `\n## Current mode\n${MODE_PROMPTS[mode] ?? MODE_PROMPTS.general}`,
-    `\n## Learner context (read-only, updated each turn)\n${learnerContext}`,
-    goalContext?.primaryLens
-      ? `\n## Starting lens\nThe learner started this conversation from the **${lensLabel(goalContext.primaryLens)}** lens. That's the on-ramp — the goal must still land with real impact across all three lenses. If calling finalize_goal, you can set primary_lens="${goalContext.primaryLens}" unless the learner clearly pivoted during the conversation.`
-      : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
+  // Coach-partner mode gets a different persona + context (talking TO the
+  // coach, with caseload data) and a narrower tool set. All other modes use
+  // the learner-facing persona + LearnerContext.
+  const isCoachPartner = mode === "coach_partner";
+
+  // If the coach-partner conversation is scoped to a specific coachee via
+  // context_ref.learnerId, the coach context assembler renders a deep-dive
+  // on that learner. Otherwise it renders a caseload overview.
+  let coachScopedLearnerId: string | undefined;
+  if (isCoachPartner && conversationId) {
+    const { data: convo } = await supabase
+      .from("ai_conversations")
+      .select("context_ref")
+      .eq("id", conversationId)
+      .maybeSingle();
+    if (
+      convo?.context_ref &&
+      typeof convo.context_ref === "object" &&
+      !Array.isArray(convo.context_ref)
+    ) {
+      const v = (convo.context_ref as { learnerId?: unknown }).learnerId;
+      if (typeof v === "string") coachScopedLearnerId = v;
+    }
+  }
+
+  const contextBlock = isCoachPartner
+    ? await buildCoachContext({
+        supabase,
+        coachUserId: user.id,
+        learnerUserId: coachScopedLearnerId,
+      })
+    : await buildLearnerContext(supabase, user.id);
+
+  const systemPrompt = isCoachPartner
+    ? [
+        COACH_PARTNER_PROMPT,
+        `\n## Coach context (read-only, updated each turn)\n${contextBlock}`,
+      ].join("\n")
+    : [
+        PERSONA,
+        `\n## Current mode\n${MODE_PROMPTS[mode] ?? MODE_PROMPTS.general}`,
+        `\n## Learner context (read-only, updated each turn)\n${contextBlock}`,
+        goalContext?.primaryLens
+          ? `\n## Starting lens\nThe learner started this conversation from the **${lensLabel(goalContext.primaryLens)}** lens. That's the on-ramp — the goal must still land with real impact across all three lenses. If calling finalize_goal, you can set primary_lens="${goalContext.primaryLens}" unless the learner clearly pivoted during the conversation.`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -564,6 +619,40 @@ export async function POST(request: NextRequest) {
     return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: false };
   });
 
+  // log_coach_note — coach-partner mode only. Writes a private note about
+  // a specific coachee into `coach_notes`. Validates that the acting user
+  // has an active coach_assignment against the learner_id — an RLS-safe
+  // backstop beyond what policies already enforce.
+  const logCoachNoteTool = buildLogCoachNoteTool(async (input) => {
+    const { data: assignment } = await supabase
+      .from("coach_assignments")
+      .select("id")
+      .eq("coach_user_id", user.id)
+      .eq("learner_user_id", input.learner_id)
+      .is("active_to", null)
+      .maybeSingle();
+    if (!assignment) {
+      return { error: "not your coachee" };
+    }
+    const { data, error } = await supabase
+      .from("coach_notes")
+      .insert({
+        org_id: membership.org_id,
+        coach_user_id: user.id,
+        learner_user_id: input.learner_id,
+        content: input.content,
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { error: error?.message ?? "insert failed" };
+    const { data: learnerProfile } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("user_id", input.learner_id)
+      .maybeSingle();
+    return { id: data.id, learner_name: learnerProfile?.display_name ?? null };
+  });
+
   // Strip any dangling tool-call parts — tool-* parts in assistant messages
   // that never received an output. These can happen when a learner types a
   // new message instead of clicking the approval pill's Apply/Dismiss buttons
@@ -573,23 +662,33 @@ export async function POST(request: NextRequest) {
   // next turn if the user still wants the action.
   const sanitizedMessages = sanitizeDanglingToolParts(messages as UIMessage[]);
   const modelMessages = await convertToModelMessages(sanitizedMessages);
+
+  // Coach-partner mode gets a narrower tool set — just log_coach_note for
+  // Phase 2. The learner-facing tools write to the LEARNER's data; exposing
+  // them here would let the coach's thought partner silently log actions or
+  // finalize goals against a learner's record, which is a product-boundary
+  // violation (the learner does that work, not the coach).
+  const toolSet: ToolSet = isCoachPartner
+    ? { log_coach_note: logCoachNoteTool }
+    : {
+        finalize_goal: finalizeGoalTool,
+        tag_themes: tagThemesTool,
+        log_action: logActionTool,
+        create_reflection: createReflectionTool,
+        suggest_lesson: suggestLessonTool,
+        suggest_resource: suggestResourceTool,
+        update_goal_status: updateGoalStatusTool,
+        set_daily_challenge: setDailyChallengeTool,
+        start_goal_sprint: startGoalSprintTool,
+        refine_capstone_section: refineCapstoneSectionTool,
+        update_profile_context: updateProfileContextTool,
+      };
+
   const result = streamText({
     model: claude(model),
     system: systemPrompt,
     messages: modelMessages,
-    tools: {
-      finalize_goal: finalizeGoalTool,
-      tag_themes: tagThemesTool,
-      log_action: logActionTool,
-      create_reflection: createReflectionTool,
-      suggest_lesson: suggestLessonTool,
-      suggest_resource: suggestResourceTool,
-      update_goal_status: updateGoalStatusTool,
-      set_daily_challenge: setDailyChallengeTool,
-      start_goal_sprint: startGoalSprintTool,
-      refine_capstone_section: refineCapstoneSectionTool,
-      update_profile_context: updateProfileContextTool,
-    },
+    tools: toolSet,
     stopWhen: stepCountIs(8), // Room for 2-3 tool calls + follow-up text per turn.
     onFinish: async (event) => {
       const latency = Date.now() - startedAt;

@@ -130,6 +130,40 @@ export default async function CoachDashboardPage() {
         </p>
       </div>
 
+      <section className="mb-6 rounded-xl border border-brand-blue/20 bg-gradient-to-br from-brand-blue/5 to-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span
+                aria-hidden
+                className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink"
+              />
+              <h2 className="text-sm font-bold text-brand-navy">Plan your week with your Thought Partner</h2>
+            </div>
+            <p className="mt-1 text-sm text-neutral-700">
+              Scan your caseload together — what's alive, what's underserved, who to prep for
+              next. Your Thought Partner already sees the data you see here.
+            </p>
+          </div>
+          <form
+            action={async () => {
+              "use server";
+              const { startCoachPartnerSessionAction } = await import(
+                "@/lib/coach-partner/start-session-action"
+              );
+              await startCoachPartnerSessionAction();
+            }}
+          >
+            <button
+              type="submit"
+              className="rounded-md bg-brand-blue px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-blue-dark"
+            >
+              Open Thought Partner →
+            </button>
+          </form>
+        </div>
+      </section>
+
       <LearnersGrid learners={learnerCards} />
     </div>
   );

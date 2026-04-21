@@ -62,6 +62,9 @@ export function TopNav({
               <NavLink href="/community">Community</NavLink>
               <NavLink href="/resources">Resources</NavLink>
               <NavLink href="/messages">Messages</NavLink>
+              <NavLink href="/coach-chat" accent>
+                Thought Partner
+              </NavLink>
             </>
           ) : (
             <>
@@ -140,6 +143,9 @@ export function TopNav({
               </MobileLink>
               <MobileLink href="/messages" onClick={() => setMobileOpen(false)}>
                 Messages
+              </MobileLink>
+              <MobileLink href="/coach-chat" onClick={() => setMobileOpen(false)} accent>
+                Thought Partner
               </MobileLink>
               <MobileLink href="/profile" onClick={() => setMobileOpen(false)}>
                 Your profile

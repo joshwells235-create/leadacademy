@@ -10,7 +10,15 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { type ApprovalHandler, renderToolPart, type ToolPart } from "./tool-renderers";
 
-type Mode = "general" | "goal" | "reflection" | "assessment" | "capstone" | "intake" | "debrief";
+type Mode =
+  | "general"
+  | "goal"
+  | "reflection"
+  | "assessment"
+  | "capstone"
+  | "intake"
+  | "debrief"
+  | "coach_partner";
 
 export function CoachChat({
   mode,
