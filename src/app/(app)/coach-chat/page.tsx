@@ -70,6 +70,16 @@ export default async function CoachChatPage({ searchParams }: Props) {
 
   // Resolve target conversation.
   let target = sp.c ? await loadConversation(supabase, sp.c) : null;
+
+  // If the URL pointed at a specific conversation but it's gone (deleted or
+  // access revoked), don't silently seed a replacement — that races with the
+  // client's own router.push("/coach-chat/new") after a deletion and would
+  // create two identical seeded openers in place of the one deleted chat.
+  // Send the user to a clean URL instead and let the landing flow decide.
+  if (sp.c && !target) {
+    redirect("/coach-chat");
+  }
+
   if (!target && !sp.c && !explicitNew && conversations.length > 0) {
     const mostRecent = conversations[0];
     const anchor = mostRecent.lastMessageAt ?? mostRecent.createdAt;

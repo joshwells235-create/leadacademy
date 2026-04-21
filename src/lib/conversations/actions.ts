@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
@@ -24,7 +23,13 @@ export async function deleteConversation(conversationId: string) {
     .eq("user_id", user.id);
   if (error) return { error: error.message };
 
-  revalidatePath("/coach-chat");
+  // Intentionally NO revalidatePath here. The sidebar handles UI refresh via
+  // router.refresh() (inactive delete) or router.push("/coach-chat/new")
+  // (active delete). Adding revalidatePath races the client navigation: the
+  // server re-renders the stale /coach-chat?c=<deletedId> URL and would seed
+  // a replacement conversation, while router.push concurrently seeds another
+  // at /coach-chat?new=1 — net effect is the deleted chat being replaced by
+  // two identical seeded openers. Leave the refresh to the client.
   return { ok: true };
 }
 
@@ -47,6 +52,7 @@ export async function renameConversation(conversationId: string, title: string) 
     .eq("user_id", user.id);
   if (error) return { error: error.message };
 
-  revalidatePath("/coach-chat");
+  // Rename is benign re: the seed-race — no conversation disappears — but
+  // we still rely on the client's router.refresh() for the UI update.
   return { ok: true };
 }
