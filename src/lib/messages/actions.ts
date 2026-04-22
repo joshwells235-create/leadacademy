@@ -10,8 +10,32 @@ export async function getOrCreateDMThread(otherUserId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "not signed in" };
 
-  const { data: mem } = await supabase.from("memberships").select("org_id").eq("user_id", user.id).eq("status", "active").limit(1).maybeSingle();
-  if (!mem) return { error: "no membership" };
+  // Org_id for the thread: prefer the sender's org (most common path),
+  // fall back to the receiver's when the sender is a super_admin or a
+  // coach without their own membership row. Without this fallback,
+  // super_admin coaches silently couldn't start threads.
+  const { data: senderMem } = await supabase
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", user.id)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  let orgId: string | null = senderMem?.org_id ?? null;
+  if (!orgId) {
+    const { data: receiverMem } = await supabase
+      .from("memberships")
+      .select("org_id")
+      .eq("user_id", otherUserId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    orgId = receiverMem?.org_id ?? null;
+  }
+  if (!orgId) {
+    return { error: "Neither party has an active membership — can't route the thread." };
+  }
+  const mem = { org_id: orgId };
 
   // Check if a DM thread already exists between these two users.
   const { data: existing } = await supabase

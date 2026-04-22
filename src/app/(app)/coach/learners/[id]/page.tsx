@@ -13,10 +13,14 @@ import { RecapForm } from "./recap-form";
 import { SinceStrip } from "./since-strip";
 import { ThoughtPartnerActivity } from "./thought-partner-activity";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ msgError?: string }>;
+};
 
-export default async function CoachLearnerPage({ params }: Props) {
+export default async function CoachLearnerPage({ params, searchParams }: Props) {
   const { id: learnerId } = await params;
+  const { msgError } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -220,17 +224,24 @@ export default async function CoachLearnerPage({ params }: Props) {
           {/* Message coachee — finds or creates a DM thread and jumps
               straight to it. Uses getOrCreateDMThread so a coach who
               already has a thread with this learner just reopens it
-              rather than creating a duplicate. Redirect happens inside
-              the form action so the server controls the navigation. */}
+              rather than creating a duplicate. Redirects inside the
+              form action so the server controls navigation; on error
+              we redirect back with ?msgError so the failure is visible
+              instead of a silent no-op. */}
           <form
             action={async () => {
               "use server";
               const { getOrCreateDMThread } = await import("@/lib/messages/actions");
+              const { redirect } = await import("next/navigation");
               const res = await getOrCreateDMThread(learnerId);
-              if ("threadId" in res) {
-                const { redirect } = await import("next/navigation");
+              if ("threadId" in res && res.threadId) {
                 redirect(`/messages/${res.threadId}`);
               }
+              const err =
+                "error" in res && res.error ? res.error : "Unknown error.";
+              redirect(
+                `/coach/learners/${learnerId}?msgError=${encodeURIComponent(err)}`,
+              );
             }}
           >
             <button
@@ -259,6 +270,20 @@ export default async function CoachLearnerPage({ params }: Props) {
           </form>
         </div>
       </div>
+
+      {msgError && (
+        <div
+          role="alert"
+          className="mb-4 rounded-md px-3 py-2.5 text-sm"
+          style={{
+            color: "var(--color-danger)",
+            background: "var(--color-danger-light)",
+            border: "1px solid color-mix(in srgb, var(--color-danger) 25%, transparent)",
+          }}
+        >
+          <strong>Couldn't open the thread:</strong> {msgError}
+        </div>
+      )}
 
       <div className="mb-4">
         <PrepDraftPanel learnerId={learnerId} />
