@@ -6,7 +6,7 @@ import { MonoLabel } from "@/components/design/mono-label";
 // Shows the module the learner is mid-way through, the next unfinished
 // lesson, a blue progress bar (course progress is coach/learning-side
 // blue, not Thought-Partner pink), and a Continue button. Falls back
-// to a library-browsing nudge when nothing is in progress.
+// to a catalog-browsing nudge when nothing is in progress.
 export function CourseCard({
   course,
 }: {
@@ -21,7 +21,7 @@ export function CourseCard({
   if (!course) {
     return (
       <Panel>
-        <MonoLabel>Library</MonoLabel>
+        <MonoLabel>Learn</MonoLabel>
         <p
           className="mt-3 leading-[1.3] text-ink"
           style={{ fontFamily: "var(--font-serif)", fontWeight: 400, fontSize: 18 }}
@@ -36,7 +36,7 @@ export function CourseCard({
           className="mt-4 inline-flex rounded-full border px-4 py-2 text-[12px] text-ink transition hover:opacity-90"
           style={{ borderColor: "var(--t-rule)" }}
         >
-          Browse library →
+          Browse courses →
         </Link>
       </Panel>
     );

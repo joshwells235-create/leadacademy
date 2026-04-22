@@ -52,7 +52,7 @@ export default async function ResourcesPage() {
 
       {!resources || resources.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
-          <h2 className="font-semibold text-brand-navy">Library's still being curated</h2>
+          <h2 className="font-semibold text-brand-navy">Still being curated</h2>
           <p className="mx-auto mt-1 max-w-sm text-sm text-neutral-600">
             {profile?.super_admin
               ? "Add the first resource above."
