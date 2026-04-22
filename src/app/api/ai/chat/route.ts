@@ -795,6 +795,25 @@ export async function POST(request: NextRequest) {
   });
 }
 
+// Strip tool-* parts that Anthropic can't resolve on the next turn.
+//
+// Keep:
+//   • output-available / output-error — the tool ran, Claude sees the result
+//   • approval-responded / output-denied — the learner resolved the pill;
+//     the approval response is what the model needs to continue the turn.
+//     Stripping these (previous behavior) meant clicking "Save goal" did
+//     nothing: the server received the approval in the request body but
+//     filtered it out before handing it to the model.
+//
+// Strip:
+//   • input-streaming / input-available — tool call with no input yet OR
+//     no approval response yet. Leaving these in causes Anthropic to
+//     reject the next call with "tool_use_id X is not followed by
+//     tool_result blocks."
+//   • approval-requested — approval request the learner walked away from
+//     (typed a new message instead of clicking the pill). Same rejection
+//     risk. The model re-proposes naturally on the next turn if the
+//     learner still wants the action.
 function sanitizeDanglingToolParts(messages: UIMessage[]): UIMessage[] {
   return messages.map((m) => {
     if (m.role !== "assistant") return m;
@@ -805,7 +824,12 @@ function sanitizeDanglingToolParts(messages: UIMessage[]): UIMessage[] {
       const type = (p as { type?: unknown }).type;
       if (typeof type !== "string" || !type.startsWith("tool-")) return true;
       const state = (p as { state?: unknown }).state;
-      return state === "output-available" || state === "output-error";
+      return (
+        state === "output-available" ||
+        state === "output-error" ||
+        state === "approval-responded" ||
+        state === "output-denied"
+      );
     });
     if (cleaned.length === parts.length) return m;
     return { ...m, parts: cleaned } as UIMessage;
