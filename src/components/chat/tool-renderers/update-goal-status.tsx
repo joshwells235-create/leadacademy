@@ -1,7 +1,7 @@
 "use client";
 
 import { ApprovalPill } from "./approval-pill";
-import type { ToolRendererProps } from "./types";
+import { getApprovalId, type ToolRendererProps } from "./types";
 
 type UpdateGoalStatusInput = {
   goal_id?: string;
@@ -41,12 +41,16 @@ export function UpdateGoalStatusRenderer({ part, isLatestMessage, onApproval }: 
     );
   }
 
-  if (part.state === "approval-requested" || part.state === "input-available") {
+  if (
+    part.state === "approval-requested" ||
+    part.state === "approval-responded" ||
+    part.state === "input-available"
+  ) {
     return (
       <ApprovalPill
         title={input.status ? (STATUS_LABEL[input.status] ?? "Update goal") : "Update goal"}
         applyLabel={input.status ? (STATUS_LABEL[input.status] ?? "Apply") : "Apply"}
-        approvalId={part.approvalId}
+        approvalId={getApprovalId(part)}
         isLatestMessage={isLatestMessage}
         onApproval={onApproval}
         body={

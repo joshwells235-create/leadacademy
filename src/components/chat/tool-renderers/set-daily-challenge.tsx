@@ -1,7 +1,7 @@
 "use client";
 
 import { ApprovalPill } from "./approval-pill";
-import type { ToolRendererProps } from "./types";
+import { getApprovalId, type ToolRendererProps } from "./types";
 
 type SetChallengeInput = {
   challenge?: string;
@@ -46,12 +46,16 @@ export function SetDailyChallengeRenderer({
     return null;
   }
 
-  if (part.state === "approval-requested" || part.state === "input-available") {
+  if (
+    part.state === "approval-requested" ||
+    part.state === "approval-responded" ||
+    part.state === "input-available"
+  ) {
     return (
       <ApprovalPill
         title={`Set ${input.for_date ?? "tomorrow"}'s challenge?`}
         applyLabel="Set challenge"
-        approvalId={part.approvalId}
+        approvalId={getApprovalId(part)}
         isLatestMessage={isLatestMessage}
         onApproval={onApproval}
         body={<p className="text-sm">{input.challenge ?? "(drafting challenge)"}</p>}

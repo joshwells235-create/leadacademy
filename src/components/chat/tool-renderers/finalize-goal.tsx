@@ -1,7 +1,7 @@
 "use client";
 
 import { ApprovalPill } from "./approval-pill";
-import type { ToolRendererProps } from "./types";
+import { getApprovalId, type ToolRendererProps } from "./types";
 
 type FinalizeInput = {
   title?: string;
@@ -36,12 +36,16 @@ export function FinalizeGoalRenderer({ part, isLatestMessage, onApproval }: Tool
     );
   }
 
-  if (part.state === "approval-requested" || part.state === "input-available") {
+  if (
+    part.state === "approval-requested" ||
+    part.state === "approval-responded" ||
+    part.state === "input-available"
+  ) {
     return (
       <ApprovalPill
         title="Save this goal?"
         applyLabel="Save goal"
-        approvalId={part.approvalId}
+        approvalId={getApprovalId(part)}
         isLatestMessage={isLatestMessage}
         onApproval={onApproval}
         body={

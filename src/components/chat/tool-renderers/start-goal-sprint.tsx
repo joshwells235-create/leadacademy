@@ -1,7 +1,7 @@
 "use client";
 
 import { ApprovalPill } from "./approval-pill";
-import type { ToolRendererProps } from "./types";
+import { getApprovalId, type ToolRendererProps } from "./types";
 
 type StartSprintInput = {
   goal_id?: string;
@@ -44,12 +44,16 @@ export function StartGoalSprintRenderer({ part, isLatestMessage, onApproval }: T
     );
   }
 
-  if (part.state === "approval-requested" || part.state === "input-available") {
+  if (
+    part.state === "approval-requested" ||
+    part.state === "approval-responded" ||
+    part.state === "input-available"
+  ) {
     return (
       <ApprovalPill
         title="Start this sprint?"
         applyLabel="Start sprint"
-        approvalId={part.approvalId}
+        approvalId={getApprovalId(part)}
         isLatestMessage={isLatestMessage}
         onApproval={onApproval}
         body={
