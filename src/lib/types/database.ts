@@ -301,6 +301,73 @@ export type Database = {
           },
         ]
       }
+      ai_message_attachments: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          extracted_text: string | null
+          filename: string
+          id: string
+          kind: string
+          message_id: string | null
+          mime_type: string
+          org_id: string
+          size_bytes: number
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          extracted_text?: string | null
+          filename: string
+          id?: string
+          kind: string
+          message_id?: string | null
+          mime_type: string
+          org_id: string
+          size_bytes: number
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          extracted_text?: string | null
+          filename?: string
+          id?: string
+          kind?: string
+          message_id?: string | null
+          mime_type?: string
+          org_id?: string
+          size_bytes?: number
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_message_attachments_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_message_attachments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: Json

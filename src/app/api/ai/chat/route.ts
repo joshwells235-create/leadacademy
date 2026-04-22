@@ -10,6 +10,7 @@ import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
 import { buildCoachContext } from "@/lib/ai/context/build-coach-context";
 import { buildLearnerContext } from "@/lib/ai/context/build-learner-context";
+import { buildAttachmentParts } from "@/lib/ai/attachments/to-model-parts";
 import { contentToUIParts } from "@/lib/ai/conversation/content-to-ui-parts";
 import { generateConversationTitle } from "@/lib/ai/conversation/generate-title";
 import { distillPendingConversations } from "@/lib/ai/memory/distill-pending";
@@ -75,6 +76,11 @@ const requestSchema = z.object({
       goalId: z.string().uuid().optional(),
     })
     .optional(),
+  // Attachment ids uploaded via /api/ai/chat/upload. The server joins
+  // these rows onto the incoming user message so the TP sees them
+  // this turn, and links them to the persisted message row via
+  // message_id so replay rehydrates the chips.
+  attachmentIds: z.array(z.string().uuid()).max(5).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -177,14 +183,71 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Persist the latest user message (it's the last in `messages`).
+  // Attachment pipeline. If the client sent any attachmentIds, load the
+  // rows, build the extra message parts (text blocks inlined, images +
+  // PDFs sent as file/image parts with short-lived signed URLs), and
+  // splice them into the latest user message BEFORE we hand it to
+  // streamText. The same modified message is what we persist, so on
+  // replay the transcript shows the text-attachment content inlined.
+  // Image / PDF signed URLs in the persisted row will be stale on
+  // replay — we rely on the ai_message_attachments row's message_id
+  // link for reconstructing chips, not on URLs in the content JSON.
+  const attachmentIds = parsed.data.attachmentIds ?? [];
+  let attachmentRecords: Awaited<ReturnType<typeof buildAttachmentParts>>["records"] = [];
+  let attachmentPrefix = "";
+  let attachmentExtraParts: Awaited<ReturnType<typeof buildAttachmentParts>>["parts"] = [];
+  if (attachmentIds.length > 0) {
+    const built = await buildAttachmentParts(supabase, attachmentIds);
+    attachmentPrefix = built.prefixText;
+    attachmentExtraParts = built.parts;
+    attachmentRecords = built.records;
+  }
+
+  // Persist the latest user message (it's the last in `messages`). When
+  // there are attachments, prepend the text-attachment block(s) to the
+  // user's own text so replay shows transcript content inline, and
+  // append image/pdf parts so the immediate turn has them too.
   const latestUser = messages[messages.length - 1] as UIMessage | undefined;
+  let persistedUserMessageId: string | null = null;
   if (latestUser?.role === "user") {
-    await supabase.from("ai_messages").insert({
-      conversation_id: conversationId,
-      role: "user",
-      content: latestUser as unknown as Json,
-    });
+    const augmented = augmentUserMessageWithAttachments(
+      latestUser,
+      attachmentPrefix,
+      attachmentExtraParts,
+    );
+    // Replace the in-memory last message so streamText sees attachments
+    // this turn. `messages` is a local binding we can mutate.
+    messages[messages.length - 1] = augmented as unknown as (typeof messages)[number];
+    const { data: inserted } = await supabase
+      .from("ai_messages")
+      .insert({
+        conversation_id: conversationId,
+        role: "user",
+        content: augmented as unknown as Json,
+      })
+      .select("id")
+      .single();
+    if (inserted?.id) {
+      persistedUserMessageId = inserted.id;
+    }
+  }
+
+  // Backfill the attachment rows with the persisted message id so the
+  // replay flow can join chips back onto the right message. Also sets
+  // conversation_id if the upload happened before the conversation
+  // existed (i.e. first message of a new thread).
+  if (persistedUserMessageId && attachmentRecords.length > 0) {
+    await supabase
+      .from("ai_message_attachments")
+      .update({
+        message_id: persistedUserMessageId,
+        conversation_id: conversationId,
+      })
+      .in(
+        "id",
+        attachmentRecords.map((r) => r.id),
+      )
+      .eq("user_id", user.id);
   }
 
   // Coach-partner mode gets a different persona + context (talking TO the
@@ -834,6 +897,30 @@ function sanitizeDanglingToolParts(messages: UIMessage[]): UIMessage[] {
     if (cleaned.length === parts.length) return m;
     return { ...m, parts: cleaned } as UIMessage;
   });
+}
+
+// Mutate-free merge of attachment content into a user UIMessage. Text
+// attachment content goes at the top (as a new text part) so Claude
+// reads the reference material before the learner's typed question;
+// image/pdf parts go at the end. The returned shape is still a valid
+// UIMessage — we keep the same `role`, `id`, and any other fields the
+// caller sent; only `parts` changes.
+function augmentUserMessageWithAttachments(
+  msg: UIMessage,
+  prefixText: string,
+  extraParts: Awaited<ReturnType<typeof buildAttachmentParts>>["parts"],
+): UIMessage {
+  if (!prefixText && extraParts.length === 0) return msg;
+  const existing = Array.isArray(msg.parts) ? msg.parts : [];
+  const next: UIMessage["parts"] = [];
+  if (prefixText) {
+    next.push({ type: "text", text: prefixText } as UIMessage["parts"][number]);
+  }
+  for (const p of existing) next.push(p);
+  for (const p of extraParts) {
+    next.push(p as unknown as UIMessage["parts"][number]);
+  }
+  return { ...msg, parts: next };
 }
 
 function lensLabel(lens: "self" | "others" | "org"): string {

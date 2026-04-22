@@ -9,6 +9,8 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { ThinkingDots } from "@/components/design/thinking-dots";
 import { TPOrb } from "@/components/design/tp-orb";
+import type { AttachmentSummary } from "@/lib/ai/attachments/types";
+import { AttachmentPicker } from "./attachment-picker";
 import { type ApprovalHandler, renderToolPart, type ToolPart } from "./tool-renderers";
 
 type Mode =
@@ -51,13 +53,28 @@ export function CoachChat({
 }) {
   const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<AttachmentSummary[]>([]);
   const endRef = useRef<HTMLDivElement>(null);
+
+  // Keep a ref of the latest attachment ids so the `body` closure
+  // inside useChat always reads the current value. Without the ref,
+  // `body` captures the initial empty array and attachments never
+  // make it into the request.
+  const attachmentIdsRef = useRef<string[]>([]);
+  useEffect(() => {
+    attachmentIdsRef.current = attachments.map((a) => a.id);
+  }, [attachments]);
 
   const { messages, sendMessage, status, error, addToolApprovalResponse } = useChat({
     messages: initialMessages,
     transport: new DefaultChatTransport({
       api: "/api/ai/chat",
-      body: () => ({ mode, goalContext, conversationId }),
+      body: () => ({
+        mode,
+        goalContext,
+        conversationId,
+        attachmentIds: attachmentIdsRef.current,
+      }),
       prepareSendMessagesRequest: ({ api, messages, body }) => ({
         api,
         body: { messages, ...(body as object) },
@@ -87,9 +104,25 @@ export function CoachChat({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = input.trim();
-    if (!trimmed || isStreaming) return;
-    sendMessage({ text: trimmed });
+    // Allow sending with attachments and no typed text — learners
+    // sometimes just drop a transcript in and wait for the TP to read
+    // it. A blank send without either is still a no-op.
+    if (!trimmed && attachments.length === 0) return;
+    if (isStreaming) return;
+    // If there's no typed text, provide a minimal placeholder so the
+    // AI SDK has a non-empty user message to send. The server-side
+    // attachment-prefix text will land on the same message.
+    const textToSend =
+      trimmed ||
+      (attachments.length === 1
+        ? `I've attached ${attachments[0].filename}.`
+        : `I've attached ${attachments.length} files.`);
+    sendMessage({ text: textToSend });
     setInput("");
+    // Clear the committed attachments from the composer — they move
+    // onto the just-sent message. On resume the server rehydrates
+    // them onto the same message via message_id linkage.
+    setAttachments([]);
   };
 
   const handleApproval: ApprovalHandler = async (approvalId, approved) => {
@@ -187,12 +220,25 @@ export function CoachChat({
 
       {/* Composer — same max-720px container as the messages so the
           textarea lines up under the conversation. Paper-surface text
-          field, accent send button. Enter sends, Shift+Enter newlines. */}
+          field, accent send button. Enter sends, Shift+Enter newlines.
+          AttachmentPicker lives above the textarea: it renders the
+          paperclip trigger, chip row, and one-time privacy notice as
+          a self-contained unit. */}
       <form
         onSubmit={handleSubmit}
         className="px-6 py-6 lg:px-16 lg:py-7"
         style={{ borderTop: "1px solid var(--t-rule)" }}
       >
+        <div className="mx-auto max-w-[720px]">
+          <div className="mb-3">
+            <AttachmentPicker
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              conversationId={conversationId}
+              disabled={isStreaming}
+            />
+          </div>
+        </div>
         <div className="mx-auto flex max-w-[720px] items-end gap-2.5">
           <label htmlFor="tp-composer" className="sr-only">
             Message your thought partner
