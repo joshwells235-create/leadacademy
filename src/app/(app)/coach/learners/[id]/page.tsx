@@ -216,23 +216,48 @@ export default async function CoachLearnerPage({ params }: Props) {
             Everything you need before and after a session.
           </p>
         </div>
-        <form
-          action={async () => {
-            "use server";
-            const { startCoachPartnerSessionAction } = await import(
-              "@/lib/coach-partner/start-session-action"
-            );
-            await startCoachPartnerSessionAction(learnerId);
-          }}
-        >
-          <button
-            type="submit"
-            className="inline-flex items-center gap-2 rounded-md border border-brand-blue/30 bg-white px-3 py-1.5 text-sm font-medium text-brand-blue transition hover:bg-brand-blue hover:text-white"
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Message coachee — finds or creates a DM thread and jumps
+              straight to it. Uses getOrCreateDMThread so a coach who
+              already has a thread with this learner just reopens it
+              rather than creating a duplicate. Redirect happens inside
+              the form action so the server controls the navigation. */}
+          <form
+            action={async () => {
+              "use server";
+              const { getOrCreateDMThread } = await import("@/lib/messages/actions");
+              const res = await getOrCreateDMThread(learnerId);
+              if ("threadId" in res) {
+                const { redirect } = await import("next/navigation");
+                redirect(`/messages/${res.threadId}`);
+              }
+            }}
           >
-            <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink" />
-            Think this through with Thought Partner →
-          </button>
-        </form>
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 rounded-md border border-brand-blue/30 bg-white px-3 py-1.5 text-sm font-medium text-brand-blue transition hover:bg-brand-blue hover:text-white"
+            >
+              Message {name.split(" ")[0]} →
+            </button>
+          </form>
+          <form
+            action={async () => {
+              "use server";
+              const { startCoachPartnerSessionAction } = await import(
+                "@/lib/coach-partner/start-session-action"
+              );
+              await startCoachPartnerSessionAction(learnerId);
+            }}
+          >
+            <button
+              type="submit"
+              className="inline-flex items-center gap-2 rounded-md border border-brand-blue/30 bg-white px-3 py-1.5 text-sm font-medium text-brand-blue transition hover:bg-brand-blue hover:text-white"
+            >
+              <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-brand-pink" />
+              Think this through with Thought Partner →
+            </button>
+          </form>
+        </div>
       </div>
 
       <div className="mb-4">
