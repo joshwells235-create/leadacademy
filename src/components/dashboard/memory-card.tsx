@@ -73,7 +73,7 @@ export function MemoryCard({
       {hasRealActivity ? (
         <>
           <p className="mt-3 text-[12.5px] leading-[1.55] text-ink-soft">
-            Already on every chat turn:
+            Already in the room:
           </p>
           <ul className="mt-2 space-y-2">
             {items.map((item) => (

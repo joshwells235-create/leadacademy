@@ -86,9 +86,9 @@ export default async function MemoryPage() {
         </h1>
         <p className="mt-3 max-w-[680px] text-[15px] leading-[1.6] text-ink-soft">
           Durable things your thought partner has noticed, distilled from
-          your conversations. It sees the most recent of these on every turn.
-          Edit or delete anything that isn't right — your edits are
-          preserved and won't be overwritten.
+          your conversations. It reads the most recent of these before
+          every reply. Edit or delete anything that isn't right — your
+          edits are preserved and won't be overwritten.
         </p>
       </div>
 

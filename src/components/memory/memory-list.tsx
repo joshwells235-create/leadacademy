@@ -474,7 +474,7 @@ function EmptyState({ contextSummary }: { contextSummary?: ContextSummary }) {
       }}
     >
       <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
-        Already on every chat turn
+        Already in the room
       </p>
       <ul className="mt-3 space-y-2">
         {items.map((item) => (
