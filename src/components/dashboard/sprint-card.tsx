@@ -209,10 +209,13 @@ export function SprintCard({
         </div>
       )}
 
-      {/* Action row — log a moment + (overview only) milestone. The
-          log-a-moment button is the signature CTA on this card; the
-          milestone button is a richer, rarer action for marking a real
-          behavioral shift. Both open signature modals. */}
+      {/* Action row — log a moment + (overview only, with at least one
+          logged action) milestone. The log-a-moment button is the
+          signature CTA and always present. The milestone button is
+          hidden entirely until the learner has logged at least one
+          action — nothing useful to celebrate yet, so the affordance
+          shouldn't advertise itself. Reappears as soon as the first
+          moment lands. */}
       <div className="mt-5 flex flex-wrap gap-2.5">
         <button
           type="button"
@@ -225,7 +228,7 @@ export function SprintCard({
         >
           + Log a moment
         </button>
-        {!compact && (
+        {!compact && sprint.actionCount > 0 && (
           <button
             type="button"
             onClick={() => setMilestoneOpen(true)}
