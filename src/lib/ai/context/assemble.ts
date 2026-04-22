@@ -19,10 +19,21 @@ export async function assembleLearnerContext(
   supabase: SupabaseClient<Database>,
   userId: string,
 ): Promise<LearnerContext> {
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - DAILY_CHALLENGE_WINDOW_DAYS);
-  const sevenDaysAgoIso = sevenDaysAgo.toISOString().slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
+  // Resolve the learner's timezone FIRST so every date in the assembled
+  // context reflects their local "today", not the server's UTC clock.
+  // Serverless runs on UTC; for an Eastern-time learner interacting
+  // after ~8pm ET, `new Date().toISOString()` would return tomorrow's
+  // UTC date and the thought partner would insist today is a day later
+  // than it actually is. Fall back to UTC when the profile has no tz
+  // set (e.g. unassigned users).
+  const { data: tzRow } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const learnerTz = tzRow?.timezone ?? "UTC";
+  const today = ymdInTimezone(new Date(), learnerTz);
+  const sevenDaysAgoIso = shiftYmd(today, -DAILY_CHALLENGE_WINDOW_DAYS);
 
   const [
     profileRes,
@@ -130,10 +141,16 @@ export async function assembleLearnerContext(
     role: membershipRes.data?.role ?? null,
   };
 
-  const todayDate = new Date();
+  // Weekday derived against the learner's timezone — same reason we
+  // resolved `today` in their tz above. Using the server's local
+  // weekday would produce "Wednesday" even when it's still Tuesday
+  // evening for the learner.
   const todayCtx: LearnerContext["today"] = {
     iso: today,
-    weekday: todayDate.toLocaleDateString("en-US", { weekday: "long" }),
+    weekday: new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      timeZone: learnerTz,
+    }),
   };
 
   const profile: ProfileContext = {
@@ -452,4 +469,38 @@ async function resolveCourseProgress(
     lessonsCompleted: progressRows?.length ?? 0,
     lessonsTotal: totalCount ?? 0,
   };
+}
+
+// ─── Timezone-aware date helpers ───────────────────────────────────────
+// Serverless Vercel runs on UTC. Using the server clock to compute
+// "today" for a learner in a non-UTC timezone makes the thought partner
+// confidently wrong about the date once the wall-clock rolls over local
+// midnight. These helpers read the date against a named timezone using
+// Intl.DateTimeFormat (which honors DST and historical offsets) without
+// pulling in a date library.
+
+/** YYYY-MM-DD for `when` as observed in the named IANA timezone. */
+function ymdInTimezone(when: Date, timezone: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(when);
+  const y = parts.find((p) => p.type === "year")?.value ?? "";
+  const m = parts.find((p) => p.type === "month")?.value ?? "";
+  const d = parts.find((p) => p.type === "day")?.value ?? "";
+  return `${y}-${m}-${d}`;
+}
+
+/** Add `days` to a YYYY-MM-DD string (can be negative). Uses UTC math
+ *  on the parsed Y-M-D so offsets never cross a DST boundary twice. */
+function shiftYmd(ymd: string, days: number): string {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
 }

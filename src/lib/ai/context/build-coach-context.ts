@@ -36,8 +36,33 @@ const COACH_JOURNAL_LIMIT = 10;
  */
 export async function buildCoachContext(args: Args): Promise<string> {
   const { supabase, coachUserId, learnerUserId } = args;
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const weekday = new Date().toLocaleDateString("en-US", { weekday: "long" });
+
+  // Resolve the coach's timezone so "today" and "weekday" reflect
+  // their local wall clock, not the server's UTC clock. Same fix as
+  // assembleLearnerContext — coaches using the product in the evening
+  // would otherwise see a one-day-in-the-future date from the thought
+  // partner. Falls back to UTC when no tz is stored.
+  const { data: coachTzRow } = await supabase
+    .from("profiles")
+    .select("timezone")
+    .eq("user_id", coachUserId)
+    .maybeSingle();
+  const coachTz = coachTzRow?.timezone ?? "UTC";
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: coachTz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const y = parts.find((p) => p.type === "year")?.value ?? "";
+  const mo = parts.find((p) => p.type === "month")?.value ?? "";
+  const d = parts.find((p) => p.type === "day")?.value ?? "";
+  const todayIso = `${y}-${mo}-${d}`;
+  const weekday = now.toLocaleDateString("en-US", {
+    weekday: "long",
+    timeZone: coachTz,
+  });
 
   const lines: string[] = [];
   lines.push(`Today: ${todayIso} (${weekday}). Use this for any date math.`);
