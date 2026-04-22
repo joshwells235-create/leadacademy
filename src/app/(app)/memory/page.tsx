@@ -16,12 +16,56 @@ export default async function MemoryPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [facts, profileRes] = await Promise.all([
+  // Memory facts + a lightweight context summary. Same pattern as the
+  // dashboard memory card — when the `learner_memory` table is empty
+  // but the learner has real activity (goals, assessments, reflections,
+  // conversations, an active sprint), the MemoryList empty state
+  // renders an honest inventory of what the TP already has in context
+  // rather than the misleading "Nothing remembered yet" copy.
+  const [
+    facts,
+    profileRes,
+    { count: goalsActiveCount },
+    assessmentRes,
+    { count: reflectionsCount },
+    { count: conversationsCount },
+    sprintRes,
+  ] = await Promise.all([
     listMemoryFacts(supabase, user.id, { limit: 500 }),
-    supabase.from("profiles").select("proactivity_enabled").eq("user_id", user.id).maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("proactivity_enabled, intake_completed_at")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .in("status", ["not_started", "in_progress"]),
+    supabase
+      .from("assessments")
+      .select("assessment_documents(status)")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("reflections")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("ai_conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+    supabase
+      .from("goal_sprints")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "active"),
   ]);
 
   const proactivityEnabled = profileRes.data?.proactivity_enabled ?? true;
+  const assessmentsIntegrated = (
+    (assessmentRes.data?.assessment_documents ?? []) as Array<{ status: string }>
+  ).filter((d) => d.status === "ready").length;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 space-y-8">
@@ -48,7 +92,17 @@ export default async function MemoryPage() {
         </p>
       </div>
 
-      <MemoryList initialFacts={facts} />
+      <MemoryList
+        initialFacts={facts}
+        contextSummary={{
+          goalsActive: goalsActiveCount ?? 0,
+          assessmentsIntegrated,
+          reflectionsCount: reflectionsCount ?? 0,
+          conversationsCount: conversationsCount ?? 0,
+          hasActiveSprint: (sprintRes.count ?? 0) > 0,
+          profileComplete: !!profileRes.data?.intake_completed_at,
+        }}
+      />
 
       <ProactivityToggle initialEnabled={proactivityEnabled} />
     </div>

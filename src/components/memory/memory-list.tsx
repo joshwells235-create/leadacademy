@@ -19,11 +19,28 @@ const CONFIDENCE_LABEL: Record<MemoryConfidence, string> = {
   high: "High confidence — consistent across conversations",
 };
 
-type Props = {
-  initialFacts: MemoryFact[];
+type ContextSummary = {
+  goalsActive: number;
+  assessmentsIntegrated: number;
+  reflectionsCount: number;
+  conversationsCount: number;
+  hasActiveSprint: boolean;
+  profileComplete: boolean;
 };
 
-export function MemoryList({ initialFacts }: Props) {
+type Props = {
+  initialFacts: MemoryFact[];
+  /** When provided, the empty state renders an honest inventory of what
+   *  the TP already has in its per-turn context (goals, assessments,
+   *  reflections, etc.) instead of the blanket "Nothing remembered yet"
+   *  copy. Distillation of durable patterns into editable facts only
+   *  fires after a conversation has been idle ≥2h, so for an active
+   *  learner the fact table is often empty while the TP's real context
+   *  is full. The dashboard card uses the same summary shape. */
+  contextSummary?: ContextSummary;
+};
+
+export function MemoryList({ initialFacts, contextSummary }: Props) {
   const [adding, setAdding] = useState(false);
   const groups = groupByType(initialFacts);
 
@@ -44,13 +61,7 @@ export function MemoryList({ initialFacts }: Props) {
       </div>
 
       {initialFacts.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 bg-white p-8 text-center shadow-sm">
-          <p className="font-serif text-base leading-[1.65] text-brand-navy/75">
-            Nothing remembered yet. As you talk, the durable things — patterns, commitments, the
-            way you actually like to be coached — will land here. You can always edit or remove
-            anything you don't want carried forward.
-          </p>
-        </div>
+        <EmptyState contextSummary={contextSummary} />
       ) : (
         <div className="space-y-6">
           {MEMORY_TYPES.map((type) => {
@@ -414,4 +425,109 @@ function groupByType(facts: MemoryFact[]): Map<MemoryType, MemoryFact[]> {
     m.set(f.type, list);
   }
   return m;
+}
+
+// Empty state — two variants. When the caller passes a context
+// summary with any real activity, we render an honest "already on
+// every chat turn" inventory + an explainer about how durable patterns
+// get distilled into facts. Otherwise we show the original first-run
+// copy so truly-new learners don't see a wall of counts that are all
+// zero.
+function EmptyState({ contextSummary }: { contextSummary?: ContextSummary }) {
+  const items = contextSummary ? buildContextItems(contextSummary) : [];
+  const hasRealActivity = items.length > 0;
+
+  if (!hasRealActivity) {
+    return (
+      <div
+        className="rounded-lg p-8 text-center"
+        style={{
+          background: "var(--t-paper)",
+          border: "1px solid var(--t-rule)",
+          boxShadow: "var(--t-panel-shadow)",
+        }}
+      >
+        <p
+          className="leading-[1.65]"
+          style={{
+            fontFamily: "var(--font-serif)",
+            fontSize: 16,
+            color: "var(--t-ink-soft)",
+          }}
+        >
+          Nothing remembered yet. As you talk, the durable things — patterns,
+          commitments, the way you actually like to be coached — will land
+          here. You can always edit or remove anything you don't want carried
+          forward.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-lg p-7"
+      style={{
+        background: "var(--t-paper)",
+        border: "1px solid var(--t-rule)",
+        boxShadow: "var(--t-panel-shadow)",
+      }}
+    >
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
+        Already on every chat turn
+      </p>
+      <ul className="mt-3 space-y-2">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="flex items-start gap-2 text-[13px] leading-[1.55] text-ink-soft"
+          >
+            <span aria-hidden className="shrink-0 text-accent">
+              ·
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-4 text-[13px] leading-[1.6] text-ink-faint">
+        Your thought partner reads all of that as context before every
+        reply. Durable patterns (preferences, repeating shapes in your
+        reflections, the way you actually like to be coached) get
+        distilled into editable facts here once a conversation settles —
+        usually after you come back to start a fresh one. Until then, add
+        anything you want carried forward with the button above.
+      </p>
+    </div>
+  );
+}
+
+function buildContextItems(ctx: ContextSummary): string[] {
+  const out: string[] = [];
+  if (ctx.profileComplete) {
+    out.push("Your profile — role, team, tenure, context you shared at intake.");
+  }
+  if (ctx.goalsActive > 0) {
+    out.push(
+      `Your ${ctx.goalsActive === 1 ? "goal" : `${ctx.goalsActive} goals`} across the three lenses.`,
+    );
+  }
+  if (ctx.hasActiveSprint) {
+    out.push("Your active sprint — practice, day count, action log.");
+  }
+  if (ctx.assessmentsIntegrated > 0) {
+    out.push(
+      `Your ${ctx.assessmentsIntegrated === 1 ? "assessment" : `${ctx.assessmentsIntegrated} assessments`} — themes and tendencies.`,
+    );
+  }
+  if (ctx.reflectionsCount > 0) {
+    out.push(
+      `Your ${ctx.reflectionsCount === 1 ? "reflection" : `${ctx.reflectionsCount} reflections`}.`,
+    );
+  }
+  if (ctx.conversationsCount > 0) {
+    out.push(
+      `Your ${ctx.conversationsCount === 1 ? "conversation" : `${ctx.conversationsCount} conversations`} with the TP.`,
+    );
+  }
+  return out;
 }
