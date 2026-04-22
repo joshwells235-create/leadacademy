@@ -58,6 +58,19 @@ export type DashboardData = {
   } | null;
   // Top memory facts
   memoryFacts: Array<{ id: string; content: string }>;
+  // A count-level summary of what the thought partner has in its
+  // per-turn context. Lets the memory card render a truthful state
+  // even when `learner_memory` is empty (distillation hasn't fired
+  // yet) — the TP still "knows" the learner's goals, assessments,
+  // reflections, etc., because those all ship in every context turn.
+  contextSummary: {
+    goalsActive: number;
+    assessmentsIntegrated: number;
+    reflectionsCount: number;
+    conversationsCount: number;
+    hasActiveSprint: boolean;
+    profileComplete: boolean;
+  };
 };
 
 export async function assembleDashboardData(
@@ -307,6 +320,45 @@ export async function assembleDashboardData(
     .order("created_at", { ascending: false })
     .limit(3);
 
+  // ── Context summary ───────────────────────────────────────────────────
+  // Counts + flags that let the memory card describe what the TP actually
+  // has in its per-turn context, even before any facts have been distilled.
+  // These are `head: true` queries so they're cheap — no rows returned.
+  const [
+    { count: goalsActiveCount },
+    { data: assessmentDocs },
+    { count: reflectionsCount },
+    { count: conversationsCount },
+    { data: profileFlag },
+  ] = await Promise.all([
+    supabase
+      .from("goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("status", ["not_started", "in_progress"]),
+    supabase
+      .from("assessments")
+      .select("assessment_documents(status)")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("reflections")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("ai_conversations")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("profiles")
+      .select("intake_completed_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+  const assessmentsIntegrated = (
+    (assessmentDocs?.assessment_documents ?? []) as Array<{ status: string }>
+  ).filter((d) => d.status === "ready").length;
+
   return {
     firstName,
     coachName,
@@ -318,6 +370,14 @@ export async function assembleDashboardData(
     recentReflection: reflection ?? null,
     currentCourse,
     memoryFacts: (factsRaw ?? []).map((f) => ({ id: f.id, content: f.content })),
+    contextSummary: {
+      goalsActive: goalsActiveCount ?? 0,
+      assessmentsIntegrated,
+      reflectionsCount: reflectionsCount ?? 0,
+      conversationsCount: conversationsCount ?? 0,
+      hasActiveSprint: !!activeSprint,
+      profileComplete: !!profileFlag?.intake_completed_at,
+    },
   };
 }
 

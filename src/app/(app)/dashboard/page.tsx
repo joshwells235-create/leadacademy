@@ -92,6 +92,35 @@ export default async function DashboardPage() {
     await detectAndFireNudge(supabase, user.id);
   }
 
+  // Fire-and-forget memory distillation for any conversation that's been
+  // idle ≥2h. The previous trigger only fired when a NEW conversation
+  // started, which meant learners who kept one conversation open saw an
+  // empty `learner_memory` table indefinitely. Triggering from the
+  // dashboard closes that gap so facts actually accumulate. The helper
+  // internally claims each row before the LLM call to avoid races with
+  // concurrent triggers.
+  if (!isFirstTime) {
+    const { data: membership } = await supabase
+      .from("memberships")
+      .select("org_id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (membership?.org_id) {
+      const { distillPendingConversations } = await import(
+        "@/lib/ai/memory/distill-pending"
+      );
+      // No await — run in the background so the dashboard isn't blocked
+      // on a Sonnet call.
+      void distillPendingConversations({
+        userScoped: supabase,
+        userId: user.id,
+        orgId: membership.org_id,
+      });
+    }
+  }
+
   // Load the most recent pending nudge — drives the TP hero when present.
   const { data: pendingNudge } = await supabase
     .from("coach_nudges")
@@ -303,7 +332,10 @@ export default async function DashboardPage() {
               <div className="grid gap-5 md:grid-cols-3">
                 <ReflectionCard reflection={data.recentReflection} />
                 <CourseCard course={data.currentCourse} />
-                <MemoryCard facts={data.memoryFacts} />
+                <MemoryCard
+                  facts={data.memoryFacts}
+                  context={data.contextSummary}
+                />
               </div>
               {/* Row 3: full-width arc strip (only when we know program dates) */}
               {data.program.week !== null && data.program.total !== null && (
