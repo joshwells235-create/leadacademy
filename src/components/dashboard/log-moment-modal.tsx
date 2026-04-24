@@ -22,7 +22,13 @@ import { createActionLog, type CreateActionLogState } from "@/lib/goals/actions"
 // celebration frame since the server has already revalidated.
 type Step = "capture" | "celebrate";
 
-const TAGS = ["Pause", "Let go", "Noticed", "Asked back"] as const;
+// Universal tags — they need to work for every kind of sprint (behavioral
+// leadership practices AND systems/habit practices). Earlier set
+// (Pause/Let go/Noticed/Asked back) assumed a delegation-style sprint and
+// didn't fit practices like "open HubSpot after every BD call." These four
+// cover both shapes: did the practice, started but didn't finish, noticed
+// and skipped, or learned something.
+const TAGS = ["Did it", "Almost", "Skipped", "Learned"] as const;
 type Tag = (typeof TAGS)[number];
 
 export function LogMomentModal({
@@ -30,6 +36,7 @@ export function LogMomentModal({
   onClose,
   goalId,
   sprintNumber,
+  sprintPractice,
   sprintActionCount,
   sprintActionGoal,
   sprintDay,
@@ -39,6 +46,7 @@ export function LogMomentModal({
   onClose: () => void;
   goalId: string | null;
   sprintNumber: number | null;
+  sprintPractice: string | null;
   sprintActionCount: number;
   sprintActionGoal: number;
   sprintDay: number;
@@ -47,7 +55,7 @@ export function LogMomentModal({
   const router = useRouter();
   const [step, setStep] = useState<Step>("capture");
   const [description, setDescription] = useState("");
-  const [tag, setTag] = useState<Tag>("Pause");
+  const [tag, setTag] = useState<Tag>("Did it");
 
   // Reset state whenever the modal opens so a second use of the same
   // session starts clean.
@@ -55,7 +63,7 @@ export function LogMomentModal({
     if (open) {
       setStep("capture");
       setDescription("");
-      setTag("Pause");
+      setTag("Did it");
     }
   }, [open]);
 
@@ -99,6 +107,20 @@ export function LogMomentModal({
             What just happened?
           </h2>
 
+          {sprintPractice && (
+            <p
+              className="mt-3 italic text-ink-soft"
+              style={{
+                fontFamily: "var(--font-italic)",
+                fontSize: 13,
+                borderLeft: "2px solid var(--t-accent)",
+                paddingLeft: 10,
+              }}
+            >
+              Your practice: {sprintPractice}
+            </p>
+          )}
+
           <label htmlFor="log-moment-description" className="sr-only">
             What just happened
           </label>
@@ -108,7 +130,7 @@ export function LogMomentModal({
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             autoFocus
-            placeholder="Asked Priya what trade-off she'd make before weighing in…"
+            placeholder="What you did, what you noticed, what tripped you up…"
             className="mt-5 w-full resize-none rounded-[10px] p-4 text-ink outline-none"
             style={{
               fontFamily: "var(--font-italic)",
@@ -295,5 +317,5 @@ function celebrationLine(
   if (pct < 50) {
     return `Early days (${day}/${total}). Keep going — your thought partner will remember this one.`;
   }
-  return `${count}/${goal} pauses logged. Your thought partner will fold this into the next thread.`;
+  return `${count}/${goal} moments logged. Your thought partner will fold this into the next thread.`;
 }

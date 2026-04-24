@@ -131,7 +131,7 @@ export function SprintCard({
         <StatNumber
           value={sprint.actionCount}
           total={sprint.actionGoal}
-          label="Pauses logged"
+          label="Moments logged"
         />
         <StatNumber
           value={sprint.day}
@@ -194,7 +194,7 @@ export function SprintCard({
           style={{ borderTop: "1px solid var(--t-rule)" }}
         >
           <p className="mb-2.5 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-soft">
-            Recent pauses
+            Recent moments
           </p>
           <ul className="space-y-2.5">
             {recentActions.slice(0, 2).map((a) => (
@@ -245,6 +245,7 @@ export function SprintCard({
         onClose={() => setLogOpen(false)}
         goalId={goal.id}
         sprintNumber={sprintNumber}
+        sprintPractice={sprint.practice}
         sprintActionCount={sprint.actionCount}
         sprintActionGoal={sprint.actionGoal}
         sprintDay={sprint.day}
