@@ -5,6 +5,7 @@ import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { getConsultantSinceStats } from "@/lib/consultant/since-last-visit";
 import { createClient } from "@/lib/supabase/server";
 import { AiTriggersPanel } from "./ai-triggers-panel";
+import { SuperCoachPanel } from "./coach-panel";
 import { ConsultantOverridePanel } from "./consultant-override-panel";
 import { SuperSinceStrip } from "./since-strip";
 
@@ -137,6 +138,32 @@ export default async function SuperLearnerPage({ params }: Props) {
       .eq("status", "active"),
     getConsultantSinceStats(supabase, userId),
   ]);
+
+  const [coachCandidatesRes, currentCoachRes] = await Promise.all([
+    supabase
+      .from("memberships")
+      .select("user_id, role, profiles:user_id(display_name)")
+      .eq("org_id", orgId)
+      .in("role", ["coach", "org_admin"])
+      .eq("status", "active"),
+    supabase
+      .from("coach_assignments")
+      .select("coach_user_id, profiles:coach_user_id(display_name)")
+      .eq("learner_user_id", userId)
+      .is("active_to", null)
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  const coachCandidates = (coachCandidatesRes.data ?? []).map((c) => ({
+    user_id: c.user_id,
+    display_name:
+      (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
+  }));
+  const currentCoachUserId = currentCoachRes.data?.coach_user_id ?? null;
+  const currentCoachName =
+    (currentCoachRes.data?.profiles as unknown as { display_name: string | null } | null)
+      ?.display_name ?? null;
 
   if (!learnerProfile.data) notFound();
 
@@ -447,6 +474,13 @@ export default async function SuperLearnerPage({ params }: Props) {
         <Section title="Capstone">
           <CapstoneReadonly row={capstoneRes.data ?? null} viewerRole="admin" />
         </Section>
+
+        <SuperCoachPanel
+          learnerUserId={userId}
+          currentCoachUserId={currentCoachUserId}
+          currentCoachName={currentCoachName}
+          candidates={coachCandidates}
+        />
 
         {mem && (
           <ConsultantOverridePanel

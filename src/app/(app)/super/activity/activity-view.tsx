@@ -65,6 +65,8 @@ const ACTION_LABEL: Record<string, string> = {
   "super.invitation.revoked": "Revoked invitation (cross-org)",
   "super.invitation.created": "Invited member (cross-org)",
   "super.membership.manually_added": "Manually added member (cross-org)",
+  "super.coach_assignment.created": "Assigned coach (cross-org)",
+  "super.coach_assignment.cleared": "Cleared coach assignment (cross-org)",
 };
 
 const DETAIL_KEY_LABEL: Record<string, string> = {

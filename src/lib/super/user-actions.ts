@@ -414,6 +414,80 @@ export async function restoreUser(userId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Coach assignment (cross-org, super-only). Closes any active assignment
+// for the learner, then optionally inserts a new one. Mirrors the org-admin
+// assignCoach but works regardless of which org the super admin belongs to.
+// ---------------------------------------------------------------------------
+
+export async function superAssignCoach(
+  learnerUserId: string,
+  coachUserId: string | null,
+): Promise<{ ok: true } | { error: string }> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const admin = createAdminClient();
+  const { data: learnerMem } = await admin
+    .from("memberships")
+    .select("org_id")
+    .eq("user_id", learnerUserId)
+    .eq("status", "active")
+    .limit(1)
+    .maybeSingle();
+  if (!learnerMem) return { error: "Learner has no active membership." };
+
+  if (coachUserId) {
+    const { data: coachMem } = await admin
+      .from("memberships")
+      .select("id, role, status")
+      .eq("user_id", coachUserId)
+      .eq("org_id", learnerMem.org_id)
+      .eq("status", "active")
+      .in("role", ["coach", "org_admin"])
+      .limit(1)
+      .maybeSingle();
+    if (!coachMem) {
+      return { error: "That user isn't an active coach in the learner's org." };
+    }
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  await admin
+    .from("coach_assignments")
+    .update({ active_to: today })
+    .eq("learner_user_id", learnerUserId)
+    .is("active_to", null);
+
+  if (coachUserId) {
+    const { error } = await admin.from("coach_assignments").insert({
+      org_id: learnerMem.org_id,
+      coach_user_id: coachUserId,
+      learner_user_id: learnerUserId,
+    });
+    if (error) return { error: error.message };
+
+    await logActivity({
+      actorId: ctx.userId,
+      orgId: learnerMem.org_id,
+      action: "super.coach_assignment.created",
+      targetType: "coach_assignment",
+      details: { coach_user_id: coachUserId, learner_user_id: learnerUserId },
+    });
+  } else {
+    await logActivity({
+      actorId: ctx.userId,
+      orgId: learnerMem.org_id,
+      action: "super.coach_assignment.cleared",
+      targetType: "coach_assignment",
+      details: { learner_user_id: learnerUserId },
+    });
+  }
+
+  revalidatePath(`/super/orgs/${learnerMem.org_id}/members/${learnerUserId}`);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
 // Invitations (cross-org view)
 // ---------------------------------------------------------------------------
 
