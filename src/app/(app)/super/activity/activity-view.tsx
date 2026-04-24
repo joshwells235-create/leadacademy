@@ -67,6 +67,8 @@ const ACTION_LABEL: Record<string, string> = {
   "super.membership.manually_added": "Manually added member (cross-org)",
   "super.coach_assignment.created": "Assigned coach (cross-org)",
   "super.coach_assignment.cleared": "Cleared coach assignment (cross-org)",
+  "super.membership.archived": "Archived membership (cross-org)",
+  "super.membership.unarchived": "Unarchived membership (cross-org)",
 };
 
 const DETAIL_KEY_LABEL: Record<string, string> = {

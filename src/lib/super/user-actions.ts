@@ -343,6 +343,40 @@ export async function moveMembershipToOrg(
   return { ok: true };
 }
 
+export async function setMembershipStatus(
+  membershipId: string,
+  status: "active" | "archived",
+): Promise<{ ok: true } | { error: string }> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const admin = createAdminClient();
+  const { data: mem } = await admin
+    .from("memberships")
+    .select("id, org_id, user_id, status")
+    .eq("id", membershipId)
+    .maybeSingle();
+  if (!mem) return { error: "Membership not found." };
+  if (mem.status === status) return { ok: true };
+
+  const { error } = await admin.from("memberships").update({ status }).eq("id", membershipId);
+  if (error) return { error: error.message };
+
+  await logActivity({
+    actorId: ctx.userId,
+    orgId: mem.org_id,
+    action:
+      status === "archived" ? "super.membership.archived" : "super.membership.unarchived",
+    targetType: "membership",
+    targetId: membershipId,
+    details: { learner_user_id: mem.user_id, from: mem.status, to: status },
+  });
+
+  revalidatePath(`/super/users/${mem.user_id}`);
+  revalidatePath(`/super/orgs/${mem.org_id}`);
+  return { ok: true };
+}
+
 // ---------------------------------------------------------------------------
 // Soft delete / restore
 // ---------------------------------------------------------------------------

@@ -11,6 +11,7 @@ import {
   restoreUser,
   revokeUserSessions,
   sendPasswordReset,
+  setMembershipStatus,
   setSuperAdmin,
   softDeleteUser,
   updateUserEmail,
@@ -604,6 +605,27 @@ function MembershipRow({
             className="text-brand-blue hover:underline"
           >
             Move to org / cohort
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              start(async () => {
+                const res = await setMembershipStatus(
+                  mem.id,
+                  mem.status === "active" ? "archived" : "active",
+                );
+                if ("error" in res && res.error) {
+                  setError(res.error);
+                  return;
+                }
+                router.refresh();
+              });
+            }}
+            disabled={pending}
+            className="text-brand-blue hover:underline disabled:opacity-60"
+          >
+            {mem.status === "active" ? "Archive" : "Unarchive"}
           </button>
         </div>
       </div>
