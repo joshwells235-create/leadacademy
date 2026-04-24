@@ -296,7 +296,7 @@ export function TopNav({
           )}
           {(isOrgAdmin || superAdmin) && (
             <MobileLink href="/admin/dashboard" onClick={() => setMobileOpen(false)}>
-              Admin
+              Org Admin
             </MobileLink>
           )}
           {isCoach && (
@@ -310,8 +310,13 @@ export function TopNav({
             </MobileLink>
           )}
           {superAdmin && (
+            <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>
+              Super Admin
+            </MobileLink>
+          )}
+          {superAdmin && (
             <>
-              <MobileSection>People &amp; access</MobileSection>
+              <MobileSection>Super: People &amp; access</MobileSection>
               <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>
                 Organizations
               </MobileLink>
@@ -322,7 +327,7 @@ export function TopNav({
                 Invitations
               </MobileLink>
 
-              <MobileSection>Content</MobileSection>
+              <MobileSection>Super: Content</MobileSection>
               <MobileLink href="/super/course-builder" onClick={() => setMobileOpen(false)}>
                 Course Builder
               </MobileLink>
@@ -333,7 +338,7 @@ export function TopNav({
                 Certificates
               </MobileLink>
 
-              <MobileSection>Insights</MobileSection>
+              <MobileSection>Super: Insights</MobileSection>
               <MobileLink href="/super/ai-usage" onClick={() => setMobileOpen(false)}>
                 AI Usage
               </MobileLink>
@@ -568,7 +573,7 @@ function UserMenu({
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full z-50 mt-2 w-64 py-1"
+            className="absolute right-0 top-full z-50 mt-2 w-64 py-1 max-h-[calc(100vh-5rem)] overflow-y-auto"
             style={{
               background: "var(--t-paper)",
               border: "1px solid var(--t-rule)",
@@ -606,7 +611,7 @@ function UserMenu({
                 <DropdownSection>Portals</DropdownSection>
                 {(isOrgAdmin || superAdmin) && (
                   <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>
-                    Admin
+                    Org Admin
                   </DropdownLink>
                 )}
                 {isCoach && (
@@ -620,8 +625,13 @@ function UserMenu({
                   </DropdownLink>
                 )}
                 {superAdmin && (
+                  <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
+                    Super Admin
+                  </DropdownLink>
+                )}
+                {superAdmin && (
                   <>
-                    <DropdownSection>People &amp; access</DropdownSection>
+                    <DropdownSection>Super: People &amp; access</DropdownSection>
                     <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
                       Organizations
                     </DropdownLink>
@@ -632,7 +642,7 @@ function UserMenu({
                       Invitations
                     </DropdownLink>
 
-                    <DropdownSection>Content</DropdownSection>
+                    <DropdownSection>Super: Content</DropdownSection>
                     <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>
                       Course Builder
                     </DropdownLink>
@@ -643,10 +653,10 @@ function UserMenu({
                       Certificates
                     </DropdownLink>
                     <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>
-                      Resource Learn
+                      Resource Library
                     </DropdownLink>
 
-                    <DropdownSection>Communication</DropdownSection>
+                    <DropdownSection>Super: Communication</DropdownSection>
                     <DropdownLink href="/super/announcements" onClick={() => setOpen(false)}>
                       Announcements
                     </DropdownLink>
@@ -654,7 +664,7 @@ function UserMenu({
                       Moderation
                     </DropdownLink>
 
-                    <DropdownSection>Insights</DropdownSection>
+                    <DropdownSection>Super: Insights</DropdownSection>
                     <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>
                       AI Usage
                     </DropdownLink>

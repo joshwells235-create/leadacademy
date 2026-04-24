@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
         <div className="mx-auto max-w-6xl px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-lg font-bold text-brand-navy">Admin Portal</h1>
+              <h1 className="text-lg font-bold text-brand-navy">Org Admin Portal</h1>
               <p className="text-xs text-neutral-500">{orgName}</p>
             </div>
             <Link href="/dashboard" className="text-xs text-brand-blue hover:underline">
