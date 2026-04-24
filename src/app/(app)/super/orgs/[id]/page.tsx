@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { CohortCapstonePanel } from "./cohort-capstone-panel";
 import { type OrgMemberRow, OrgMembersList } from "./org-members-list";
 import { OrgSettings } from "./org-settings";
+import { SuperInvitePanel } from "./super-invite-panel";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -107,22 +108,28 @@ export default async function OrgDetailPage({ params }: Props) {
           />
         </div>
 
-        {/* Right: members (searchable/filterable) */}
-        <OrgMembersList
-          orgId={orgId}
-          rows={members.map<OrgMemberRow>((m) => ({
-            membershipId: m.id,
-            userId: m.user_id,
-            name:
-              (m.profiles as unknown as { display_name: string | null } | null)?.display_name ??
-              "Unnamed",
-            role: m.role,
-            status: m.status,
-            cohortId: m.cohort_id,
-            cohortName: m.cohorts?.name ?? null,
-          }))}
-          cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
-        />
+        {/* Right: invite + members */}
+        <div className="space-y-5">
+          <SuperInvitePanel
+            orgId={orgId}
+            cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+          />
+          <OrgMembersList
+            orgId={orgId}
+            rows={members.map<OrgMemberRow>((m) => ({
+              membershipId: m.id,
+              userId: m.user_id,
+              name:
+                (m.profiles as unknown as { display_name: string | null } | null)?.display_name ??
+                "Unnamed",
+              role: m.role,
+              status: m.status,
+              cohortId: m.cohort_id,
+              cohortName: m.cohorts?.name ?? null,
+            }))}
+            cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+          />
+        </div>
       </div>
     </div>
   );

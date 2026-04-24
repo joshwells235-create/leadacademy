@@ -6,6 +6,20 @@ import { MEMBER_ROLES } from "@/lib/admin/roles";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
+function buildInviteUrl(token: string): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  return `${appUrl}/register?token=${encodeURIComponent(token)}`;
+}
+
+function generateTempPassword(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let out = "";
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  for (let i = 0; i < 16; i++) out += chars[bytes[i] % chars.length];
+  return `${out}!`;
+}
+
 /**
  * Super-admin user-lifecycle actions. Every action requires super-admin
  * authz and writes to `activity_logs` with `super.user.*` / `super.membership.*`
@@ -402,6 +416,197 @@ export async function restoreUser(userId: string) {
 // ---------------------------------------------------------------------------
 // Invitations (cross-org view)
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Org-scoped invite (for /super/orgs/[id]). Unlike the admin-side inviteMember,
+// these take orgId explicitly — super admins don't necessarily have a
+// membership in the target org, so we can't derive orgId from the caller.
+// ---------------------------------------------------------------------------
+
+const superInviteSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(MEMBER_ROLES),
+  cohortId: z.string().uuid().optional().nullable(),
+});
+
+export async function superInviteMember(
+  orgId: string,
+  input: { email: string; role: string; cohortId?: string | null },
+): Promise<{ ok: true; inviteUrl: string } | { error: string }> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+  const parsed = superInviteSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid input." };
+
+  const admin = createAdminClient();
+
+  const { data: org } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (!org) return { error: "Organization not found." };
+
+  if (parsed.data.cohortId) {
+    const { data: cohort } = await admin
+      .from("cohorts")
+      .select("id, org_id")
+      .eq("id", parsed.data.cohortId)
+      .maybeSingle();
+    if (!cohort || cohort.org_id !== orgId) {
+      return { error: "That cohort doesn't belong to this org." };
+    }
+  }
+
+  const normalizedEmail = parsed.data.email.toLowerCase().trim();
+
+  const { data: existingInvite } = await admin
+    .from("invitations")
+    .select("id")
+    .eq("org_id", orgId)
+    .ilike("email", normalizedEmail)
+    .is("consumed_at", null)
+    .gt("expires_at", new Date().toISOString())
+    .limit(1)
+    .maybeSingle();
+  if (existingInvite) {
+    return {
+      error:
+        "This email already has a pending invitation in this org. Resend the existing invite instead.",
+    };
+  }
+
+  const { data: authUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const matchUser = authUsers?.users.find((u) => u.email?.toLowerCase() === normalizedEmail);
+  if (matchUser) {
+    const { data: activeMem } = await admin
+      .from("memberships")
+      .select("id")
+      .eq("org_id", orgId)
+      .eq("user_id", matchUser.id)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (activeMem) {
+      return { error: "This email is already an active member of this org." };
+    }
+  }
+
+  const { data: inv, error } = await admin
+    .from("invitations")
+    .insert({
+      org_id: orgId,
+      email: normalizedEmail,
+      role: parsed.data.role,
+      cohort_id: parsed.data.cohortId ?? null,
+      invited_by: ctx.userId,
+    })
+    .select("id, token")
+    .single();
+  if (error) return { error: error.message };
+
+  await logActivity({
+    actorId: ctx.userId,
+    orgId,
+    action: "super.invitation.created",
+    targetType: "invitation",
+    targetId: inv.id,
+    details: { email: normalizedEmail, role: parsed.data.role },
+  });
+
+  revalidatePath(`/super/orgs/${orgId}`);
+  return { ok: true, inviteUrl: buildInviteUrl(inv.token) };
+}
+
+const superManualAddSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().min(1).max(100),
+  role: z.enum(MEMBER_ROLES),
+  cohortId: z.string().uuid().optional().nullable(),
+});
+
+export async function superManuallyAddMember(
+  orgId: string,
+  input: { email: string; displayName: string; role: string; cohortId?: string | null },
+): Promise<{ ok: true; email: string; tempPassword: string } | { error: string }> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+  const parsed = superManualAddSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid input." };
+
+  const admin = createAdminClient();
+
+  const { data: org } = await admin
+    .from("organizations")
+    .select("id")
+    .eq("id", orgId)
+    .maybeSingle();
+  if (!org) return { error: "Organization not found." };
+
+  if (parsed.data.cohortId) {
+    const { data: cohort } = await admin
+      .from("cohorts")
+      .select("id, org_id")
+      .eq("id", parsed.data.cohortId)
+      .maybeSingle();
+    if (!cohort || cohort.org_id !== orgId) {
+      return { error: "That cohort doesn't belong to this org." };
+    }
+  }
+
+  const email = parsed.data.email.toLowerCase().trim();
+
+  const { data: existingUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const match = existingUsers?.users.find((u) => u.email?.toLowerCase() === email);
+  if (match) {
+    return {
+      error:
+        "An account with this email already exists. Use the regular invite flow or assign them a role via the org members list.",
+    };
+  }
+
+  const tempPassword = generateTempPassword();
+
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email,
+    password: tempPassword,
+    email_confirm: true,
+    user_metadata: { display_name: parsed.data.displayName },
+  });
+  if (createErr || !created.user) {
+    return { error: createErr?.message ?? "Couldn't create user." };
+  }
+
+  await admin
+    .from("profiles")
+    .upsert(
+      { user_id: created.user.id, display_name: parsed.data.displayName },
+      { onConflict: "user_id" },
+    );
+
+  const { error: memErr } = await admin.from("memberships").insert({
+    org_id: orgId,
+    user_id: created.user.id,
+    role: parsed.data.role,
+    cohort_id: parsed.data.cohortId ?? null,
+    status: "active",
+  });
+  if (memErr) {
+    await admin.auth.admin.deleteUser(created.user.id);
+    return { error: `Couldn't create membership: ${memErr.message}` };
+  }
+
+  await logActivity({
+    actorId: ctx.userId,
+    orgId,
+    action: "super.membership.manually_added",
+    targetType: "membership",
+    details: { email, role: parsed.data.role, cohort_id: parsed.data.cohortId ?? null },
+  });
+
+  revalidatePath(`/super/orgs/${orgId}`);
+  return { ok: true, email, tempPassword };
+}
 
 export async function revokeInvitation(invitationId: string) {
   const ctx = await requireSuperAdmin();

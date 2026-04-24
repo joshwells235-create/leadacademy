@@ -63,6 +63,8 @@ const ACTION_LABEL: Record<string, string> = {
   "super.membership.role_changed": "Changed membership role",
   "super.membership.moved_org": "Moved membership to new org",
   "super.invitation.revoked": "Revoked invitation (cross-org)",
+  "super.invitation.created": "Invited member (cross-org)",
+  "super.membership.manually_added": "Manually added member (cross-org)",
 };
 
 const DETAIL_KEY_LABEL: Record<string, string> = {
