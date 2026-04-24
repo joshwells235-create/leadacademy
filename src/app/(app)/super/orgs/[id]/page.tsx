@@ -29,7 +29,7 @@ export default async function OrgDetailPage({ params }: Props) {
     .maybeSingle();
   if (!org) notFound();
 
-  const [membersRes, cohortsRes, usageRes] = await Promise.all([
+  const [membersRes, cohortsRes, usageRes, superAdminsRes] = await Promise.all([
     supabase
       .from("memberships")
       .select("id, user_id, role, status, cohort_id, cohorts(name), profiles:user_id(display_name)")
@@ -43,18 +43,41 @@ export default async function OrgDetailPage({ params }: Props) {
       .from("ai_usage")
       .select("tokens_in, tokens_out, usd_cents, request_count, model")
       .eq("org_id", orgId),
+    // Super admins are valid consultant candidates regardless of whether
+    // they hold a consultant membership in this org — LeadShift super-admins
+    // commonly flex into the consultant seat ad-hoc without being invited
+    // org-by-org.
+    supabase
+      .from("profiles")
+      .select("user_id, display_name")
+      .eq("super_admin", true)
+      .is("deleted_at", null),
   ]);
 
   const members = membersRes.data ?? [];
   const cohorts = cohortsRes.data ?? [];
   const usage = usageRes.data ?? [];
-  const consultantCandidates = members
-    .filter((m) => m.role === "consultant" && m.status === "active")
-    .map((m) => ({
+
+  const seen = new Set<string>();
+  const consultantCandidates: { user_id: string; display_name: string | null }[] = [];
+  for (const m of members) {
+    if (m.role !== "consultant" || m.status !== "active") continue;
+    if (seen.has(m.user_id)) continue;
+    seen.add(m.user_id);
+    consultantCandidates.push({
       user_id: m.user_id,
       display_name:
         (m.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
-    }));
+    });
+  }
+  for (const s of superAdminsRes.data ?? []) {
+    if (seen.has(s.user_id)) continue;
+    seen.add(s.user_id);
+    consultantCandidates.push({
+      user_id: s.user_id,
+      display_name: s.display_name ? `${s.display_name} (super)` : "super admin",
+    });
+  }
   const totalCost = usage.reduce((s, u) => s + u.usd_cents, 0);
   const totalRequests = usage.reduce((s, u) => s + u.request_count, 0);
   const totalTokensIn = usage.reduce((s, u) => s + u.tokens_in, 0);

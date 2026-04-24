@@ -471,17 +471,28 @@ export async function superAssignCoach(
   if (!learnerMem) return { error: "Learner has no active membership." };
 
   if (coachUserId) {
-    const { data: coachMem } = await admin
-      .from("memberships")
-      .select("id, role, status")
+    // Super admins can always flex into the coach seat for any learner —
+    // they don't need a coach/org_admin membership in the target org.
+    const { data: coachProfile } = await admin
+      .from("profiles")
+      .select("super_admin")
       .eq("user_id", coachUserId)
-      .eq("org_id", learnerMem.org_id)
-      .eq("status", "active")
-      .in("role", ["coach", "org_admin"])
-      .limit(1)
       .maybeSingle();
-    if (!coachMem) {
-      return { error: "That user isn't an active coach in the learner's org." };
+    const isSuper = !!coachProfile?.super_admin;
+
+    if (!isSuper) {
+      const { data: coachMem } = await admin
+        .from("memberships")
+        .select("id, role, status")
+        .eq("user_id", coachUserId)
+        .eq("org_id", learnerMem.org_id)
+        .eq("status", "active")
+        .in("role", ["coach", "org_admin"])
+        .limit(1)
+        .maybeSingle();
+      if (!coachMem) {
+        return { error: "That user isn't an active coach in the learner's org." };
+      }
     }
   }
 

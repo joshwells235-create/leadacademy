@@ -44,6 +44,7 @@ export default async function SuperLearnerPage({ params }: Props) {
     learnerMembershipRes,
     consultantCandidatesRes,
     sinceStats,
+    superAdminCandidatesRes,
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -137,9 +138,14 @@ export default async function SuperLearnerPage({ params }: Props) {
       .eq("role", "consultant")
       .eq("status", "active"),
     getConsultantSinceStats(supabase, userId),
+    supabase
+      .from("profiles")
+      .select("user_id, display_name")
+      .eq("super_admin", true)
+      .is("deleted_at", null),
   ]);
 
-  const [coachCandidatesRes, currentCoachRes] = await Promise.all([
+  const [coachCandidatesRes, currentCoachRes, superAdminCoachesRes] = await Promise.all([
     supabase
       .from("memberships")
       .select("user_id, role, profiles:user_id(display_name)")
@@ -153,13 +159,36 @@ export default async function SuperLearnerPage({ params }: Props) {
       .is("active_to", null)
       .limit(1)
       .maybeSingle(),
+    // Super admins are valid coach candidates regardless of whether they
+    // hold a coach/org_admin membership in this org — they commonly flex
+    // into the coach seat for a specific learner without being invited
+    // org-by-org.
+    supabase
+      .from("profiles")
+      .select("user_id, display_name")
+      .eq("super_admin", true)
+      .is("deleted_at", null),
   ]);
 
-  const coachCandidates = (coachCandidatesRes.data ?? []).map((c) => ({
-    user_id: c.user_id,
-    display_name:
-      (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
-  }));
+  const coachSeen = new Set<string>();
+  const coachCandidates: { user_id: string; display_name: string | null }[] = [];
+  for (const c of coachCandidatesRes.data ?? []) {
+    if (coachSeen.has(c.user_id)) continue;
+    coachSeen.add(c.user_id);
+    coachCandidates.push({
+      user_id: c.user_id,
+      display_name:
+        (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
+    });
+  }
+  for (const s of superAdminCoachesRes.data ?? []) {
+    if (coachSeen.has(s.user_id)) continue;
+    coachSeen.add(s.user_id);
+    coachCandidates.push({
+      user_id: s.user_id,
+      display_name: s.display_name ? `${s.display_name} (super)` : "super admin",
+    });
+  }
   const currentCoachUserId = currentCoachRes.data?.coach_user_id ?? null;
   const currentCoachName =
     (currentCoachRes.data?.profiles as unknown as { display_name: string | null } | null)
@@ -171,11 +200,25 @@ export default async function SuperLearnerPage({ params }: Props) {
   const cohortDefaultConsultantId = mem?.cohorts?.consultant_user_id ?? null;
   const overrideConsultantId = mem?.consultant_user_id ?? null;
 
-  const consultantCandidates = (consultantCandidatesRes.data ?? []).map((c) => ({
-    user_id: c.user_id,
-    display_name:
-      (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
-  }));
+  const consultantSeen = new Set<string>();
+  const consultantCandidates: { user_id: string; display_name: string | null }[] = [];
+  for (const c of consultantCandidatesRes.data ?? []) {
+    if (consultantSeen.has(c.user_id)) continue;
+    consultantSeen.add(c.user_id);
+    consultantCandidates.push({
+      user_id: c.user_id,
+      display_name:
+        (c.profiles as unknown as { display_name: string | null } | null)?.display_name ?? null,
+    });
+  }
+  for (const s of superAdminCandidatesRes.data ?? []) {
+    if (consultantSeen.has(s.user_id)) continue;
+    consultantSeen.add(s.user_id);
+    consultantCandidates.push({
+      user_id: s.user_id,
+      display_name: s.display_name ? `${s.display_name} (super)` : "super admin",
+    });
+  }
   const nameById = new Map(consultantCandidates.map((c) => [c.user_id, c.display_name]));
   const overrideConsultantName = overrideConsultantId
     ? (nameById.get(overrideConsultantId) ?? null)

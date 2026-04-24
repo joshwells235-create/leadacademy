@@ -68,7 +68,8 @@ export function CohortCapstonePanel({
         </ul>
       )}
       <p className="mt-4 text-[11px] leading-relaxed text-neutral-500">
-        The consultant owns program delivery for the cohort. They must first have an active{" "}
+        The consultant owns program delivery for the cohort. Super admins can flex into this seat
+        without an org membership; any other person must have an active{" "}
         <code className="rounded bg-brand-light px-1">consultant</code> membership in this org —
         invite them on the People tab if they don't appear in the picker.
       </p>
