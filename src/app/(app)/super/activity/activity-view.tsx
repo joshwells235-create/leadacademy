@@ -55,6 +55,7 @@ const ACTION_LABEL: Record<string, string> = {
   "super.user.email_changed": "Changed user email",
   "super.user.email_confirmed": "Manually confirmed email",
   "super.user.password_reset_sent": "Sent password reset",
+  "super.user.password_set_directly": "Set password directly",
   "super.user.sessions_revoked": "Revoked user sessions",
   "super.user.super_admin_granted": "Granted super-admin",
   "super.user.super_admin_revoked": "Revoked super-admin",

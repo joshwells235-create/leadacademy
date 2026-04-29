@@ -174,6 +174,40 @@ export async function sendPasswordReset(userId: string) {
   return { ok: true, link: data?.properties?.action_link ?? null };
 }
 
+/**
+ * Set a user's password directly to a freshly-generated temp password and
+ * return it to the admin to share via a non-email channel. Bypasses the
+ * recovery-link flow entirely — useful when the user's email environment
+ * (corporate Safe Links, etc.) auto-clicks links and consumes single-use
+ * OTP tokens before the user can use them.
+ */
+export async function setUserPassword(userId: string) {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const admin = createAdminClient();
+  const { data: existing } = await admin.auth.admin.getUserById(userId);
+  if (!existing?.user) return { error: "User not found." };
+
+  const tempPassword = generateTempPassword();
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password: tempPassword,
+  });
+  if (error) return { error: error.message };
+
+  await logActivity({
+    actorId: ctx.userId,
+    orgId: null,
+    action: "super.user.password_set_directly",
+    targetType: "auth.user",
+    targetId: userId,
+    details: { email: existing.user.email ?? null },
+  });
+
+  return { ok: true, tempPassword };
+}
+
 export async function confirmUserEmail(userId: string) {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };

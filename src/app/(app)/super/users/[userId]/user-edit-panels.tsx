@@ -13,6 +13,7 @@ import {
   sendPasswordReset,
   setMembershipStatus,
   setSuperAdmin,
+  setUserPassword,
   softDeleteUser,
   updateUserEmail,
   updateUserProfile,
@@ -335,14 +336,21 @@ function AuthActionsPanel({
 }) {
   const [pending, start] = useTransition();
   const [resetLink, setResetLink] = useState<string | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
+  const [confirmingDirectSet, setConfirmingDirectSet] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const router = useRouter();
 
-  const reset = () => {
+  const clearOutputs = () => {
     setError(null);
     setDone(null);
     setResetLink(null);
+    setTempPassword(null);
+  };
+
+  const reset = () => {
+    clearOutputs();
     start(async () => {
       const res = await sendPasswordReset(userId);
       if ("error" in res && res.error) {
@@ -351,6 +359,20 @@ function AuthActionsPanel({
       }
       setResetLink(res.link ?? null);
       setDone("Password reset link generated. Supabase also emailed the user.");
+    });
+  };
+
+  const setPasswordDirectly = () => {
+    clearOutputs();
+    setConfirmingDirectSet(false);
+    start(async () => {
+      const res = await setUserPassword(userId);
+      if ("error" in res && res.error) {
+        setError(res.error);
+        return;
+      }
+      setTempPassword(res.tempPassword ?? null);
+      setDone("New password set. Share it with the user via a non-email channel.");
     });
   };
 
@@ -394,6 +416,18 @@ function AuthActionsPanel({
         </button>
         <button
           type="button"
+          onClick={() => {
+            clearOutputs();
+            setConfirmingDirectSet(true);
+          }}
+          disabled={pending || disabled}
+          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-brand-navy hover:bg-brand-light disabled:opacity-60"
+          title="Bypasses email entirely. Use when corporate Safe Links is consuming reset tokens."
+        >
+          Set password directly
+        </button>
+        <button
+          type="button"
           onClick={confirm}
           disabled={pending || disabled}
           className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs text-brand-navy hover:bg-brand-light disabled:opacity-60"
@@ -409,12 +443,39 @@ function AuthActionsPanel({
           Revoke all sessions
         </button>
       </div>
+      {confirmingDirectSet && (
+        <div className="mt-3">
+          <ConfirmBlock
+            title="Set this user's password directly?"
+            tone="caution"
+            confirmLabel={pending ? "Working…" : "Generate new password"}
+            pending={pending}
+            onCancel={() => setConfirmingDirectSet(false)}
+            onConfirm={setPasswordDirectly}
+          >
+            A new temp password will be generated and become the user's only working password
+            immediately. Share it via a non-email channel (text, Slack, phone). Any prior password
+            stops working.
+          </ConfirmBlock>
+        </div>
+      )}
       {resetLink && (
         <div className="mt-3 rounded-md border border-brand-blue/30 bg-brand-blue/5 p-3">
           <p className="text-[11px] font-medium text-brand-blue mb-1">
             Reset link (share with user if email delivery is down):
           </p>
           <p className="break-all font-mono text-[11px] text-brand-navy">{resetLink}</p>
+        </div>
+      )}
+      {tempPassword && (
+        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3">
+          <p className="text-[11px] font-medium text-amber-800 mb-1">
+            Temp password (share via text, Slack, or phone — not email):
+          </p>
+          <p className="break-all font-mono text-sm text-brand-navy">{tempPassword}</p>
+          <p className="mt-2 text-[11px] text-amber-800">
+            Tell the user to log in with this password and change it from their profile.
+          </p>
         </div>
       )}
       {done && <p className="mt-2 text-xs text-emerald-700">{done}</p>}
