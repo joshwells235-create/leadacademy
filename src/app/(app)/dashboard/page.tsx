@@ -7,6 +7,7 @@ import { ArcStrip, type ArcMilestone } from "@/components/dashboard/arc-strip";
 import { ChallengeCard } from "@/components/dashboard/challenge-card";
 import { CoachCard } from "@/components/dashboard/coach-card";
 import { CourseCard } from "@/components/dashboard/course-card";
+import { DensityHint } from "@/components/dashboard/density-hint";
 import { DensityLayout } from "@/components/dashboard/density-layout";
 import { GreetingBlock } from "@/components/dashboard/greeting-block";
 import { MemoryCard } from "@/components/dashboard/memory-card";
@@ -333,17 +334,27 @@ export default async function DashboardPage() {
       {!isFirstTime && data && (
         <DensityLayout
           focus={
-            <div className="mt-7 grid gap-5 md:grid-cols-2">
-              <SprintCard
-                sprint={data.activeSprint}
-                goal={data.activeSprint?.goal ?? null}
-                actionDays={data.activeSprint?.actionDays ?? []}
-                recentActions={data.activeSprint?.recentActions ?? []}
-                sprintNumber={data.activeSprint?.sprintNumber ?? null}
-                compact
-              />
-              <ChallengeCard compact initialStreak={data.dailyChallengeStreak} />
-            </div>
+            <>
+              <div className="mt-7 grid gap-5 md:grid-cols-2">
+                <SprintCard
+                  sprint={data.activeSprint}
+                  goal={data.activeSprint?.goal ?? null}
+                  actionDays={data.activeSprint?.actionDays ?? []}
+                  recentActions={data.activeSprint?.recentActions ?? []}
+                  sprintNumber={data.activeSprint?.sprintNumber ?? null}
+                  compact
+                />
+                <ChallengeCard compact initialStreak={data.dailyChallengeStreak} />
+              </div>
+              <div className="mt-5">
+                <CoachCard
+                  coachName={data.coachName}
+                  item={data.coachItem}
+                  lastRecapAt={data.lastRecapAt}
+                />
+              </div>
+              <DensityHint />
+            </>
           }
           overview={
             <div className="mt-7 space-y-5">

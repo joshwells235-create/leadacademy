@@ -161,16 +161,22 @@ export function TopNav({
               <DensityToggle />
             </div>
           )}
+          {(isCoach || isOrgAdmin || showConsultantPortal || superAdmin) && (
+            <div className="hidden lg:block">
+              <PortalsMenu
+                superAdmin={superAdmin}
+                isCoach={isCoach}
+                isOrgAdmin={isOrgAdmin}
+                isConsultant={showConsultantPortal}
+              />
+            </div>
+          )}
           <div className="hidden lg:block">
             <UserMenu
               displayName={displayName}
               userEmail={userEmail}
               superAdmin={superAdmin}
-              isCoach={isCoach}
-              isOrgAdmin={isOrgAdmin}
-              isConsultant={showConsultantPortal}
               coachPrimary={coachPrimary}
-              role={memberships[0]?.role}
             />
           </div>
           {/* Mobile hamburger */}
@@ -523,24 +529,21 @@ function GrowthDropdown({
 }
 
 // ─── User / avatar dropdown ──────────────────────────────────────────────
+//
+// Slimmed down to "just you" — profile, memory, pre-session, sign out.
+// All portal entries (admin/coach/consultant/super) now live in the
+// adjacent `PortalsMenu` so the user dropdown doesn't have to host an
+// overflow-scroll list of cross-cutting links.
 function UserMenu({
   displayName,
   userEmail,
   superAdmin,
-  isCoach,
-  isOrgAdmin,
-  isConsultant,
   coachPrimary,
-  role,
 }: {
   displayName: string | null;
   userEmail: string;
   superAdmin: boolean;
-  isCoach: boolean;
-  isOrgAdmin: boolean;
-  isConsultant: boolean;
   coachPrimary: boolean;
-  role?: string;
 }) {
   const [open, setOpen] = useState(false);
   const name = displayName ?? userEmail;
@@ -606,84 +609,6 @@ function UserMenu({
                 </DropdownLink>
               </>
             )}
-            {(isCoach || isOrgAdmin || superAdmin || isConsultant) && (
-              <>
-                <DropdownSection>Portals</DropdownSection>
-                {(isOrgAdmin || superAdmin) && (
-                  <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>
-                    Org Admin
-                  </DropdownLink>
-                )}
-                {isCoach && (
-                  <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>
-                    Coach
-                  </DropdownLink>
-                )}
-                {isConsultant && (
-                  <DropdownLink href="/consultant/dashboard" onClick={() => setOpen(false)}>
-                    Consultant
-                  </DropdownLink>
-                )}
-                {superAdmin && (
-                  <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
-                    Super Admin
-                  </DropdownLink>
-                )}
-                {superAdmin && (
-                  <>
-                    <DropdownSection>Super: People &amp; access</DropdownSection>
-                    <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
-                      Organizations
-                    </DropdownLink>
-                    <DropdownLink href="/super/users" onClick={() => setOpen(false)}>
-                      Users
-                    </DropdownLink>
-                    <DropdownLink href="/super/invitations" onClick={() => setOpen(false)}>
-                      Invitations
-                    </DropdownLink>
-
-                    <DropdownSection>Super: Content</DropdownSection>
-                    <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>
-                      Course Builder
-                    </DropdownLink>
-                    <DropdownLink href="/super/learning-paths" onClick={() => setOpen(false)}>
-                      Learning Paths
-                    </DropdownLink>
-                    <DropdownLink href="/super/certificates" onClick={() => setOpen(false)}>
-                      Certificates
-                    </DropdownLink>
-                    <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>
-                      Resource Library
-                    </DropdownLink>
-
-                    <DropdownSection>Super: Communication</DropdownSection>
-                    <DropdownLink href="/super/announcements" onClick={() => setOpen(false)}>
-                      Announcements
-                    </DropdownLink>
-                    <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>
-                      Moderation
-                    </DropdownLink>
-
-                    <DropdownSection>Super: Insights</DropdownSection>
-                    <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>
-                      AI Usage
-                    </DropdownLink>
-                    <DropdownLink href="/super/conversations" onClick={() => setOpen(false)}>
-                      AI Conversations
-                    </DropdownLink>
-                    <DropdownLink href="/super/activity" onClick={() => setOpen(false)}>
-                      Activity Log
-                    </DropdownLink>
-                    <DropdownLink href="/super/ai-errors" onClick={() => setOpen(false)}>
-                      AI Errors
-                    </DropdownLink>
-                    <DropdownLink href="/super/export" onClick={() => setOpen(false)}>
-                      Data Export
-                    </DropdownLink>
-                  </>
-                )}
-              </>
-            )}
             <DropdownDivider />
             {/* Same dropdown-submit gotcha as the mobile drawer:
                 setOpen(false) would unmount the form mid-click. Let the
@@ -697,6 +622,138 @@ function UserMenu({
                 Sign out
               </button>
             </form>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Portals dropdown ───────────────────────────────────────────────────
+//
+// First-class entry for everyone with any portal role — admin, coach,
+// consultant, super. Previously these links were buried inside the
+// avatar dropdown alongside profile + memory + sign-out. Splitting
+// them out lets the avatar dropdown stay short and gives portal
+// switching its own labeled affordance.
+function PortalsMenu({
+  superAdmin,
+  isCoach,
+  isOrgAdmin,
+  isConsultant,
+}: {
+  superAdmin: boolean;
+  isCoach: boolean;
+  isOrgAdmin: boolean;
+  isConsultant: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink transition"
+        style={{ borderColor: "var(--t-rule)" }}
+      >
+        Portals
+        <svg
+          className={`h-3 w-3 transition ${open ? "rotate-180" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className="absolute right-0 top-full z-50 mt-2 w-64 py-1 max-h-[calc(100vh-5rem)] overflow-y-auto"
+            style={{
+              background: "var(--t-paper)",
+              border: "1px solid var(--t-rule)",
+              borderRadius: "var(--t-radius-lg)",
+              boxShadow: "var(--t-panel-shadow)",
+            }}
+          >
+            {(isOrgAdmin || superAdmin) && (
+              <DropdownLink href="/admin/dashboard" onClick={() => setOpen(false)}>
+                Org Admin
+              </DropdownLink>
+            )}
+            {isCoach && (
+              <DropdownLink href="/coach/dashboard" onClick={() => setOpen(false)}>
+                Coach
+              </DropdownLink>
+            )}
+            {isConsultant && (
+              <DropdownLink href="/consultant/dashboard" onClick={() => setOpen(false)}>
+                Consultant
+              </DropdownLink>
+            )}
+            {superAdmin && (
+              <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
+                Super Admin
+              </DropdownLink>
+            )}
+            {superAdmin && (
+              <>
+                <DropdownSection>Super: People &amp; access</DropdownSection>
+                <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
+                  Organizations
+                </DropdownLink>
+                <DropdownLink href="/super/users" onClick={() => setOpen(false)}>
+                  Users
+                </DropdownLink>
+                <DropdownLink href="/super/invitations" onClick={() => setOpen(false)}>
+                  Invitations
+                </DropdownLink>
+
+                <DropdownSection>Super: Content</DropdownSection>
+                <DropdownLink href="/super/course-builder" onClick={() => setOpen(false)}>
+                  Course Builder
+                </DropdownLink>
+                <DropdownLink href="/super/learning-paths" onClick={() => setOpen(false)}>
+                  Learning Paths
+                </DropdownLink>
+                <DropdownLink href="/super/certificates" onClick={() => setOpen(false)}>
+                  Certificates
+                </DropdownLink>
+                <DropdownLink href="/super/resources" onClick={() => setOpen(false)}>
+                  Resource Library
+                </DropdownLink>
+
+                <DropdownSection>Super: Communication</DropdownSection>
+                <DropdownLink href="/super/announcements" onClick={() => setOpen(false)}>
+                  Announcements
+                </DropdownLink>
+                <DropdownLink href="/super/moderation" onClick={() => setOpen(false)}>
+                  Moderation
+                </DropdownLink>
+
+                <DropdownSection>Super: Insights</DropdownSection>
+                <DropdownLink href="/super/ai-usage" onClick={() => setOpen(false)}>
+                  AI Usage
+                </DropdownLink>
+                <DropdownLink href="/super/conversations" onClick={() => setOpen(false)}>
+                  AI Conversations
+                </DropdownLink>
+                <DropdownLink href="/super/activity" onClick={() => setOpen(false)}>
+                  Activity Log
+                </DropdownLink>
+                <DropdownLink href="/super/ai-errors" onClick={() => setOpen(false)}>
+                  AI Errors
+                </DropdownLink>
+                <DropdownLink href="/super/export" onClick={() => setOpen(false)}>
+                  Data Export
+                </DropdownLink>
+              </>
+            )}
           </div>
         </>
       )}

@@ -16,7 +16,9 @@ const STORAGE_KEY = "la-density";
 // `density-change` CustomEvent so the dashboard can react without
 // prop-drilling.
 export function DensityToggle() {
-  const [density, setDensity] = useState<DensityMode>("overview");
+  // New learners default to Focus so the first paint isn't a wall of
+  // seven cards. Returning learners get whatever they last chose.
+  const [density, setDensity] = useState<DensityMode>("focus");
 
   useEffect(() => {
     try {
@@ -25,7 +27,7 @@ export function DensityToggle() {
         setDensity(stored);
         document.documentElement.dataset.density = stored;
       } else {
-        document.documentElement.dataset.density = "overview";
+        document.documentElement.dataset.density = "focus";
       }
     } catch {
       // localStorage access can throw in private-mode Safari; fall
@@ -38,6 +40,9 @@ export function DensityToggle() {
     setDensity(next);
     try {
       localStorage.setItem(STORAGE_KEY, next);
+      // Once the learner has toggled at least once, the "Want more?"
+      // hint has served its purpose. Dismiss it permanently.
+      localStorage.setItem("la-density-hint-seen", "1");
     } catch {
       // ignore
     }
