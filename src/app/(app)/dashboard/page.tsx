@@ -15,6 +15,8 @@ import { ReflectionCard } from "@/components/dashboard/reflection-card";
 import { SprintCard } from "@/components/dashboard/sprint-card";
 import { TPHero } from "@/components/dashboard/tp-hero";
 import type { TransparencySource } from "@/components/dashboard/tp-transparency-modal";
+import { WeekOneGate } from "@/components/onboarding/week-one-gate";
+import type { WeekOneStep } from "@/components/onboarding/week-one";
 import { detectAndFireNudge } from "@/lib/ai/nudges/detect";
 import { getVisibleAnnouncements } from "@/lib/announcements/get-visible";
 import { getUserRoleContext } from "@/lib/auth/role-context";
@@ -79,6 +81,57 @@ export default async function DashboardPage() {
   const totalReflections = reflectionsRes.data?.length ?? 0;
   const hasMembership = !!membershipRes.data;
   const recentConversation = convRes.data;
+
+  // Action-log count for the Week One "moment logged" step. Cheap head
+  // query — bypasses the assembler so it doesn't add cost to the rest
+  // of the dashboard.
+  const { count: actionLogsCount } = await supabase
+    .from("action_logs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  // Conversation count (excluding intake — intake-mode is step 1, not
+  // step 3). Used to mark step 3 (first real conversation) complete.
+  const { count: realConversationCount } = await supabase
+    .from("ai_conversations")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .neq("mode", "intake");
+
+  // Week One step state. Read from existing signals — no new schema.
+  // Skipped via per-device localStorage flag inside WeekOneGate.
+  const weekOneSteps: WeekOneStep[] = [
+    {
+      key: "intake",
+      done: !!profile?.intake_completed_at,
+      href: "/dashboard",
+    },
+    {
+      key: "assessment",
+      done: (data?.contextSummary.assessmentsIntegrated ?? 0) > 0,
+      href: "/assessments",
+    },
+    {
+      key: "conversation",
+      done: (realConversationCount ?? 0) > 0,
+      href: "/coach-chat",
+    },
+    {
+      key: "goal",
+      done: totalGoals > 0,
+      href: "/coach-chat?mode=goal",
+    },
+    {
+      key: "moment",
+      done: (actionLogsCount ?? 0) > 0,
+      href: "/goals",
+    },
+  ];
+  const weekOneComplete = weekOneSteps.every((s) => s.done);
+  // Super admins always see the regular dashboard. They build / test /
+  // support the product; locking them into onboarding would be wrong.
+  const showWeekOneGate =
+    !weekOneComplete && hasMembership && !profile?.super_admin;
 
   // "First time" = no real practice yet (no goals, no reflections). We
   // intentionally don't key off conversations — intake creates one, and
@@ -171,16 +224,10 @@ export default async function DashboardPage() {
 
   const milestones = buildMilestones(data);
 
-  return (
-    <div className="relative mx-auto max-w-[1440px] px-6 py-8 lg:px-12 lg:py-12">
-      {announcements.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {announcements.map((a) => (
-            <AnnouncementBanner key={a.id} announcement={a} />
-          ))}
-        </div>
-      )}
-
+  // Dashboard body — the existing layout, extracted so we can wrap it
+  // in the Week One gate for new learners.
+  const dashboardBody = (
+    <>
       {/* Intake CTA — the only full-width block that ever sits above the
           greeting. Surfaced whenever intake is pending (first-time or a
           freshly-reset learner) so the TP always has its "about this
@@ -397,6 +444,24 @@ export default async function DashboardPage() {
             </div>
           }
         />
+      )}
+    </>
+  );
+
+  return (
+    <div className="relative mx-auto max-w-[1440px] px-6 py-8 lg:px-12 lg:py-12">
+      {announcements.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {announcements.map((a) => (
+            <AnnouncementBanner key={a.id} announcement={a} />
+          ))}
+        </div>
+      )}
+
+      {showWeekOneGate ? (
+        <WeekOneGate steps={weekOneSteps}>{dashboardBody}</WeekOneGate>
+      ) : (
+        dashboardBody
       )}
     </div>
   );
