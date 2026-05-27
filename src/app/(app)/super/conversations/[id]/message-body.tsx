@@ -55,6 +55,21 @@ type Part = {
 
 function normalize(content: unknown): { text: string; parts: Part[] | null } {
   if (typeof content === "string") return { text: content, parts: null };
+
+  // AI SDK UIMessage shape — what the chat route actually persists:
+  // { id, role, parts: [{ type: "text", text }, { type: "tool-…" }, …] }
+  // We unwrap to the `parts` array and continue with the same code path
+  // as the bare-array case so the renderer shows readable text + tool
+  // bubbles instead of a JSON dump.
+  if (
+    content &&
+    typeof content === "object" &&
+    !Array.isArray(content) &&
+    Array.isArray((content as Record<string, unknown>).parts)
+  ) {
+    return normalize((content as Record<string, unknown>).parts);
+  }
+
   if (Array.isArray(content)) {
     const parts: Part[] = content.map((p) => {
       if (!p || typeof p !== "object") return { type: "unknown", json: p };
