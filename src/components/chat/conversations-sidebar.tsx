@@ -36,7 +36,12 @@ export function ConversationsSidebar({
   activeMode,
   groundedIn,
 }: Props) {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  // On mobile, default the rail to expanded when there's no active
+  // thread (new-chat landing) so the learner immediately sees their
+  // history instead of an empty chat with a hidden "Threads" tap-target.
+  // Once they pick or start a conversation, it collapses by default —
+  // matching the original mobile-first behavior.
+  const [mobileOpen, setMobileOpen] = useState(!activeId);
 
   const earlier = conversations.filter((c) => c.id !== activeId);
 
@@ -364,7 +369,7 @@ function EarlierList({
 }) {
   const groups = groupConversations(conversations);
   return (
-    <ul className="max-h-[45vh] space-y-3 overflow-y-auto pr-1 lg:max-h-[50vh]">
+    <ul className="max-h-[60vh] space-y-3 overflow-y-auto pr-1 lg:max-h-[50vh]">
       {groups.map((g) => (
         <li key={g.label}>
           <div className="mb-1 font-mono text-[9px] uppercase tracking-[0.15em] text-ink-faint">

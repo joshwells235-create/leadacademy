@@ -135,7 +135,7 @@ export function CoachChat({
     <div className="flex h-full min-h-[70vh] flex-col">
       {/* Message column — scroll area. Fills available height; composer
           sits below as a separate flex child. */}
-      <div className="flex-1 overflow-y-auto px-6 py-10 lg:px-16 lg:py-12">
+      <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-16 lg:py-12">
         <div className="mx-auto max-w-[720px]">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center pt-16 text-center">
@@ -226,7 +226,7 @@ export function CoachChat({
           a self-contained unit. */}
       <form
         onSubmit={handleSubmit}
-        className="px-6 py-6 lg:px-16 lg:py-7"
+        className="px-4 py-5 sm:px-6 sm:py-6 lg:px-16 lg:py-7"
         style={{ borderTop: "1px solid var(--t-rule)" }}
       >
         <div className="mx-auto max-w-[720px]">
