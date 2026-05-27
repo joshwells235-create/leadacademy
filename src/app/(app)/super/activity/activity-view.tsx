@@ -70,6 +70,7 @@ const ACTION_LABEL: Record<string, string> = {
   "super.coach_assignment.cleared": "Cleared coach assignment (cross-org)",
   "super.membership.archived": "Archived membership (cross-org)",
   "super.membership.unarchived": "Unarchived membership (cross-org)",
+  "super.artifact.assessment_doc_deleted": "Deleted assessment doc",
 };
 
 const DETAIL_KEY_LABEL: Record<string, string> = {

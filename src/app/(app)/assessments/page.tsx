@@ -15,6 +15,22 @@ const TYPES: { key: "pi" | "eqi" | "threesixty"; label: string; description: str
   },
 ];
 
+// Loose name comparison so "Joe" doesn't false-positive against "Joseph Cundall"
+// but "Joe Cundall" still raises a flag when stamped against a "Javed Siddiqui"
+// profile. Returns true when the names look like the same person.
+function rougheq(a: string, b: string): boolean {
+  const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
+  const na = norm(a);
+  const nb = norm(b);
+  if (!na || !nb) return true;
+  if (na === nb) return true;
+  const ta = na.split(" ").filter(Boolean);
+  const tb = nb.split(" ").filter(Boolean);
+  if (ta.length === 0 || tb.length === 0) return true;
+  if (ta[ta.length - 1] === tb[tb.length - 1]) return true;
+  return na.includes(nb) || nb.includes(na);
+}
+
 export default async function AssessmentsPage() {
   const supabase = await createClient();
   const {
@@ -31,9 +47,37 @@ export default async function AssessmentsPage() {
   const { data: docs } = assessment
     ? await supabase
         .from("assessment_documents")
-        .select("id, type, file_name, status, error_message, uploaded_at")
+        .select("id, type, file_name, status, error_message, uploaded_at, ai_summary")
         .eq("assessment_id", assessment.id)
     : { data: [] };
+
+  // Detect "wrong PDF uploaded" cases — Claude extracts the participant name
+  // from every report. If it doesn't roughly match the learner's profile
+  // display_name, surface a red banner so they can replace before the bad
+  // content feeds into their thought-partner context.
+  const { data: ownProfile } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  const learnerName = ownProfile?.display_name ?? null;
+  const nameMismatches = (docs ?? [])
+    .map((d) => {
+      const summary = d.ai_summary as Record<string, unknown> | null;
+      const participantName =
+        summary && typeof summary.participant_name === "string"
+          ? summary.participant_name
+          : null;
+      if (!participantName || !learnerName) return null;
+      if (rougheq(participantName, learnerName)) return null;
+      return {
+        id: d.id,
+        type: d.type,
+        file_name: d.file_name,
+        participantName,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 
   const docsByType: Record<string, NonNullable<typeof docs>[number]> = {};
   for (const d of docs ?? []) {
@@ -77,6 +121,29 @@ export default async function AssessmentsPage() {
           </p>
         </div>
       </div>
+
+      {nameMismatches.length > 0 && learnerName && (
+        <div className="mb-6 rounded-lg border border-red-300 bg-red-50 p-4 shadow-sm">
+          <h2 className="text-sm font-bold text-red-900">
+            Heads up — wrong report{nameMismatches.length === 1 ? "" : "s"} uploaded?
+          </h2>
+          <p className="mt-1 text-xs text-red-800">
+            We extracted findings that reference someone else's name. Your profile says
+            <em> {learnerName}</em>. If that's right, replace the file
+            {nameMismatches.length === 1 ? "" : "s"} below with your own report
+            {nameMismatches.length === 1 ? "" : "s"} — the thought partner is currently
+            grounding conversations in someone else's data.
+          </p>
+          <ul className="mt-2 space-y-0.5 text-[11px] text-red-800">
+            {nameMismatches.map((m) => (
+              <li key={m.id}>
+                <span className="font-mono">{m.file_name ?? m.type}</span> — extracted for{" "}
+                <em>{m.participantName}</em>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {readyCount > 0 && (
         <div

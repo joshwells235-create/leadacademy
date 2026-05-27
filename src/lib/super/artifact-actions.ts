@@ -152,6 +152,91 @@ export async function superDeleteMemoryFact(factId: string) {
   return { ok: true };
 }
 
+// Delete a single assessment document (PI / EQ-i / 360 report) for a
+// learner. Use this when someone accidentally uploaded the wrong PDF —
+// the extracted content references the wrong person.
+//
+// Behavior:
+// 1. Remove the assessment_documents row
+// 2. Delete the underlying file from Storage
+// 3. Rebuild the parent assessments.ai_summary so the rolled-up view
+//    no longer references the deleted report
+// 4. If this was the last doc, delete the parent assessments row too
+//    (so the learner gets a fresh slate when they re-upload)
+export async function superDeleteAssessmentDocument(documentId: string) {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+
+  const admin = createAdminClient();
+
+  const { data: doc } = await admin
+    .from("assessment_documents")
+    .select(
+      "id, assessment_id, type, file_name, storage_path, assessments:assessment_id(user_id, org_id)",
+    )
+    .eq("id", documentId)
+    .maybeSingle();
+  if (!doc) return { error: "Assessment document not found." };
+
+  const assessmentMeta = doc.assessments as unknown as {
+    user_id: string;
+    org_id: string;
+  } | null;
+
+  // Best-effort storage cleanup — don't block on it.
+  if (doc.storage_path) {
+    await admin.storage.from("assessments").remove([doc.storage_path]);
+  }
+
+  const { error: delDocErr } = await admin
+    .from("assessment_documents")
+    .delete()
+    .eq("id", documentId);
+  if (delDocErr) return { error: delDocErr.message };
+
+  // Rebuild parent ai_summary from remaining ready docs.
+  const { data: remaining } = await admin
+    .from("assessment_documents")
+    .select("type, ai_summary, status")
+    .eq("assessment_id", doc.assessment_id);
+
+  if (!remaining || remaining.length === 0) {
+    // No docs left — nuke the parent row too so the learner gets a
+    // clean slate when they re-upload their own reports.
+    await admin.from("assessments").delete().eq("id", doc.assessment_id);
+  } else {
+    const rolledUp: Record<string, unknown> = {};
+    for (const d of remaining) {
+      if (d.status === "ready") rolledUp[d.type] = d.ai_summary;
+    }
+    await admin
+      .from("assessments")
+      // biome-ignore lint/suspicious/noExplicitAny: jsonb roundtrip
+      .update({ ai_summary: rolledUp as any })
+      .eq("id", doc.assessment_id);
+  }
+
+  await log({
+    actorId: ctx.userId,
+    orgId: assessmentMeta?.org_id ?? null,
+    action: "super.artifact.assessment_doc_deleted",
+    targetType: "assessment_document",
+    targetId: documentId,
+    details: {
+      learner_user_id: assessmentMeta?.user_id ?? null,
+      type: doc.type,
+      file_name: doc.file_name,
+    },
+  });
+
+  if (assessmentMeta?.org_id && assessmentMeta?.user_id) {
+    revalidatePath(
+      `/super/orgs/${assessmentMeta.org_id}/members/${assessmentMeta.user_id}`,
+    );
+  }
+  return { ok: true };
+}
+
 export async function superDeleteConversation(conversationId: string) {
   const ctx = await requireSuperAdmin();
   if ("error" in ctx) return { error: ctx.error };

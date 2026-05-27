@@ -5,6 +5,7 @@ import { ProfileReadonly } from "@/components/profile/profile-readonly";
 import { getConsultantSinceStats } from "@/lib/consultant/since-last-visit";
 import { createClient } from "@/lib/supabase/server";
 import { AiTriggersPanel } from "./ai-triggers-panel";
+import { AssessmentDocsPanel } from "./assessment-docs-panel";
 import { SuperCoachPanel } from "./coach-panel";
 import { ConsultantOverridePanel } from "./consultant-override-panel";
 import { SuperSinceStrip } from "./since-strip";
@@ -144,6 +145,19 @@ export default async function SuperLearnerPage({ params }: Props) {
       .eq("super_admin", true)
       .is("deleted_at", null),
   ]);
+
+  const { data: assessmentRow } = await supabase
+    .from("assessments")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const { data: assessmentDocs } = assessmentRow
+    ? await supabase
+        .from("assessment_documents")
+        .select("id, type, file_name, status, uploaded_at, ai_summary")
+        .eq("assessment_id", assessmentRow.id)
+        .order("uploaded_at", { ascending: false })
+    : { data: [] };
 
   const [coachCandidatesRes, currentCoachRes, superAdminCoachesRes] = await Promise.all([
     supabase
@@ -523,6 +537,25 @@ export default async function SuperLearnerPage({ params }: Props) {
           currentCoachUserId={currentCoachUserId}
           currentCoachName={currentCoachName}
           candidates={coachCandidates}
+        />
+
+        <AssessmentDocsPanel
+          learnerName={name}
+          docs={(assessmentDocs ?? []).map((d) => {
+            const summary = d.ai_summary as Record<string, unknown> | null;
+            const participantName =
+              summary && typeof summary.participant_name === "string"
+                ? summary.participant_name
+                : null;
+            return {
+              id: d.id,
+              type: d.type,
+              file_name: d.file_name,
+              status: d.status,
+              uploaded_at: d.uploaded_at,
+              ai_summary_participant_name: participantName,
+            };
+          })}
         />
 
         {mem && (

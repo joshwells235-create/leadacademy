@@ -152,6 +152,7 @@ ${EXTRACTION_GUIDANCE[assessmentType]}
 Return a JSON object with these fields:
 
 {
+  "participant_name": "The full name of the person this report is about, as it appears on the report. Use null if the report has no name on it.",
   "summary": "2-3 sentence executive summary of what this report shows",
   "key_strengths": ["strength 1", "strength 2", ...],
   "growth_areas": ["area 1", "area 2", ...],
