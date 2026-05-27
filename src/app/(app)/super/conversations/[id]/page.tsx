@@ -10,23 +10,35 @@ export default async function ConversationViewPage({ params }: Props) {
   const { id } = await params;
   const supabase = await createClient();
 
+  // ai_conversations.user_id FKs to auth.users — there is no FK to
+  // public.profiles, so the PostgREST embed `profiles:user_id(...)`
+  // returns a relationship error and the whole row comes back null,
+  // which then calls notFound() and renders "Page not found." Look
+  // profiles up separately instead. organizations has a real FK so
+  // its embed is fine.
   const { data: convo } = await supabase
     .from("ai_conversations")
     .select(
-      "id, mode, title, created_at, last_message_at, user_id, org_id, profiles:user_id(display_name), organizations:org_id(name)",
+      "id, mode, title, created_at, last_message_at, user_id, org_id, organizations:org_id(name)",
     )
     .eq("id", id)
     .maybeSingle();
   if (!convo) notFound();
 
-  const { data: messages } = await supabase
-    .from("ai_messages")
-    .select("id, role, content, model, tokens_in, tokens_out, latency_ms, created_at")
-    .eq("conversation_id", id)
-    .order("created_at");
+  const [{ data: messages }, { data: learnerProfile }] = await Promise.all([
+    supabase
+      .from("ai_messages")
+      .select("id, role, content, model, tokens_in, tokens_out, latency_ms, created_at")
+      .eq("conversation_id", id)
+      .order("created_at"),
+    supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("user_id", convo.user_id)
+      .maybeSingle(),
+  ]);
 
-  const learnerName =
-    (convo.profiles as unknown as { display_name: string | null })?.display_name ?? "Unknown";
+  const learnerName = learnerProfile?.display_name ?? "Unknown";
   const orgName = (convo.organizations as unknown as { name: string })?.name ?? "";
 
   const msgs = messages ?? [];

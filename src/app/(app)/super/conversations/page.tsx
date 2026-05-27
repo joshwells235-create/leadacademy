@@ -38,10 +38,14 @@ export default async function ConversationsPage({ searchParams }: Props) {
 
   const orgList = await supabase.from("organizations").select("id, name").order("name");
 
+  // ai_conversations.user_id FKs to auth.users (not profiles), so a
+  // PostgREST embed `profiles:user_id(...)` returns a relationship
+  // error and the whole query comes back null. Skip the embed, then
+  // lookup display_names in a second batched query below.
   let query = supabase
     .from("ai_conversations")
     .select(
-      "id, mode, title, last_message_at, user_id, org_id, profiles:user_id(display_name), organizations:org_id(name)",
+      "id, mode, title, last_message_at, user_id, org_id, organizations:org_id(name)",
       { count: "exact" },
     )
     .order("last_message_at", { ascending: false, nullsFirst: false });
@@ -53,6 +57,19 @@ export default async function ConversationsPage({ searchParams }: Props) {
   if (q) query = query.ilike("title", `%${q}%`);
 
   const { data: conversations, count } = await query.range(from, to);
+
+  // Batched profile lookup for the page's set of user_ids — one query
+  // regardless of result count.
+  const userIds = Array.from(new Set((conversations ?? []).map((c) => c.user_id)));
+  const { data: profilesData } = userIds.length
+    ? await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", userIds)
+    : { data: [] };
+  const nameByUserId = new Map(
+    (profilesData ?? []).map((p) => [p.user_id, p.display_name] as const),
+  );
 
   const total = count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -103,8 +120,7 @@ export default async function ConversationsPage({ searchParams }: Props) {
                   className="border-b border-neutral-50 hover:bg-brand-light transition"
                 >
                   <td className="px-4 py-3 font-medium text-brand-navy">
-                    {(c.profiles as unknown as { display_name: string | null })?.display_name ??
-                      "Unknown"}
+                    {nameByUserId.get(c.user_id) ?? "Unknown"}
                   </td>
                   <td className="px-3 py-3 text-neutral-600">
                     {(c.organizations as unknown as { name: string })?.name ?? ""}
