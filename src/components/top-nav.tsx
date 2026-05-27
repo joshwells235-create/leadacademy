@@ -177,7 +177,7 @@ export function TopNav({
           <button
             type="button"
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden rounded-md p-1.5 text-ink-soft hover:text-ink transition"
+            className="lg:hidden rounded-md p-2.5 text-ink-soft hover:text-ink transition"
             aria-label="Menu"
           >
             <svg
@@ -761,7 +761,7 @@ function MobileLink({
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition",
+        "flex items-center gap-2 rounded-md px-4 py-3 text-sm transition",
         accent ? "font-medium text-ink" : "text-ink-soft hover:text-ink",
       )}
     >

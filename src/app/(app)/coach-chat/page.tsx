@@ -273,6 +273,16 @@ export default async function CoachChatPage({ searchParams }: Props) {
                 </>
               )}
             </p>
+            {groundedIn.length > 0 && (
+              <p
+                className="mt-3 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint"
+                aria-label="What this thread is grounded in"
+              >
+                <span className="text-accent">Grounded in</span>
+                <span aria-hidden> · </span>
+                {groundedIn.slice(0, 5).join(" · ")}
+              </p>
+            )}
           </div>
         </header>
 

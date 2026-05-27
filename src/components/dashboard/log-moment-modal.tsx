@@ -277,8 +277,9 @@ function TagPrefixedDescription({
 }
 
 // Cardinal → Fraunces-rendered ordinal word, because "eight" reads
-// better than "8th" in the celebration line. Falls back to numerals
-// after twelve where the word length starts to fight the serif.
+// better than "8th" in the celebration line. Past twenty we fall back
+// to "23rd" / "47th" style — still reads as a real number, not a system
+// token like "#13" did before.
 function ordinal(n: number): string {
   const words = [
     "first",
@@ -288,14 +289,31 @@ function ordinal(n: number): string {
     "fifth",
     "sixth",
     "seventh",
-    "eight",
+    "eighth",
     "ninth",
     "tenth",
     "eleventh",
     "twelfth",
+    "thirteenth",
+    "fourteenth",
+    "fifteenth",
+    "sixteenth",
+    "seventeenth",
+    "eighteenth",
+    "nineteenth",
+    "twentieth",
   ];
   // n is 1-indexed count of actions; ordinal index is n - 1.
-  return n >= 1 && n <= 12 ? words[n - 1] : `#${n}`;
+  if (n >= 1 && n <= 20) return words[n - 1];
+  // English ordinal suffix: 1st / 2nd / 3rd / Nth, with the 11/12/13
+  // exceptions (which fall back to th).
+  const lastTwo = n % 100;
+  if (lastTwo >= 11 && lastTwo <= 13) return `${n}th`;
+  const lastOne = n % 10;
+  if (lastOne === 1) return `${n}st`;
+  if (lastOne === 2) return `${n}nd`;
+  if (lastOne === 3) return `${n}rd`;
+  return `${n}th`;
 }
 
 // The subtitle under the celebration headline. Short, specific, rooted
