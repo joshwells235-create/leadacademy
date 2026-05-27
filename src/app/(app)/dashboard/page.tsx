@@ -238,6 +238,43 @@ export default async function DashboardPage() {
         />
       )}
 
+      {/* Returning-learner assessment reminder. The "Your first steps"
+          card disappears as soon as a learner has any goal or reflection,
+          which used to mean the upload prompt vanished even if they never
+          uploaded anything. This persistent amber banner stays put on
+          the dashboard until they upload their first report — at which
+          point it goes away so the dashboard doesn't keep nagging them. */}
+      {!intakePending &&
+        !isFirstTime &&
+        (data?.contextSummary.assessmentsIntegrated ?? 0) < 1 && (
+          <div
+            className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border-l-4 border border-amber-200 border-l-amber-500 bg-amber-50/70 p-4"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-amber-800">
+                Still missing
+              </p>
+              <p
+                className="mt-1 text-ink"
+                style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 400 }}
+              >
+                Upload your assessment reports.
+              </p>
+              <p className="mt-0.5 text-xs text-ink-soft">
+                Without your PI, EQ-i, or 360, your thought partner is working from intake
+                alone. Upload any one to ground every future conversation in real data.
+              </p>
+            </div>
+            <Link
+              href="/assessments"
+              className="shrink-0 rounded-full px-4 py-2 text-xs font-medium text-white"
+              style={{ background: "var(--t-accent)" }}
+            >
+              Upload reports →
+            </Link>
+          </div>
+        )}
+
       {/* First-time learners: the three-step "your first steps" card
           that replaces the dashboard grid until they have real practice
           to render. Retained verbatim from the pre-redesign flow
@@ -263,30 +300,30 @@ export default async function DashboardPage() {
           <div className="grid gap-4 md:grid-cols-3">
             <StepCard
               number="1"
+              title="Upload your assessments"
+              description="Add your PI, EQ-i, or 360 reports first so every conversation is grounded in real data instead of generic advice."
+              href="/assessments"
+              cta="Upload reports"
+              done={(data?.contextSummary.assessmentsIntegrated ?? 0) > 0}
+              estimate="when you have the PDFs"
+            />
+            <StepCard
+              number="2"
               title="Talk with your thought partner"
-              description="Tell it what you're working on. It already has your profile — no setup."
+              description="Tell it what you're working on. With your assessments uploaded, it can already pattern-match what you bring."
               href="/coach-chat"
               cta="Start a conversation"
               done={!!recentConversation}
               estimate="~5 min"
             />
             <StepCard
-              number="2"
+              number="3"
               title="Set a growth goal"
               description="Your thought partner drafts it with you — one that changes you, your team, and your org."
               href="/coach-chat?mode=goal"
               cta="Draft a goal"
               done={totalGoals > 0}
               estimate="~10 min"
-            />
-            <StepCard
-              number="3"
-              title="Upload your assessments"
-              description="Add your PI, EQ-i, or 360 reports so coaching is grounded in real data."
-              href="/assessments"
-              cta="Upload reports"
-              done={false}
-              estimate="when you have the PDFs"
             />
           </div>
         </div>
