@@ -4,6 +4,7 @@ import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
 import { TopNav } from "@/components/top-nav";
 import { AmbientGlow } from "@/components/design/ambient-glow";
+import { CommandPalette } from "@/components/palette/command-palette";
 import { DEFAULT_THEME_MODE, isThemeMode } from "@/lib/design/tokens";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -105,6 +106,20 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           }
         />
         <main className="flex-1">{children}</main>
+        <CommandPalette
+          isStaff={
+            (profile?.super_admin ?? false) ||
+            roleContext.isOrgAdmin ||
+            roleContext.isCoach ||
+            roleContext.isConsultant
+          }
+          superAdmin={profile?.super_admin ?? false}
+          isCoach={roleContext.isCoach}
+          isOrgAdmin={roleContext.isOrgAdmin}
+          isConsultant={isConsultant}
+          coachPrimary={coachPrimary}
+          capstoneAvailable={capstoneAvailable}
+        />
       </div>
     </div>
   );

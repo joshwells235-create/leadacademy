@@ -152,6 +152,7 @@ export function TopNav({
 
         {/* Right cluster */}
         <div className="flex items-center gap-2.5">
+          <CommandPaletteTrigger />
           <NotificationBell userId={userId} initialCount={unreadNotifications} />
           <div className="hidden md:block">
             <ModeToggle current={themeMode} />
@@ -758,6 +759,47 @@ function PortalsMenu({
         </>
       )}
     </div>
+  );
+}
+
+// ─── Command-palette trigger ────────────────────────────────────────────
+//
+// Visible affordance for ⌘K. Synthesizes a keyboard event the palette
+// already listens for so we don't have to thread a callback down through
+// the layout. Hidden on small screens — keyboard users hit ⌘K directly.
+function CommandPaletteTrigger() {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        window.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "k",
+            code: "KeyK",
+            ctrlKey: true,
+            metaKey: true,
+            bubbles: true,
+          }),
+        );
+      }}
+      aria-label="Open quick navigation (⌘K)"
+      title="Quick navigation (⌘K)"
+      className="hidden md:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink transition"
+      style={{ borderColor: "var(--t-rule)" }}
+    >
+      <svg
+        aria-hidden
+        className="h-3 w-3"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth={2}
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path strokeLinecap="round" d="m20 20-3.5-3.5" />
+      </svg>
+      <span>⌘K</span>
+    </button>
   );
 }
 
