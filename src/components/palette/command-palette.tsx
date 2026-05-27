@@ -118,7 +118,10 @@ export function CommandPalette(props: Props) {
   const items: Item[] = useMemo(() => {
     const list: Item[] = [];
     for (const hit of people) list.push({ kind: "person", hit });
-    for (const nav of filteredNav) list.push({ kind: "nav", ...nav });
+    // filteredNav items already are NavItems (kind === "nav" baked in);
+    // push them directly rather than re-spread-with-kind, which trips
+    // TS's no-duplicate-keys rule on production builds.
+    for (const nav of filteredNav) list.push(nav);
     return list;
   }, [people, filteredNav]);
 
