@@ -1,5 +1,6 @@
 "use client";
 
+import { CompleteGoalSprintRenderer } from "./complete-goal-sprint";
 import { CreateReflectionRenderer } from "./create-reflection";
 import { FinalizeGoalRenderer } from "./finalize-goal";
 import { LogActionRenderer } from "./log-action";
@@ -23,6 +24,7 @@ const RENDERERS: Record<string, Renderer> = {
   "tool-update_goal_status": UpdateGoalStatusRenderer,
   "tool-set_daily_challenge": SetDailyChallengeRenderer,
   "tool-start_goal_sprint": StartGoalSprintRenderer,
+  "tool-complete_goal_sprint": CompleteGoalSprintRenderer,
   "tool-refine_capstone_section": RefineCapstoneSectionRenderer,
   "tool-update_profile_context": UpdateProfileContextRenderer,
   // tag_themes has no UI — it silently enriches a reflection's themes.

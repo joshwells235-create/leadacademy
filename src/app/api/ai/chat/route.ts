@@ -27,6 +27,7 @@ import { INTAKE_MODE } from "@/lib/ai/prompts/modes/intake";
 import { REFLECTION_MODE } from "@/lib/ai/prompts/modes/reflection";
 import { buildCreateReflectionTool } from "@/lib/ai/tools/create-reflection";
 import { buildFinalizeGoalTool } from "@/lib/ai/tools/finalize-goal";
+import { buildCompleteGoalSprintTool } from "@/lib/ai/tools/complete-goal-sprint";
 import { buildLogActionTool } from "@/lib/ai/tools/log-action";
 import { buildLogCoachNoteTool } from "@/lib/ai/tools/log-coach-note";
 import { buildRefineCapstoneSectionTool } from "@/lib/ai/tools/refine-capstone-section";
@@ -400,6 +401,61 @@ export async function POST(request: NextRequest) {
     };
   });
 
+  // complete_goal_sprint — close out the active sprint on a goal WITHOUT
+  // starting a new one. Approval-gated. Distinct from start_goal_sprint,
+  // which closes-then-opens; this is for when the learner is stopping.
+  const completeGoalSprintTool = buildCompleteGoalSprintTool(async (input) => {
+    // Load the sprint, scoped to the learner, and confirm it's actually
+    // active before closing — guards against stale IDs in the context.
+    const { data: sprint } = await supabase
+      .from("goal_sprints")
+      .select("id, title, status, goal_id, action_count")
+      .eq("id", input.sprint_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!sprint) return { error: "Sprint not found." };
+    if (sprint.status !== "active") {
+      return { error: `That sprint is already ${sprint.status}.` };
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase
+      .from("goal_sprints")
+      .update({
+        status: input.outcome === "abandoned" ? "abandoned" : "completed",
+        actual_end_date: today,
+      })
+      .eq("id", input.sprint_id)
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .select("id, title, status, action_count")
+      .single();
+    if (error || !data) return { error: error?.message ?? "update failed" };
+
+    // Optional closing reflection — capture it as a real reflection so it
+    // flows into the learner's journal + context, tagged to the sprint.
+    if (input.reflection && input.reflection.trim()) {
+      await supabase.from("reflections").insert({
+        org_id: membership.org_id,
+        user_id: user.id,
+        content: input.reflection.trim(),
+        themes: ["sprint-closeout"],
+        reflected_on: today,
+      });
+      revalidatePath("/reflections");
+    }
+
+    revalidatePath("/dashboard");
+    revalidatePath("/goals");
+    revalidatePath(`/goals/${sprint.goal_id}`);
+    return {
+      id: data.id,
+      title: data.title,
+      outcome: input.outcome,
+      action_count: data.action_count ?? 0,
+    };
+  });
+
   const startedAt = Date.now();
   const model = MODELS.sonnet;
 
@@ -761,6 +817,7 @@ export async function POST(request: NextRequest) {
         update_goal_status: updateGoalStatusTool,
         set_daily_challenge: setDailyChallengeTool,
         start_goal_sprint: startGoalSprintTool,
+        complete_goal_sprint: completeGoalSprintTool,
         refine_capstone_section: refineCapstoneSectionTool,
         update_profile_context: updateProfileContextTool,
       };

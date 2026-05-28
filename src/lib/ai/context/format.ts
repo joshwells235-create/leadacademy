@@ -231,6 +231,10 @@ function formatGoals(ctx: LearnerContext): string {
       lines.push(`    Current sprint ${s.sprintNumber}: "${s.title}" — ${status}`);
       lines.push(`    Practicing: ${s.practice}`);
       lines.push(`    Actions logged this sprint: ${s.actionCountThisSprint}`);
+      // sprint_id is exposed so the thought partner can pass it to
+      // complete_goal_sprint when the learner wants to wrap a sprint
+      // without rolling straight into the next one.
+      lines.push(`    Sprint ID (for complete_goal_sprint): ${s.id}`);
     } else {
       lines.push("    (no active sprint)");
     }
