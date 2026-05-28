@@ -5,6 +5,7 @@ import {
   type ToolSet,
   type UIMessage,
 } from "ai";
+import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { claude, MODELS } from "@/lib/ai/client";
@@ -327,6 +328,8 @@ export async function POST(request: NextRequest) {
     if (error || !data) {
       return { error: error?.message ?? "insert failed" };
     }
+    revalidatePath("/dashboard");
+    revalidatePath("/goals");
     return { id: data.id, title: data.title };
   });
 
@@ -382,6 +385,12 @@ export async function POST(request: NextRequest) {
       .select("id, title, practice, planned_end_date, sprint_number")
       .single();
     if (error || !data) return { error: error?.message ?? "insert failed" };
+    // The dashboard + goal pages cache the learner's sprint state. Without
+    // this, starting a sprint mid-chat leaves the dashboard showing the
+    // previous (or a stale) sprint until a hard refresh.
+    revalidatePath("/dashboard");
+    revalidatePath("/goals");
+    revalidatePath(`/goals/${input.goal_id}`);
     return {
       id: data.id,
       title: data.title,
@@ -436,6 +445,8 @@ export async function POST(request: NextRequest) {
       .select("id")
       .single();
     if (error || !data) return { error: error?.message ?? "insert failed" };
+    revalidatePath("/dashboard");
+    revalidatePath("/action-log");
     return { id: data.id };
   });
 
@@ -453,6 +464,8 @@ export async function POST(request: NextRequest) {
       .select("id")
       .single();
     if (error || !data) return { error: error?.message ?? "insert failed" };
+    revalidatePath("/dashboard");
+    revalidatePath("/reflections");
     return { id: data.id };
   });
 
@@ -484,6 +497,9 @@ export async function POST(request: NextRequest) {
       .select("id, title, status")
       .single();
     if (error || !data) return { error: error?.message ?? "update failed" };
+    revalidatePath("/dashboard");
+    revalidatePath("/goals");
+    revalidatePath(`/goals/${input.goal_id}`);
     return { id: data.id, title: data.title, status: data.status };
   });
 
@@ -665,6 +681,7 @@ export async function POST(request: NextRequest) {
         .select("id, challenge, for_date")
         .single();
       if (error || !data) return { error: error?.message ?? "update failed" };
+      revalidatePath("/dashboard");
       return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: true };
     }
 
@@ -679,6 +696,7 @@ export async function POST(request: NextRequest) {
       .select("id, challenge, for_date")
       .single();
     if (error || !data) return { error: error?.message ?? "insert failed" };
+    revalidatePath("/dashboard");
     return { id: data.id, challenge: data.challenge, for_date: data.for_date, replaced: false };
   });
 
