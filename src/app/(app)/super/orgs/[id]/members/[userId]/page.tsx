@@ -532,12 +532,14 @@ export default async function SuperLearnerPage({ params }: Props) {
           <CapstoneReadonly row={capstoneRes.data ?? null} viewerRole="admin" />
         </Section>
 
-        <SuperCoachPanel
-          learnerUserId={userId}
-          currentCoachUserId={currentCoachUserId}
-          currentCoachName={currentCoachName}
-          candidates={coachCandidates}
-        />
+        <div data-tour="super-coach-panel">
+          <SuperCoachPanel
+            learnerUserId={userId}
+            currentCoachUserId={currentCoachUserId}
+            currentCoachName={currentCoachName}
+            candidates={coachCandidates}
+          />
+        </div>
 
         <AssessmentDocsPanel
           learnerName={name}

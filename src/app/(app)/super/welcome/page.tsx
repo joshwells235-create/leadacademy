@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { LaunchTourButton } from "@/components/super/launch-tour-button";
 import { createClient } from "@/lib/supabase/server";
 import { WelcomeDismiss } from "./welcome-dismiss";
 
@@ -59,6 +60,14 @@ export default async function SuperWelcomePage() {
           Tip: press <kbd className="rounded border border-rule px-1.5 py-0.5 font-mono text-[11px] not-italic">⌘K</kbd> from anywhere
           to jump to any page or search for any learner across orgs.
         </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <LaunchTourButton variant="primary">
+            ✦ Take the interactive tour instead →
+          </LaunchTourButton>
+          <span className="text-[12px] text-ink-faint">
+            spotlights the real buttons across live screens — about two minutes
+          </span>
+        </div>
       </header>
 
       <Step

@@ -661,6 +661,7 @@ function PortalsMenu({
         onClick={() => setOpen(!open)}
         aria-haspopup="true"
         aria-expanded={open}
+        data-tour="nav-portals"
         className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink transition"
         style={{ borderColor: "var(--t-rule)" }}
       >
@@ -794,6 +795,7 @@ function CommandPaletteTrigger() {
       }}
       aria-label="Open quick navigation (⌘K)"
       title="Quick navigation (⌘K)"
+      data-tour="nav-cmdk"
       className="hidden md:inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-ink-soft hover:text-ink transition"
       style={{ borderColor: "var(--t-rule)" }}
     >

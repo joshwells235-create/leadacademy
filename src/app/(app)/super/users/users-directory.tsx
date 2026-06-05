@@ -69,6 +69,7 @@ export function UsersDirectory({ rows }: { rows: UserRow[] }) {
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="search"
+          data-tour="super-users-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, email, or org"

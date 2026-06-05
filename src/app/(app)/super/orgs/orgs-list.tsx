@@ -50,7 +50,7 @@ export function OrgsList({ rows }: { rows: OrgRow[] }) {
   }
 
   return (
-    <div>
+    <div data-tour="super-org-list">
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <input
           type="search"

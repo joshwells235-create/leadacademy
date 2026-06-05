@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { LaunchTourButton } from "@/components/super/launch-tour-button";
 
 const TUTORIAL_KEY = "la-super-tutorial-seen";
 
@@ -45,23 +46,23 @@ export function NewAdminCallout() {
           className="mt-1 text-ink"
           style={{ fontFamily: "var(--font-serif)", fontSize: 22, fontWeight: 400 }}
         >
-          Take the super-admin tour first.
+          Take the guided tour first.
         </h2>
         <p className="mt-1 max-w-[640px] text-[13px] text-ink-soft">
-          A ten-minute walkthrough of every surface you'll use — managing
-          orgs, inviting people, the per-learner detail screen, AI quality
-          control, content, audit. Recommended before you start moving things
-          around.
+          A two-minute spotlight walkthrough that points at the real buttons
+          and walks you across the actual screens — orgs, cohorts, inviting
+          people, the per-learner detail page, ⌘K search. Recommended before
+          you start moving things around.
         </p>
-      </div>
-      <div className="flex shrink-0 items-center gap-2">
         <Link
           href="/super/welcome"
-          className="rounded-full px-4 py-2 text-xs font-medium text-white"
-          style={{ background: "var(--t-accent)" }}
+          className="mt-2 inline-block text-[12px] text-accent underline"
         >
-          Start the tour →
+          Prefer to read? Full written reference →
         </Link>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <LaunchTourButton>Start the tour →</LaunchTourButton>
         <button
           type="button"
           onClick={() => {

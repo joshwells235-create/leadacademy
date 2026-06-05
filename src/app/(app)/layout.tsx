@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { TopNav } from "@/components/top-nav";
 import { AmbientGlow } from "@/components/design/ambient-glow";
 import { CommandPalette } from "@/components/palette/command-palette";
+import { SuperTour } from "@/components/super/super-tour";
 import { DEFAULT_THEME_MODE, isThemeMode } from "@/lib/design/tokens";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -120,6 +121,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           coachPrimary={coachPrimary}
           capstoneAvailable={capstoneAvailable}
         />
+        <SuperTour superAdmin={profile?.super_admin ?? false} />
       </div>
     </div>
   );

@@ -124,34 +124,40 @@ export default async function OrgDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <CohortCapstonePanel
-            orgId={orgId}
-            cohorts={cohorts}
-            consultantCandidates={consultantCandidates}
-          />
+          <div data-tour="super-cohort-panel">
+            <CohortCapstonePanel
+              orgId={orgId}
+              cohorts={cohorts}
+              consultantCandidates={consultantCandidates}
+            />
+          </div>
         </div>
 
         {/* Right: invite + members */}
         <div className="space-y-5">
-          <SuperInvitePanel
-            orgId={orgId}
-            cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
-          />
-          <OrgMembersList
-            orgId={orgId}
-            rows={members.map<OrgMemberRow>((m) => ({
-              membershipId: m.id,
-              userId: m.user_id,
-              name:
-                (m.profiles as unknown as { display_name: string | null } | null)?.display_name ??
-                "Unnamed",
-              role: m.role,
-              status: m.status,
-              cohortId: m.cohort_id,
-              cohortName: m.cohorts?.name ?? null,
-            }))}
-            cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
-          />
+          <div data-tour="super-invite-panel">
+            <SuperInvitePanel
+              orgId={orgId}
+              cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+            />
+          </div>
+          <div data-tour="super-members-list">
+            <OrgMembersList
+              orgId={orgId}
+              rows={members.map<OrgMemberRow>((m) => ({
+                membershipId: m.id,
+                userId: m.user_id,
+                name:
+                  (m.profiles as unknown as { display_name: string | null } | null)?.display_name ??
+                  "Unnamed",
+                role: m.role,
+                status: m.status,
+                cohortId: m.cohort_id,
+                cohortName: m.cohorts?.name ?? null,
+              }))}
+              cohorts={cohorts.map((c) => ({ id: c.id, name: c.name }))}
+            />
+          </div>
         </div>
       </div>
     </div>
