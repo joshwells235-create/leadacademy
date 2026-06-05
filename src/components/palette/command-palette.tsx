@@ -351,6 +351,7 @@ function buildNavItems(p: Props): NavItem[] {
   }
   if (p.superAdmin) {
     items.push(
+      { kind: "nav", label: "Super · Welcome / Tour", href: "/super/welcome", section: "Super" },
       { kind: "nav", label: "Super · Organizations", href: "/super/orgs", section: "Super" },
       { kind: "nav", label: "Super · Users", href: "/super/users", section: "Super" },
       { kind: "nav", label: "Super · Invitations", href: "/super/invitations", section: "Super" },

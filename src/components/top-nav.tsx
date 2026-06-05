@@ -323,6 +323,11 @@ export function TopNav({
           )}
           {superAdmin && (
             <>
+              <MobileSection>Super: Get oriented</MobileSection>
+              <MobileLink href="/super/welcome" onClick={() => setMobileOpen(false)}>
+                Welcome / Tour
+              </MobileLink>
+
               <MobileSection>Super: People &amp; access</MobileSection>
               <MobileLink href="/super/orgs" onClick={() => setMobileOpen(false)}>
                 Organizations
@@ -704,6 +709,11 @@ function PortalsMenu({
             )}
             {superAdmin && (
               <>
+                <DropdownSection>Super: Get oriented</DropdownSection>
+                <DropdownLink href="/super/welcome" onClick={() => setOpen(false)}>
+                  Welcome / Tour
+                </DropdownLink>
+
                 <DropdownSection>Super: People &amp; access</DropdownSection>
                 <DropdownLink href="/super/orgs" onClick={() => setOpen(false)}>
                   Organizations

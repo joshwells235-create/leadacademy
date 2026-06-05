@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NewAdminCallout } from "./new-admin-callout";
 import { OrgCreateForm } from "./org-create-form";
 import { type OrgRow, OrgsList } from "./orgs-list";
 
@@ -84,6 +85,7 @@ export default async function OrgsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      <NewAdminCallout />
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-brand-navy">Organizations</h1>
