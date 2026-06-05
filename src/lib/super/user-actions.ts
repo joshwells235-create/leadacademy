@@ -281,6 +281,137 @@ export async function setSuperAdmin(userId: string, enabled: boolean) {
 }
 
 // ---------------------------------------------------------------------------
+// Add super admin — onboarding flow for new LeadShift staff. Handles both
+// cases in one move: if the email already has an account, grant it
+// super-admin; if not, create a confirmed account with a temp password
+// and grant super-admin. Org attachment is optional — super powers come
+// from profiles.super_admin, not from a membership — but if the staffer
+// should also live in a client org, pass orgId and they get an org_admin
+// membership there too.
+// ---------------------------------------------------------------------------
+
+const addSuperAdminSchema = z.object({
+  email: z.string().email(),
+  displayName: z.string().trim().min(1).max(100),
+  orgId: z.string().uuid().optional().nullable(),
+});
+
+export async function addSuperAdmin(input: {
+  email: string;
+  displayName: string;
+  orgId?: string | null;
+}): Promise<
+  | { ok: true; created: boolean; email: string; tempPassword?: string }
+  | { error: string }
+> {
+  const ctx = await requireSuperAdmin();
+  if ("error" in ctx) return { error: ctx.error };
+  const parsed = addSuperAdminSchema.safeParse(input);
+  if (!parsed.success) return { error: "Invalid input." };
+
+  const email = parsed.data.email.toLowerCase().trim();
+  const admin = createAdminClient();
+
+  // Validate org if provided.
+  if (parsed.data.orgId) {
+    const { data: org } = await admin
+      .from("organizations")
+      .select("id")
+      .eq("id", parsed.data.orgId)
+      .maybeSingle();
+    if (!org) return { error: "Organization not found." };
+  }
+
+  // Does this email already have an account?
+  const { data: existingUsers } = await admin.auth.admin.listUsers({ page: 1, perPage: 200 });
+  const match = existingUsers?.users.find((u) => u.email?.toLowerCase() === email);
+
+  let userId: string;
+  let created = false;
+  let tempPassword: string | undefined;
+
+  if (match) {
+    userId = match.id;
+    // Ensure a profile row exists, then flip super_admin on.
+    await admin
+      .from("profiles")
+      .upsert(
+        { user_id: userId, super_admin: true, display_name: parsed.data.displayName },
+        { onConflict: "user_id" },
+      );
+  } else {
+    tempPassword = generateTempPassword();
+    const { data: createdUser, error: createErr } = await admin.auth.admin.createUser({
+      email,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { display_name: parsed.data.displayName },
+    });
+    if (createErr || !createdUser.user) {
+      return { error: createErr?.message ?? "Couldn't create user." };
+    }
+    userId = createdUser.user.id;
+    created = true;
+    // handle_new_user trigger may create the profile; upsert with the
+    // super_admin flag to be certain.
+    await admin
+      .from("profiles")
+      .upsert(
+        { user_id: userId, super_admin: true, display_name: parsed.data.displayName },
+        { onConflict: "user_id" },
+      );
+  }
+
+  // Optional org attachment — org_admin membership so the staffer has a
+  // sensible role in that org. Skip if they're already an active member.
+  if (parsed.data.orgId) {
+    const { data: existingMem } = await admin
+      .from("memberships")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("org_id", parsed.data.orgId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (!existingMem) {
+      const { error: memErr } = await admin.from("memberships").insert({
+        org_id: parsed.data.orgId,
+        user_id: userId,
+        role: "org_admin",
+        status: "active",
+      });
+      if (memErr) {
+        // Don't fail the whole grant on a membership hiccup — the super
+        // flag is the important part. Surface it as a partial note.
+        await logActivity({
+          actorId: ctx.userId,
+          orgId: null,
+          action: "super.user.super_admin_granted",
+          targetType: "profile",
+          targetId: userId,
+          details: { email, created, membership_error: memErr.message },
+        });
+        revalidatePath("/super/users");
+        return { ok: true, created, email, tempPassword };
+      }
+    }
+  }
+
+  await logActivity({
+    actorId: ctx.userId,
+    orgId: parsed.data.orgId ?? null,
+    action: "super.user.super_admin_granted",
+    targetType: "profile",
+    targetId: userId,
+    details: { email, created, attached_org: parsed.data.orgId ?? null },
+  });
+
+  revalidatePath("/super/users");
+  revalidatePath(`/super/users/${userId}`);
+  return { ok: true, created, email, tempPassword };
+}
+
+// ---------------------------------------------------------------------------
 // Membership ops (cross-org, super-only)
 // ---------------------------------------------------------------------------
 

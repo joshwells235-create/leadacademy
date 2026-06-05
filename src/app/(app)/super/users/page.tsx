@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { AddSuperAdminPanel } from "./add-super-admin-panel";
 import { type UserRow, UsersDirectory } from "./users-directory";
 
 export default async function SuperUsersPage() {
@@ -98,6 +99,8 @@ export default async function SuperUsersPage() {
         <Stat label="Unconfirmed" value={unconfirmedCount} sublabel="never confirmed email" />
         <Stat label="Soft-deleted" value={deletedCount} sublabel="retained for audit" />
       </div>
+
+      <AddSuperAdminPanel orgs={(orgs ?? []).map((o) => ({ id: o.id, name: o.name }))} />
 
       <UsersDirectory rows={rows} />
     </div>

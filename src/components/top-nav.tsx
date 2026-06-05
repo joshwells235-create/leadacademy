@@ -7,6 +7,7 @@ import { AccentWord } from "@/components/design/accent-word";
 import { DensityToggle } from "@/components/design/density-toggle";
 import { ModeToggle } from "@/components/design/mode-toggle";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { LaunchTourButton } from "@/components/super/launch-tour-button";
 import { logoutAction } from "@/lib/auth/actions";
 import type { ThemeMode } from "@/lib/design/tokens";
 import { cn } from "@/lib/utils/cn";
@@ -324,8 +325,15 @@ export function TopNav({
           {superAdmin && (
             <>
               <MobileSection>Super: Get oriented</MobileSection>
+              <LaunchTourButton
+                variant="ghost"
+                onClick={() => setMobileOpen(false)}
+                className="block w-full rounded-md px-4 py-3 text-left text-sm text-ink-soft hover:text-ink transition"
+              >
+                ✦ Start guided tour
+              </LaunchTourButton>
               <MobileLink href="/super/welcome" onClick={() => setMobileOpen(false)}>
-                Welcome / Tour
+                Welcome / Reference
               </MobileLink>
 
               <MobileSection>Super: People &amp; access</MobileSection>
@@ -711,8 +719,15 @@ function PortalsMenu({
             {superAdmin && (
               <>
                 <DropdownSection>Super: Get oriented</DropdownSection>
+                <LaunchTourButton
+                  variant="ghost"
+                  onClick={() => setOpen(false)}
+                  className="block w-full px-3.5 py-2 text-left text-sm text-ink-soft hover:text-ink transition"
+                >
+                  ✦ Start guided tour
+                </LaunchTourButton>
                 <DropdownLink href="/super/welcome" onClick={() => setOpen(false)}>
-                  Welcome / Tour
+                  Welcome / Reference
                 </DropdownLink>
 
                 <DropdownSection>Super: People &amp; access</DropdownSection>

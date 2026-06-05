@@ -17,14 +17,18 @@ export function LaunchTourButton({
   children,
   variant = "primary",
   className,
+  onClick,
 }: {
   children: React.ReactNode;
   variant?: "primary" | "ghost";
   className?: string;
+  /** Fired before launch — used by menu items to close themselves. */
+  onClick?: () => void;
 }) {
   const router = useRouter();
 
   const launch = () => {
+    onClick?.();
     try {
       localStorage.setItem(ACTIVE_KEY, "1");
       localStorage.setItem(STEP_KEY, "0");
