@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { humanizeAction } from "@/lib/super/humanize-action";
+import { humanizePath } from "@/lib/super/humanize-path";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { type JourneyEvent, JourneyTimeline } from "./journey-timeline";
 import { UserEditPanels } from "./user-edit-panels";
 
 type Props = { params: Promise<{ userId: string }> };
@@ -53,6 +56,58 @@ export default async function SuperUserDetailPage({ params }: Props) {
 
   const isSelf = viewer?.id === userId;
   const name = profile?.display_name ?? authUser.email ?? "Unnamed";
+
+  // Journey timeline — merge page visits with actions taken. page_views
+  // isn't in the generated Database types yet, so the query is narrowly
+  // cast. Both reads go through the admin client (super-admin context).
+  const [pageViewsRes, actionsRes] = await Promise.all([
+    (
+      admin.from("page_views" as never) as unknown as {
+        select: (cols: string) => {
+          eq: (
+            col: string,
+            val: string,
+          ) => {
+            order: (
+              col: string,
+              opts: { ascending: boolean },
+            ) => {
+              limit: (
+                n: number,
+              ) => Promise<{ data: Array<{ path: string; viewed_at: string }> | null }>;
+            };
+          };
+        };
+      }
+    )
+      .select("path, viewed_at")
+      .eq("user_id", userId)
+      .order("viewed_at", { ascending: false })
+      .limit(120),
+    admin
+      .from("activity_logs")
+      .select("action, target_type, details, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(60),
+  ]);
+
+  const journeyEvents: JourneyEvent[] = [
+    ...(pageViewsRes.data ?? []).map((v) => ({
+      kind: "page" as const,
+      label: humanizePath(v.path),
+      detail: v.path,
+      at: v.viewed_at,
+    })),
+    ...(actionsRes.data ?? []).map((a) => ({
+      kind: "action" as const,
+      label: humanizeAction(a.action),
+      detail: summarizeDetails(a.details),
+      at: a.created_at,
+    })),
+  ]
+    .sort((x, y) => (x.at < y.at ? 1 : -1))
+    .slice(0, 100);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
@@ -119,6 +174,23 @@ export default async function SuperUserDetailPage({ params }: Props) {
         orgs={orgs}
         cohorts={cohorts}
       />
+
+      <div className="mt-6">
+        <JourneyTimeline events={journeyEvents} actorName={name} />
+      </div>
     </div>
   );
+}
+
+// Compact one-line summary of an activity_logs.details JSON blob for the
+// timeline. Picks the most useful key if present.
+function summarizeDetails(details: unknown): string | null {
+  if (!details || typeof details !== "object") return null;
+  const d = details as Record<string, unknown>;
+  const parts: string[] = [];
+  if (typeof d.email === "string") parts.push(d.email);
+  if (typeof d.name === "string") parts.push(d.name);
+  if (typeof d.role === "string") parts.push(`role: ${d.role}`);
+  if (typeof d.to === "string") parts.push(`→ ${d.to}`);
+  return parts.length ? parts.join(" · ") : null;
 }

@@ -4,6 +4,7 @@ import { getUserRoleContext } from "@/lib/auth/role-context";
 import { createClient } from "@/lib/supabase/server";
 import { TopNav } from "@/components/top-nav";
 import { AmbientGlow } from "@/components/design/ambient-glow";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import { CommandPalette } from "@/components/palette/command-palette";
 import { SuperTour } from "@/components/super/super-tour";
 import { DEFAULT_THEME_MODE, isThemeMode } from "@/lib/design/tokens";
@@ -122,6 +123,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
           capstoneAvailable={capstoneAvailable}
         />
         <SuperTour superAdmin={profile?.super_admin ?? false} />
+        <PageViewTracker />
       </div>
     </div>
   );
